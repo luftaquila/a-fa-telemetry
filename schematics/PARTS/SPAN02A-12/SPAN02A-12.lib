@@ -1,0 +1,30 @@
+EESchema-LIBRARY Version 2.3
+#encoding utf-8
+#SamacSys ECAD Model SPAN02A-12
+#/1189124/739686/2.49/7/4/Power Supply
+DEF SPAN02A-12 PS 0 30 Y Y 1 F N
+F0 "PS" 850 300 50 H V L CNN
+F1 "SPAN02A-12" 850 200 50 H V L CNN
+F2 "SPAN02A12" 850 100 50 H I L CNN
+F3 "https://datasheet.datasheetarchive.com/originals/distributors/DKDS-2/37032.pdf" 850 0 50 H I L CNN
+F4 "Isolated DC/DC Converters 9-18Vin 12Vout 167mA SIP8 Reg Iso" 850 -100 50 H I L CNN "Description"
+F5 "11.6" 850 -200 50 H I L CNN "Height"
+F6 "Mean Well" 850 -300 50 H I L CNN "Manufacturer_Name"
+F7 "SPAN02A-12" 850 -400 50 H I L CNN "Manufacturer_Part_Number"
+F8 "709-SPAN02A-12" 850 -500 50 H I L CNN "Mouser Part Number"
+F9 "https://www.mouser.co.uk/ProductDetail/MEAN-WELL/SPAN02A-12?qs=5aG0NVq1C4wxQqKsG84AkQ%3D%3D" 850 -600 50 H I L CNN "Mouser Price/Stock"
+F10 "SPAN02A-12" 850 -700 50 H I L CNN "Arrow Part Number"
+F11 "https://www.arrow.com/en/products/span02a-12/mean-well-enterprises?region=nac" 850 -800 50 H I L CNN "Arrow Price/Stock"
+DRAW
+X -VIN 1 0 0 200 R 50 50 0 0 P
+X +VIN 2 0 -100 200 R 50 50 0 0 P
+X R.C. 3 0 -200 200 R 50 50 0 0 P
+X N.C._1 5 0 -300 200 R 50 50 0 0 P
+X +VOUT 6 0 -400 200 R 50 50 0 0 P
+X -VOUT 7 0 -500 200 R 50 50 0 0 P
+X N.C._2 8 0 -600 200 R 50 50 0 0 P
+P 5 0 1 6 200 100 800 100 800 -700 200 -700 200 100 N
+ENDDRAW
+ENDDEF
+#
+#End Library

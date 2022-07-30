@@ -1,0 +1,9 @@
+EESchema-DOCLIB  Version 2.0
+#
+$CMP IRF640
+D Trans MOSFET N-CH 200V 18A 3-Pin(3+Tab) TO-220AB - Bulk
+K
+F https://www.vishay.com/docs/91036/sihf640.pdf
+$ENDCMP
+#
+#End Doc Library

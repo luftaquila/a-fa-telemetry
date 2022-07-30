@@ -1,0 +1,17 @@
+{
+  "name": "a-fa",
+  "version": "1.0.0",
+  "description": "",
+  "main": "index.mjs",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "author": "LUFT-AQUILA",
+  "license": "ISC",
+  "dependencies": {
+    "dateformat": "^5.0.3",
+    "dotenv": "^16.0.1",
+    "mariadb": "^3.0.0",
+    "socket.io": "^4.5.1"
+  }
+}

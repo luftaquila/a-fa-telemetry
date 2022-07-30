@@ -1,0 +1,9 @@
+EESchema-DOCLIB  Version 2.0
+#
+$CMP SPAN02A-12
+D Isolated DC/DC Converters 9-18Vin 12Vout 167mA SIP8 Reg Iso
+K
+F https://datasheet.datasheetarchive.com/originals/distributors/DKDS-2/37032.pdf
+$ENDCMP
+#
+#End Doc Library

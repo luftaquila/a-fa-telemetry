@@ -1,0 +1,10 @@
+(sym_lib_table
+  (lib (name "IRF640")(type "KiCad")(uri "${KIPRJMOD}/PARTS/IRF640/IRF640.kicad_sym")(options "")(descr ""))
+  (lib (name "SPAN02A-12")(type "KiCad")(uri "${KIPRJMOD}/PARTS/SPAN02A-12/SPAN02A-12.kicad_sym")(options "")(descr ""))
+  (lib (name "ADJ14024")(type "KiCad")(uri "${KIPRJMOD}/PARTS/ADJ14024/ADJ14024.kicad_sym")(options "")(descr ""))
+  (lib (name "2-1445088-8")(type "Legacy")(uri "${KIPRJMOD}/PARTS/2-1445088-8/2-1445088-8.lib")(options "")(descr ""))
+  (lib (name "A-FA_PARTS")(type "KiCad")(uri "${KIPRJMOD}/PARTS/A-FA_PARTS.kicad_sym")(options "")(descr ""))
+  (lib (name "TL783")(type "Legacy")(uri "${KIPRJMOD}/PARTS/TL783/TL783.lib")(options "")(descr ""))
+  (lib (name "DFR0299")(type "KiCad")(uri "${KIPRJMOD}/PARTS/DFR0299/DFR0299.kicad_sym")(options "")(descr ""))
+  (lib (name "G2RL-1_12DC")(type "KiCad")(uri "${KIPRJMOD}/PARTS/G2RL-1 12DC/G2RL-1_12DC.kicad_sym")(options "")(descr ""))
+)

@@ -1,0 +1,202 @@
+@import url('https://fonts.googleapis.com/css2?family=Nanum+Gothic:wght@400;700;800&display=swap');
+@font-face {
+  font-family: 'S-CoreDream-4Regular';
+  src: url('https://cdn.jsdelivr.net/gh/projectnoonnu/noonfonts_six@1.2/S-CoreDream-4Regular.woff') format('woff');
+  font-weight: normal;
+  font-style: normal;
+}
+@font-face {
+  font-family: 'S-CoreDream-5Medium';
+  src: url('https://cdn.jsdelivr.net/gh/projectnoonnu/noonfonts_six@1.2/S-CoreDream-5Medium.woff') format('woff');
+  font-weight: normal;
+  font-style: normal;
+}
+@font-face {
+  font-family: 'S-CoreDream-6Bold';
+  src: url('https://cdn.jsdelivr.net/gh/projectnoonnu/noonfonts_six@1.2/S-CoreDream-6Bold.woff') format('woff');
+  font-weight: normal;
+  font-style: normal;
+}
+
+html {
+  font-family: 'Nanum Gothic', sans-serif;
+  background-color: rgb(243, 244, 246);
+  -webkit-touch-callout: none;
+  -webkit-user-select: none;
+  -khtml-user-select: none;
+  -moz-user-select: none;
+  -ms-user-select: none;
+  user-select: none;
+}
+
+body {
+  min-width: 320px;
+  min-height: 568px;
+  max-width: 414px;
+  overflow-y: auto;
+  border-radius: 10px;
+}
+@media (min-width: 415px) {
+  body {
+    box-shadow: 0px 32px 47px rgba(32, 23, 23, 0.09);
+    margin: 2rem auto;
+  }
+}
+
+#logo {
+  text-align: center;
+  padding-top: .5rem;
+}
+
+#logo img {
+  width: 70%;
+}
+
+div#container {
+  padding: 1rem;
+  padding-top: 0rem;
+}
+
+header {
+  position: sticky;
+  top: 0;
+  background-color: rgb(243, 244, 246);
+  padding: 1rem 0rem;
+  z-index: 1000;
+}
+
+div.status {
+  display: inline-block;
+  text-align: center;
+}
+
+div.status.left {
+  margin-right: 1rem;
+}
+
+div.status.right {
+  float: right;
+  margin-left: 1.2rem;
+}
+
+div.fault-indicator {
+  width: 100%;
+  text-align: center;
+  margin-top: 1.5rem;
+  margin-bottom: 1.5rem;
+}
+
+div.status.middle {
+  width: 23%;
+}
+
+div.status.middle i {
+  font-size: 1.5rem!important;
+}
+
+div.status i {
+  font-size: 1.75rem;
+}
+
+div.status div.text {
+  font-weight: bold;
+  font-size: 0.75rem;
+  margin-top: 0.5rem;
+  color: rgb(25,35,41);
+}
+
+
+article {
+  margin-top: 1.5rem;
+  padding: 1rem;
+  background-color: white;
+  border-radius: 10px;
+}
+
+article h1 {
+  font-size: 1.75rem;
+  margin: 0px;
+  color: rgb(59,130,246);
+}
+
+article h2 {
+  font-size: 1.5rem;
+  margin: 0;
+}
+
+article .content {
+  padding-left: 1rem;
+}
+
+div.toggle_graph {
+  transform: scale(.5);
+  margin-left: -3rem;
+  margin-top: -.3rem;
+}
+
+div.toggle_graph label {
+  width: 6rem!important;
+  margin-right: -.3rem;
+  display: inline-block!important;
+}
+
+table.param {
+  margin-top: 1rem;
+}
+
+table.param .graph {
+  display: none;
+}
+
+table.param .param-label {
+  color: rgb(65,75,81);
+  text-align: left;
+  vertical-align: baseline;
+  width: 9rem;
+}
+
+table.param .param-data h2 {
+  text-align: left;
+  font-family: 'S-CoreDream-6Bold';
+  font-size: 3rem;
+}
+
+table.param .param-unit {
+  font-size: 1rem;
+}
+
+canvas.graph {
+  display: none;
+}
+
+table.settings {
+  width: 100%;
+}
+
+table.settings span.btn {
+  width: -webkit-fill-available;
+  height: 2rem;
+  line-height: 2.2rem;
+  font-family: 'S-CoreDream-5Medium';
+}
+
+div.swal2-html-container {
+  word-break: keep-all;
+  line-height: 1.5rem;
+}
+
+.swal2-two-buttons {
+  margin-right: 2rem!important;
+}
+
+code {
+  padding: 0.2em 0.4em;
+  margin: 0;
+  font-size: 85%;
+  background-color: rgba(175, 184, 193, 0.2);
+  border-radius: 6px;
+}
+
+table.dataTable td {
+  font-size: 1rem;
+}
