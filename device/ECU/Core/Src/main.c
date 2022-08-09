@@ -80,17 +80,58 @@ typedef enum {
 	COMPASS,
 	COMPASS_DIR
 } GPRMC_t;
+
+typedef enum {
+	CAN_BMS_CORE = 0,
+	CAN_BMS_TEMP,
+	CAN_INV_TEMP_1,
+	CAN_INV_TEMP_3,
+	CAN_INV_ANALOG_IN,
+	CAN_INV_MOTOR_POS,
+	CAN_INV_CURRENT,
+	CAN_INV_VOLTAGE,
+	CAN_INV_FLUX,
+	CAN_INV_REF,
+	CAN_INV_STATE,
+	CAN_INV_FAULT,
+	CAN_INV_TORQUE,
+	CAN_INV_FLUX_WEAKING
+} CAN_MSG_t;
+
+typedef enum {
+	CAN_BMS_CORE_ID = 0x6B0,
+	CAN_BMS_TEMP_ID = 0x6B1,
+	CAN_INV_TEMP_1_ID = 0xA0,
+	CAN_INV_TEMP_3_ID = 0xA2,
+	CAN_INV_ANALOG_IN_ID = 0xA3,
+	CAN_INV_MOTOR_POS_ID = 0xA5,
+	CAN_INV_CURRENT_ID = 0xA6,
+	CAN_INV_VOLTAGE_ID = 0xA7,
+	CAN_INV_FLUX_ID = 0xA8,
+	CAN_INV_REF_ID = 0xA9,
+	CAN_INV_STATE_ID = 0xAA,
+	CAN_INV_FAULT_ID = 0xAB,
+	CAN_INV_TORQUE_ID = 0xAC,
+	CAN_INV_FLUX_WEAKING_ID = 0xAD
+} CAN_MSG_ID_t;
 /* USER CODE END PTD */
 
 /* Private define ------------------------------------------------------------*/
 /* USER CODE BEGIN PD */
-#define DEBUG_MODE (1)
+#define DEBUG_MODE (0)
 #define GPS_DEBUG (0)
 
 #define INPUT_GPIO_COUNT (7)
 
+// ADC temperature sensor calibration values
 #define TS_CAL1 *((uint16_t*) 0x1FFF7A2C)
 #define TS_CAL2 *((uint16_t*) 0x1FFF7A2E)
+
+// LCD
+#define LCD_I2C_ADRESS 0x27 << 1
+
+// CAN
+#define CAN_MSG_COUNT 14
 
 /* USER CODE END PD */
 
@@ -102,6 +143,9 @@ typedef enum {
 /* Private variables ---------------------------------------------------------*/
 
 /* USER CODE BEGIN PV */
+
+// error handler log
+log_t errlog;
 
 // SD file system;
 FATFS SDFatFs;
@@ -119,12 +163,12 @@ ring_buffer_t logbuffer;
 // GPS UART6 receive buffer
 uint8_t gps_rxd;
 uint8_t gps_rxs[120];
-uint32_t GPS_valid = false;
+uint32_t gps_valid = false;
 
 // WiFi UART3 receive buffer
 uint8_t wifi_rxd;
 uint8_t wifi_rxs[50];
-uint32_t WiFi_valid = false;
+uint32_t wifi_valid = false;
 
 // GPIO status
 GPIO_t GPIO[8] = {
@@ -138,8 +182,29 @@ GPIO_t GPIO[8] = {
 };
 
 // ADC temperature value
-uint32_t ADC_valid;
-uint32_t temperature;
+uint32_t adc_valid = false;
+uint32_t core_temperature;
+
+// GPIO update on socket connection
+uint32_t isGPIOcheckedAfterSocketConnected = false;
+uint32_t socketConnectedTime;
+
+// LCD update flag
+uint32_t lcd_valid = false;
+
+// CAN receiver config
+CAN_RxHeaderTypeDef can_rxh;
+uint8_t can_rxb[8];
+uint8_t can_rxd[CAN_MSG_COUNT][8];
+uint32_t can_valid[CAN_MSG_COUNT] = { false, };
+uint32_t can_active = false;
+uint8_t *can_msg_id[CAN_MSG_COUNT] = { "CAN_BMS_CORE", "CAN_BMS_TEMP", "CAN_INV_TEMP_1", "CAN_INV_TEMP_3",
+						   "CAN_INV_ANALOG_IN", "CAN_INV_MOTOR_POS", "CAN_INV_CURRENT", "CAN_INV_VOLTAGE",
+						   "CAN_INV_FLUX", "CAN_INV_REF", "CAN_INV_STATE", "CAN_INV_FAULT",
+						   "CAN_INV_TORQUE", "CAN_INV_FLUX_WEAKING" };
+
+// SD mount flag
+uint32_t sd_valid = false;
 
 /* USER CODE END PV */
 
@@ -177,63 +242,127 @@ uint64_t getDateTimeBits() {
 	return result;
 }
 
-void LOGGER(log_t* log) {
-	char* content;
-	content = malloc(200);
-	uint32_t writtenBytesCount;
+
+void SD_Setup() {
+	// INIT & MOUNT
+	disk_initialize((BYTE) 0);
+	uint32_t err = f_mount(&SDFatFs, "", 0);
+
+	#if DEBUG_MODE
+		printf("mount err: %d\n", err);
+	#endif
+	if(err != FR_OK) {
+		errlog.component = "ECU";
+		errlog.level = "ERRR";
+		errlog.key = "SD";
+		errlog.value = malloc(17);
+		sprintf(errlog.value, "SD_MOUNT_ERR: %d", err);
+
+		Error_Handler();
+		free(errlog.value);
+	}
+
+	sd_valid = true;
+
+	log_t log;
+	log.component = "ECU";
+	log.level = "INFO";
+	log.key = "SD";
+	log.value = "SD_MOUNTED";
+	LOGGER(&log);
+}
+
+
+char* log_string_generator(log_t* log, char* str, uint32_t* logsize) {
 	uint64_t timestamp = getDateTimeBits();
 
 	// set log content
-	sprintf(content, "![%s]\t[20%d-%02d-%02d %02d:%02d:%02d.%03d]\t%s\t\t%s\t\t\t%s\n",
+	sprintf(str, "![%s]\t[20%d-%02d-%02d %02d:%02d:%02d.%03d]\t%s\t\t%s\t\t\t%s\n",
 			log->level,
 			(uint32_t)(timestamp >> 48), (uint32_t)(timestamp << 16 >> 56), (uint32_t)(timestamp << 24 >> 56),
 			(uint32_t)(timestamp << 32 >> 56), (uint32_t)(timestamp << 40 >> 56), (uint32_t)(timestamp << 48 >> 56), (int)(999.0 / 255.0 * (float)(255 - (timestamp << 56 >> 56))),
 			log->component, log->key, log->value);
 
-	// calculate log content length
-	char *end = strchr(content, '\0');
-	uint32_t logsize = (uint32_t)(end - content);
+	*logsize = strlen(str);
+	return str;
+}
+
+void LOGGER(log_t* log) {
+	char* content = malloc(100);
+	uint32_t logsize;
+
+#if DEBUG_MODE
+	printf("LOG value: %s %s %s %s\n", log->level, log->component, log->key, log->value);
+#endif
+
+	log_string_generator(log, content, &logsize);
+
+#if DEBUG_MODE
+	printf("LOG content: %s", content);
+#endif
 
 	// append log to buffer
 	ring_buffer_queue_arr(&logbuffer, content, logsize + 1);
 
-#if DEBUG_MODE
-	printf("LOG: %s", content);
-#endif
+	#if DEBUG_MODE
+		printf("LOG: %s", content);
+	#endif
+
+	// mount SD
+	if (!sd_valid) {
+		SD_Setup();
+	}
 
 	// SAVE TO SD
 	FIL file;
+	uint32_t writtenBytesCount;
 
 	// OPEN FILE
 	uint32_t err = f_open(&file, logfile, FA_OPEN_APPEND | FA_WRITE);
-#if DEBUG_MODE
-	printf("open err: %d, %s\n", err, logfile);
-#endif
-	if(err != FR_OK) {
-		f_close(&file);
-		printf("\n!!!!! SD OPEN ERROR !!!!!\n\n");
+	#if DEBUG_MODE
+		printf("sd open: %d, %s\n", err, logfile);
+	#endif
+	if (err != FR_OK) {
+		errlog.component = "ECU";
+		errlog.level = "ERRR";
+		errlog.key = "SD";
+		errlog.value = malloc(16);
+		sprintf(errlog.value, "SD_OPEN_ERR: %d", err);
+
 		Error_Handler();
+		free(errlog.value);
 	}
 
 	// WRITE TO FILE
 	err = f_write(&file, content, logsize, (void *)&writtenBytesCount);
-#if DEBUG_MODE
-	printf("write err: %d, %s, %d\n", err, logfile, writtenBytesCount);
-#endif
-	if(err != FR_OK) {
-		printf("\n!!!!! SD WRITE ERROR !!!!!\n\n");
-		err = f_close(&file);
+	#if DEBUG_MODE
+		printf("sd write: %d, %s, %d\n", err, logfile, writtenBytesCount);
+	#endif
+	if (err != FR_OK) {
+		errlog.component = "ECU";
+		errlog.level = "ERRR";
+		errlog.key = "SD";
+		errlog.value = malloc(17);
+		sprintf(errlog.value, "SD_WRITE_ERR: %d", err);
+
 		Error_Handler();
+		free(errlog.value);
 	}
 
 	// CLOSE FILE
 	err = f_close(&file);
-#if DEBUG_MODE
-	printf("close err: %d\n\n", err);
-#endif
+	#if DEBUG_MODE
+		printf("sd close: %d\n\n", err);
+	#endif
 	if(err != FR_OK) {
-		printf("\n!!!!! SD CLOSE ERROR !!!!!\n\n");
+		errlog.component = "ECU";
+		errlog.level = "ERRR";
+		errlog.key = "SD";
+		errlog.value = malloc(17);
+		sprintf(errlog.value, "SD_CLOSE_ERR: %d", err);
+
 		Error_Handler();
+		free(errlog.value);
 	}
 
 	free(content);
@@ -259,25 +388,25 @@ void Sensor_Setup() {
 		log.component = "ECU";
 		log.level = "INFO";
 		log.key = "GPIO";
-		log.value = malloc(strlen(GPIO[i].name + 3));
-		sprintf(log.value, "%s %d", GPIO[i].name, GPIO[i].value);
+		log.value = malloc(strlen(GPIO[i].name) + 3);
+		sprintf(log.value, "%s %d", GPIO[i].name, (GPIO[i].value));
 		LOGGER(&log);
 		free(log.value);
 	}
 }
 
 void Sensor_Manager() {
-	if (ADC_valid) {
+	if (adc_valid) {
 		log_t log;
 		log.component = "ECU";
 		log.level = "INFO";
 		log.key = "TEMPERATURE";
 		log.value = malloc(5);
-		sprintf(log.value, "%d", temperature);
+		sprintf(log.value, "%d", core_temperature);
 		LOGGER(&log);
 		free(log.value);
 
-		ADC_valid = false;
+		adc_valid = false;
 	}
 
 	// detect GPIO state change
@@ -287,7 +416,7 @@ void Sensor_Manager() {
 			log.component = "ECU";
 			log.level = "INFO";
 			log.key = "GPIO";
-			log.value = malloc(strlen(GPIO[i].name + 3));
+			log.value = malloc(strlen(GPIO[i].name) + 3);
 			sprintf(log.value, "%s %d", GPIO[i].name, !(GPIO[i].value));
 			LOGGER(&log);
 			free(log.value);
@@ -367,44 +496,194 @@ void CAN_Setup() {
 
    // CAN configuration
    if (HAL_CAN_ConfigFilter(&hcan1, &CAN_Filter_Config) != HAL_OK) {
-	   printf("\n!!!!! CAN FILTER CONFIG ERROR !!!!!\n\n");
-	   Error_Handler();
+		errlog.component = "ECU";
+		errlog.level = "ERRR";
+		errlog.key = "CAN";
+		errlog.value = malloc(25);
+		sprintf(errlog.value, "HAL_CAN_ConfigFilter_ERR");
+
+		Error_Handler();
+		free(errlog.value);
    }
 
    // CAN start
    if (HAL_CAN_Start(&hcan1) != HAL_OK) {
-	   printf("\n!!!!! CAN START ERROR !!!!!\n\n");
-	   Error_Handler();
+		errlog.component = "ECU";
+		errlog.level = "ERRR";
+		errlog.key = "CAN";
+		errlog.value = malloc(18);
+		sprintf(errlog.value, "HAL_CAN_Start_ERR");
+
+		Error_Handler();
+		free(errlog.value);
    }
 
    // CAN RX notification activation
    if (HAL_CAN_ActivateNotification(&hcan1, CAN_IT_RX_FIFO0_MSG_PENDING) != HAL_OK) {
-	   printf("\n!!!!! CAN RX NOTIFICATION ACTIVATE ERROR !!!!!\n\n");
-	   Error_Handler();
+		errlog.component = "ECU";
+		errlog.level = "ERRR";
+		errlog.key = "CAN";
+		errlog.value = malloc(61);
+		sprintf(errlog.value, "HAL_CAN_ActivateNotification_CAN_IT_RX_FIFO0_MSG_PENDING_ERR");
+
+		Error_Handler();
+		free(errlog.value);
+   }
+   can_active = true;
+
+   // CAN RX FULL notification activation
+   if (HAL_CAN_ActivateNotification(&hcan1, CAN_IT_RX_FIFO0_FULL) != HAL_OK) {
+		errlog.component = "ECU";
+		errlog.level = "ERRR";
+		errlog.key = "CAN";
+		errlog.value = malloc(54);
+		sprintf(errlog.value, "HAL_CAN_ActivateNotification_CAN_IT_RX_FIFO0_FULL_ERR");
+
+		Error_Handler();
+		free(errlog.value);
    }
 }
 
 void HAL_CAN_RxFifo0MsgPendingCallback(CAN_HandleTypeDef *CAN_Handle) {
-   CAN_RxHeaderTypeDef CAN_Rx_Header;
-   uint8_t CAN_Rx_Data[8];
+	if (HAL_CAN_GetRxMessage(CAN_Handle, CAN_RX_FIFO0, &can_rxh, can_rxb) != HAL_OK) {
+		errlog.component = "ECU";
+		errlog.level = "ERRR";
+		errlog.key = "CAN";
+		errlog.value = malloc(25);
+		sprintf(errlog.value, "HAL_CAN_GetRxMessage_ERR");
 
-   // CAN RX
-   if (HAL_CAN_GetRxMessage(CAN_Handle, CAN_RX_FIFO0, &CAN_Rx_Header, CAN_Rx_Data) != HAL_OK) {
-	   printf("\n!!!!! CAN RX ERROR !!!!!\n\n");
-	   Error_Handler();
-   }
+		Error_Handler();
+		free(errlog.value);
+	}
 
-   // CAN RECEIVE DATA HANDLER HERE
+	switch (can_rxh.StdId) {
+		case CAN_BMS_CORE_ID:
+			memcpy(can_rxd[CAN_BMS_CORE], can_rxb, 8);
+			can_valid[CAN_BMS_CORE] = true;
+			break;
 
+		case CAN_BMS_TEMP_ID:
+			memcpy(can_rxd[CAN_BMS_TEMP], can_rxb, 8);
+			can_valid[CAN_BMS_TEMP] = true;
+			break;
+
+		case CAN_INV_TEMP_1_ID:
+			memcpy(can_rxd[CAN_INV_TEMP_1], can_rxb, 8);
+			can_valid[CAN_INV_TEMP_1] = true;
+			break;
+
+		case CAN_INV_TEMP_3_ID:
+			memcpy(can_rxd[CAN_INV_TEMP_3], can_rxb, 8);
+			can_valid[CAN_INV_TEMP_3] = true;
+			break;
+
+		case CAN_INV_ANALOG_IN_ID:
+			memcpy(can_rxd[CAN_INV_ANALOG_IN], can_rxb, 8);
+			can_valid[CAN_INV_ANALOG_IN] = true;
+			break;
+
+		case CAN_INV_MOTOR_POS_ID:
+			memcpy(can_rxd[CAN_INV_MOTOR_POS], can_rxb, 8);
+			can_valid[CAN_INV_MOTOR_POS] = true;
+			break;
+
+		case CAN_INV_CURRENT_ID:
+			memcpy(can_rxd[CAN_INV_CURRENT], can_rxb, 8);
+			can_valid[CAN_INV_CURRENT] = true;
+			break;
+
+		case CAN_INV_VOLTAGE_ID:
+			memcpy(can_rxd[CAN_INV_VOLTAGE], can_rxb, 8);
+			can_valid[CAN_INV_VOLTAGE] = true;
+			break;
+
+		case CAN_INV_FLUX_ID:
+			memcpy(can_rxd[CAN_INV_FLUX], can_rxb, 8);
+			can_valid[CAN_INV_FLUX] = true;
+			break;
+
+		case CAN_INV_REF_ID:
+			memcpy(can_rxd[CAN_INV_REF], can_rxb, 8);
+			can_valid[CAN_INV_REF] = true;
+			break;
+
+		case CAN_INV_STATE_ID:
+			memcpy(can_rxd[CAN_INV_STATE], can_rxb, 8);
+			can_valid[CAN_INV_STATE] = true;
+			break;
+
+		case CAN_INV_FAULT_ID:
+			memcpy(can_rxd[CAN_INV_FAULT], can_rxb, 8);
+			can_valid[CAN_INV_FAULT] = true;
+			break;
+
+		case CAN_INV_TORQUE_ID:
+			memcpy(can_rxd[CAN_INV_TORQUE], can_rxb, 8);
+			can_valid[CAN_INV_TORQUE] = true;
+			break;
+
+		case CAN_INV_FLUX_WEAKING_ID:
+			memcpy(can_rxd[CAN_INV_FLUX_WEAKING], can_rxb, 8);
+			can_valid[CAN_INV_FLUX_WEAKING] = true;
+			break;
+	}
 }
 
-void HAL_CAN_ErrorCallback(CAN_HandleTypeDef *hcan) {
-	printf("\n!!!!! CAN ERROR !!!!!\n\n");
-	Error_Handler();
+void HAL_CAN_RxFifo0FullCallback(CAN_HandleTypeDef *CAN_Handle) {
+	// deactivate CAN RX on FIFO FULL
+	if (HAL_CAN_DeactivateNotification(&hcan1, CAN_IT_RX_FIFO0_MSG_PENDING) != HAL_OK) {
+		errlog.component = "ECU";
+		errlog.level = "ERRR";
+		errlog.key = "CAN";
+		errlog.value = malloc(63);
+		sprintf(errlog.value, "HAL_CAN_DeactivateNotification_CAN_IT_RX_FIFO0_MSG_PENDING_ERR");
+
+		Error_Handler();
+		free(errlog.value);
+	}
+	can_active = false;
 }
 
 void CAN_Manager() {
+	for (uint32_t i = 0; i < CAN_MSG_COUNT; i++) {
+		if (can_valid[i]) {
+			log_t log;
+	        log.component = i < 2 ? "BMS" : "INV";
+	        log.level = (i == 0 && (can_rxd[i][5] | can_rxd[i][6])) ? "ERRR" : "INFO";
+	        log.key = can_msg_id[i];
+			log.value = malloc(40);
+			sprintf(log.value, "0x%02X 0x%02X 0x%02X 0x%02X 0x%02X 0x%02X 0x%02X 0x%02X", can_rxd[i][0], can_rxd[i][1], can_rxd[i][2], can_rxd[i][3], can_rxd[i][4], can_rxd[i][5], can_rxd[i][6], can_rxd[i][7]);
+			LOGGER(&log);
+			free(log.value);
 
+			can_valid[i] = false;
+		}
+	}
+
+	if (!can_active) {
+		// CAN RX notification activation
+		if (HAL_CAN_ActivateNotification(&hcan1, CAN_IT_RX_FIFO0_MSG_PENDING) != HAL_OK) {
+			errlog.component = "ECU";
+			errlog.level = "ERRR";
+			errlog.key = "CAN";
+			errlog.value = malloc(61);
+			sprintf(errlog.value, "HAL_CAN_ActivateNotification_CAN_IT_RX_FIFO0_MSG_PENDING_ERR");
+
+			Error_Handler();
+			free(errlog.value);
+		}
+	}
+}
+
+void HAL_CAN_ErrorCallback(CAN_HandleTypeDef *hcan) {
+	errlog.component = "ECU";
+	errlog.level = "ERRR";
+	errlog.key = "CAN";
+	errlog.value = malloc(26);
+	sprintf(errlog.value, "HAL_CAN_ErrorCallback_ERR");
+
+	Error_Handler();
+	free(errlog.value);
 }
 /* ========== CAN RECEIVER END ========== */
 
@@ -413,7 +692,7 @@ void HAL_UART_RxCpltCallback(UART_HandleTypeDef *huart) {
 	// for GPS
 	if(huart->Instance == USART6) {
 		// process only if data is not ready
-		if(GPS_valid) return;
+		if(gps_valid) return;
 		else {
 			// received character position
 			static uint32_t len = 0;
@@ -426,7 +705,7 @@ void HAL_UART_RxCpltCallback(UART_HandleTypeDef *huart) {
 				// process only if received line is GPRMC
 				if(strstr(gps_rxs, "$GPRMC")) {
 					// set GPS data ready
-					GPS_valid = true;
+					gps_valid = true;
 					return;
 				}
 			}
@@ -442,7 +721,7 @@ void HAL_UART_RxCpltCallback(UART_HandleTypeDef *huart) {
 	// for WiFi
 	else if(huart->Instance == USART3) {
 		// process only if data is ready to processed
-		if(WiFi_valid) return;
+		if(wifi_valid) return;
 		else {
 			static uint32_t len = 0;
 
@@ -452,7 +731,7 @@ void HAL_UART_RxCpltCallback(UART_HandleTypeDef *huart) {
 
 				// set flag only if received line contains $ESP
 				if(strstr(wifi_rxs, "$ESP")) {
-					WiFi_valid = true;
+					wifi_valid = true;
 					return;
 				}
 			}
@@ -494,7 +773,7 @@ void GPS_Setup() {
 
 void GPS_Manager() {
 	// process only if received buffer data is ready
-	if(GPS_valid) {
+	if(gps_valid) {
 #if DEBUG_MODE && GPS_DEBUG
 		printf("GPS: %s\n", gps_rxs);
 #endif
@@ -565,7 +844,7 @@ void GPS_Manager() {
 		*/
 
 		// on valid GPS fix
-		if(gps[GPS_VALID][0] == 'A') {
+		if(gps[gps_valid][0] == 'A') {
 			// log if GPS got fix
 			if(!isGPSFixed) {
 				log_t log;
@@ -602,7 +881,7 @@ void GPS_Manager() {
 		for(int i = 0; i < 11; i++) free(gps[i]);
 
 		// mark data used
-		GPS_valid = false;
+		gps_valid = false;
 
 		// re-enable interrupt
 		HAL_UART_Receive_IT(&huart6, &gps_rxd, 1);
@@ -615,7 +894,7 @@ void GPS_Manager() {
 void WiFi_Manager() {
 	static uint32_t isWiFiSocketConnected = false;
 
-	if (WiFi_valid) {
+	if (wifi_valid) {
 #if DEBUG_MODE
 				printf("WiFi: %s\n", wifi_rxs);
 #endif
@@ -707,10 +986,39 @@ void WiFi_Manager() {
 				isWiFiSocketConnected = true;
 			}
 		}
+
+		// mark process complete and re-enable UART interrupt
+		wifi_valid = false;
+		HAL_UART_Receive_IT(&huart3, &wifi_rxd, 1);
 	}
 
-	// flush ring buffer on ESP online
 	if (isWiFiSocketConnected) {
+		// check all GPIO in 100ms interval after socket connection
+		if (!isGPIOcheckedAfterSocketConnected) {
+			static uint32_t checkedGPIOcount = 0;
+			if (!socketConnectedTime) socketConnectedTime = HAL_GetTick();
+
+			if (HAL_GetTick() > socketConnectedTime + 100 * (checkedGPIOcount + 5)) {
+				GPIO[checkedGPIOcount].value = HAL_GPIO_ReadPin(GPIO[checkedGPIOcount].port, GPIO[checkedGPIOcount].pin);
+
+				log_t log;
+				log.component = "ECU";
+				log.level = "INFO";
+				log.key = "GPIO";
+				log.value = malloc(strlen(GPIO[checkedGPIOcount].name) + 3);
+				sprintf(log.value, "%s %d", GPIO[checkedGPIOcount].name, (GPIO[checkedGPIOcount].value));
+				LOGGER(&log);
+				free(log.value);
+
+				checkedGPIOcount++;
+
+				if (checkedGPIOcount == INPUT_GPIO_COUNT) {
+					isGPIOcheckedAfterSocketConnected = true;
+				}
+			}
+		}
+
+		// flush ring buffer on ESP online
 		while(!ring_buffer_is_empty(&logbuffer)) {
 			uint32_t size = strlen(logbuffer.buffer + logbuffer.tail_index) + 1;
 			uint8_t* buf = malloc(size);
@@ -720,12 +1028,6 @@ void WiFi_Manager() {
 			HAL_UART_Transmit(&huart3, buf, size, 100);
 			free(buf);
 		}
-	}
-
-	// mark process complete and re-enable UART interrupt
-	if (WiFi_valid) {
-		WiFi_valid = false;
-		HAL_UART_Receive_IT(&huart3, &wifi_rxd, 1);
 	}
 }
 /* ========== WiFi END ========== */
@@ -748,32 +1050,121 @@ void HAL_TIM_PeriodElapsedCallback(TIM_HandleTypeDef *htim) {
 	}
 
 	// internal temperature sensor
-	else if(htim->Instance == TIM4) { // 5s
+	else if (htim->Instance == TIM4) { // 5s
 		HAL_ADC_Start_IT(&hadc1);
+	}
+
+	else if (htim->Instance == TIM3) { // 100ms
+		lcd_valid = true;
 	}
 }
 
 // TEMPERATURE SENSOR interrupt callback
 void HAL_ADC_ConvCpltCallback(ADC_HandleTypeDef* hadc) {
-	temperature = (uint32_t)(((110.0 - 30) * (HAL_ADC_GetValue(&hadc1) - TS_CAL1) / (TS_CAL2 - TS_CAL1) + 30) * 10);
-	ADC_valid = true;
+	core_temperature = (uint32_t)(((110.0 - 30) * (HAL_ADC_GetValue(&hadc1) - TS_CAL1) / (TS_CAL2 - TS_CAL1) + 30) * 10);
+	adc_valid = true;
 }
 
 
-void SD_Setup() {
-	// INIT & MOUNT
-	disk_initialize((BYTE) 0);
-	uint32_t err = f_mount(&SDFatFs, "", 0);
+/* ========== LCD START ========== */
+void LCD_Send_CMD (uint8_t cmd) {
+	uint8_t data_u, data_l;
+	uint8_t data_t[4];
+	data_u = (cmd & 0xF0);
+	data_l = ((cmd << 4) & 0xF0);
+	data_t[0] = data_u | 0x0C;
+	data_t[1] = data_u | 0x08;
+	data_t[2] = data_l | 0x0C;
+	data_t[3] = data_l | 0x08;
+	HAL_I2C_Master_Transmit(&hi2c2, LCD_I2C_ADRESS, (uint8_t *)data_t, 4, 10);
+}
 
-#if DEBUG_MODE
-	printf("mount err: %d\n", err);
-#endif
+void LCD_Send_DATA (uint8_t data) {
+	uint8_t data_u, data_l;
+	uint8_t data_t[4];
+	data_u = (data & 0xF0);
+	data_l = ((data << 4) & 0xF0);
+	data_t[0] = data_u | 0x0D;
+	data_t[1] = data_u | 0x09;
+	data_t[2] = data_l | 0x0D;
+	data_t[3] = data_l | 0x09;
+	HAL_I2C_Master_Transmit(&hi2c2, LCD_I2C_ADRESS, (uint8_t *)data_t, 4, 10);
+}
 
-	if(err != FR_OK) {
-		printf("\n!!!!! SD MOUNT ERROR !!!!!\n\n");
-		Error_Handler();
+void LCD_Write(uint8_t *str, uint8_t col, uint8_t row) {
+    switch (row) {
+        case 0:
+            col |= 0x80;
+            break;
+        case 1:
+            col |= 0xC0;
+            break;
+    }
+    LCD_Send_CMD(col);
+
+	while (*str) LCD_Send_DATA(*str++);
+}
+
+void LCD_Setup() {
+	// LCD initialization sequence
+	HAL_Delay(10);
+	LCD_Send_CMD(0x30);
+	HAL_Delay(5);
+	LCD_Send_CMD(0x30);
+	HAL_Delay(1);
+	LCD_Send_CMD(0x30);
+	LCD_Send_CMD(0x20);
+
+	HAL_Delay(1);
+	LCD_Send_CMD(0x28); // FUNCTION SET: DL=0, N=1, F=0
+	LCD_Send_CMD(0x08); // DISPLAY SWITCH: D=0, C=0, B=0
+	LCD_Send_CMD(0x01); // SCREEN CLEAR
+	HAL_Delay(2);
+	LCD_Send_CMD(0x0C); // DISPLAY SWITCH: D=1, C=0, B=0
+
+	// display initial screen
+    LCD_Write("V:", 12, 0);
+    LCD_Write("T:", 12, 1);
+
+    // LCD update rate: 100ms
+	HAL_TIM_Base_Start_IT(&htim3);
+}
+
+void LCD_Manager() {
+	if (lcd_valid) {
+		// update LCD integer value
+		uint8_t core_temp_display[3];
+		uint32_t core_temp_display_value = (core_temperature + 5) / 10; // +5 for rounding
+		sprintf(core_temp_display, "%d", core_temp_display_value);
+	    LCD_Write(core_temp_display, 14, 1);
+
+	    // update LCD block indicator
+		static int32_t display_prev_block_count = 0;
+		int32_t display_block_count = core_temp_display_value - 35;
+		int32_t display_block_variance = display_block_count - display_prev_block_count;
+		uint8_t fill;
+
+		if (display_block_variance > 0) {
+			fill = 0xFF;
+		}
+		else {
+			fill = ' ';
+			display_block_variance = -display_block_variance;
+		}
+
+		uint8_t* display_blocks = malloc(display_block_variance + 1);
+		memset(display_blocks, fill, display_block_variance);
+		display_blocks[display_block_variance] = '\0';
+
+	    LCD_Write(display_blocks, fill == 0xFF ? display_prev_block_count : display_block_count, 1);
+	    display_prev_block_count = display_block_count;
+
+	    free(display_blocks);
+
+		lcd_valid = false;
 	}
 }
+/* ========== LCD END ========== */
 
 /* USER CODE END 0 */
 
@@ -817,6 +1208,8 @@ int main(void)
   MX_USART3_UART_Init();
   MX_ADC1_Init();
   MX_TIM4_Init();
+  MX_I2C1_Init();
+  MX_TIM3_Init();
   /* USER CODE BEGIN 2 */
 
   // set boot time and log file name
@@ -825,15 +1218,8 @@ int main(void)
 		(uint32_t)(boot >> 48), (uint32_t)(boot << 16 >> 56), (uint32_t)(boot << 24 >> 56),
 		(uint32_t)(boot << 32 >> 56), (uint32_t)(boot << 40 >> 56), (uint32_t)(boot << 48 >> 56));
 
-  // initialize 8KB log buffer
+  // initialize 32KB log buffer
   ring_buffer_init(&logbuffer);
-
-  // set SD card
-  SD_Setup();
-
-  // set WiFi
-  HAL_UART_Receive_IT(&huart3, &wifi_rxd, 1);
-  HAL_UART_Transmit(&huart3, "ESP CHECK", 10, 100);
 
   // set onboard LED active
   HAL_GPIO_WritePin(GPIOA, LED1_Pin, GPIO_PIN_RESET);
@@ -846,6 +1232,13 @@ int main(void)
   log.key = "STARTUP";
   log.value = "STARTUP";
   LOGGER(&log);
+
+  // set LCD
+  LCD_Setup();
+
+  // set WiFi
+  HAL_UART_Receive_IT(&huart3, &wifi_rxd, 1);
+  HAL_UART_Transmit(&huart3, "ESP CHECK", 10, 100);
 
   // initialize GPIOs
   Sensor_Setup();
@@ -860,14 +1253,13 @@ int main(void)
 
   /* Infinite loop */
   /* USER CODE BEGIN WHILE */
-  while (1)
-  {
+  while (1) {
 	RTD_Manager();
 	Sensor_Manager();
 	CAN_Manager();
 	GPS_Manager();
 	WiFi_Manager();
-	// HUD_Manager();
+	LCD_Manager();
     /* USER CODE END WHILE */
 
     /* USER CODE BEGIN 3 */
@@ -935,17 +1327,27 @@ void SystemClock_Config(void)
   */
 void Error_Handler(void)
 {
-  /* USER CODE BEGIN Error_Handler_Debug */
-  /* User can add his own implementation to report the HAL error return state */
-  //__disable_irq();
-  HAL_GPIO_WritePin(GPIOA, LED1_Pin, GPIO_PIN_SET);
-  HAL_GPIO_WritePin(GPIOA, LED2_Pin, GPIO_PIN_RESET);
-  while (1)
-  {
-	  //__enable_irq();
+	/* USER CODE BEGIN Error_Handler_Debug */
+	/* User can add his own implementation to report the HAL error return state */
+	//__disable_irq();
+	HAL_GPIO_WritePin(GPIOA, LED1_Pin, GPIO_PIN_SET);
+	HAL_GPIO_WritePin(GPIOA, LED2_Pin, GPIO_PIN_RESET);
+
+	char* errstr = malloc(100);
+	uint32_t errsize;
+	log_string_generator(&errlog, errstr, &errsize);
+	ring_buffer_queue_arr(&logbuffer, errstr, errsize);
+
+#if DEBUG_MODE
+	printf("ERROR: %s\n", errlog.value);
+#endif
+
+	free(errstr);
+
+	while (1) {
 	  break;
-  }
-  /* USER CODE END Error_Handler_Debug */
+	}
+	/* USER CODE END Error_Handler_Debug */
 }
 
 #ifdef  USE_FULL_ASSERT
