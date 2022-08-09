@@ -94,6 +94,20 @@ div.status.middle i {
   font-size: 1.5rem!important;
 }
 
+div.status.failsafe {
+  width: 13%;
+}
+
+div.status.failsafe i {
+  font-size: 1.75rem!important;
+}
+
+div.status div.failsafe-help {
+  transform: scale(.5);
+  margin-left: -.5rem;
+  margin-top: -.2rem;
+}
+
 div.status i {
   font-size: 1.75rem;
 }
@@ -128,20 +142,21 @@ article .content {
   padding-left: 1rem;
 }
 
-div.toggle_graph {
-  transform: scale(.5);
-  margin-left: -3rem;
-  margin-top: -.3rem;
+div.toggle_graph label {
+  font-size: .4rem;
+  width: 3rem!important;
+  margin-right: -.3rem;
+  margin-top: .3rem;
+  display: inline-block!important;
 }
 
-div.toggle_graph label {
+div.toggle_graph label.double {
   width: 6rem!important;
-  margin-right: -.3rem;
-  display: inline-block!important;
 }
 
 table.param {
   margin-top: 1rem;
+  width: -webkit-fill-available;
 }
 
 table.param .graph {
@@ -152,7 +167,7 @@ table.param .param-label {
   color: rgb(65,75,81);
   text-align: left;
   vertical-align: baseline;
-  width: 9rem;
+  width: 8.5rem;
 }
 
 table.param .param-data h2 {
@@ -165,8 +180,14 @@ table.param .param-unit {
   font-size: 1rem;
 }
 
+
+table.param .param-subvalue {
+  font-size: 1.75rem;
+}
+
 canvas.graph {
   display: none;
+  margin-right: 1rem;
 }
 
 table.settings {
@@ -199,4 +220,14 @@ code {
 
 table.dataTable td {
   font-size: 1rem;
+}
+
+div.failsafe-desc {
+  font-size: 1rem;
+  text-align: left;
+}
+
+ul {
+  margin-top: 0rem;
+  line-height: 1.75rem;;
 }
