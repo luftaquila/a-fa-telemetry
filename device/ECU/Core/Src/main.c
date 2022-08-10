@@ -1328,13 +1328,10 @@ void Error_Handler(void)
 	uint8_t* errstr = malloc(100);
 	uint32_t errsize;
 	log_string_generator(&errlog, errstr, &errsize);
-	ring_buffer_queue_arr(&logbuffer, errstr, errsize);
-
-#if DEBUG_MODE
-	printf("ERROR: %s\n", errlog.value);
-#endif
-
+	ring_buffer_queue_arr(&logbuffer, errstr, errsize + 1);
 	free(errstr);
+
+	printf("ERROR: %s\n", errlog.value);
 
 	while (1) {
 	  break;
