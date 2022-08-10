@@ -22,37 +22,47 @@ else {
 
   // on data report update
   socket.on('telemetry-repeat', data => {
-    console.log(data.status.system.sd)
     process_data(data.data);
     process_status(data.status);
 
     if (isLiveCANTrafficOn && data.data.key.includes("CAN")) {
-      const item = liveCANTrafficData.find(x => x.id === data.data.key);
-      if (item) item = {
-        id: data.data.key,
-        byte0: data.data.bytes[0],
-        byte1: data.data.bytes[1],
-        byte2: data.data.bytes[2],
-        byte3: data.data.bytes[3],
-        byte4: data.data.bytes[4],
-        byte5: data.data.bytes[5],
-        byte6: data.data.bytes[6],
-        byte7: data.data.bytes[7],
-        cnt: item.cnt++
-      };
+      let item = liveCANTrafficData.find(x => x.id === data.data.key);
+      if (item) {
+        item.byte0 = data.data.bytes[0];
+        item.byte1 = data.data.bytes[1];
+        item.byte2 = data.data.bytes[2];
+        item.byte3 = data.data.bytes[3];
+        item.byte4 = data.data.bytes[4];
+        item.byte5 = data.data.bytes[5];
+        item.byte6 = data.data.bytes[6];
+        item.byte7 = data.data.bytes[7];
+        item.cnt = item.cnt++;
+        item.index = item.index;
+        item.interval = new Date(data.data.datetime) - new Date(item.timestamp);
+        item.timestamp = data.data.datetime;
+        
+        $('#can_table').DataTable().row(item.index).data(item);
+      }
 
-      else liveCANTrafficData.push({
-        id: data.data.key,
-        byte0: data.data.bytes[0],
-        byte1: data.data.bytes[1],
-        byte2: data.data.bytes[2],
-        byte3: data.data.bytes[3],
-        byte4: data.data.bytes[4],
-        byte5: data.data.bytes[5],
-        byte6: data.data.bytes[6],
-        byte7: data.data.bytes[7],
-        cnt: 0
-      });
+      else {
+        const item = {
+          id: data.data.key,
+          byte0: data.data.bytes[0],
+          byte1: data.data.bytes[1],
+          byte2: data.data.bytes[2],
+          byte3: data.data.bytes[3],
+          byte4: data.data.bytes[4],
+          byte5: data.data.bytes[5],
+          byte6: data.data.bytes[6],
+          byte7: data.data.bytes[7],
+          cnt: 0,
+          index: CAN_index++,
+          timestamp: data.data.datetime,
+          interval: 0
+        };
+        liveCANTrafficData.push(item);
+        $('#can_table').DataTable().row.add(item).draw();
+      }
     }
 
     // update telemetry
@@ -395,9 +405,10 @@ let liveCANTrafficData = [];
 $("#livecan").on("click", e => {
   isLiveCANTrafficOn = true;
   Swal.fire({
-    html: `<table id="can_table" class="compact cell-border stripe"><thead><tr><th>id</th><th>#0</th><th>#1</th><th>#2</th><th>#3</th><th>#4</th><th>#5</th><th>#6</th><th>#7</th><th>cnt</th></thead></table>`,
+    html: `<table id="can_table" class="compact cell-border stripe"><thead><tr><th>id</th><th>#0</th><th>#1</th><th>#2</th><th>#3</th><th>#4</th><th>#5</th><th>#6</th><th>#7</th><th>cnt</th><th>int</th></thead></table>`,
     showCloseButton: true,
     willOpen: dom => {
+      CAN_index = 0;
       $('#can_table').DataTable({
         data: liveCANTrafficData,
         paging: false,
@@ -411,18 +422,23 @@ $("#livecan").on("click", e => {
           { data: 'byte5' },
           { data: 'byte6' },
           { data: 'byte7' },
-          { data: 'count' }
+          { data: 'cnt' },
+          { data: 'interval' }
         ],
         columnDefs: [{
           targets: "_all",
           className: "dt-head-center",
           orderable: false,
         }],
+        select: true,
+        responsive: true
       });
     },
     willClose: dom => {
       isLiveCANTrafficOn = false;
       liveCANTrafficData = [];
+      CAN_index = 0;
+      $('#can_table').DataTable().destroy();
     }
   });
 });
