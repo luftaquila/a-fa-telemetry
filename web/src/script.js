@@ -1,38 +1,77 @@
-socket = io.connect("/", { query: { client: true } });
-
-// on socket lost
-socket.on('connect_error', () => {
-  $("#server i").css("color", "red");
+if (typeof io === typeof undefined) Swal.fire({
+  icon: 'error',
+  title: '서버 응답 없음',
+  html: `소켓 서버가 응답하지 않습니다.`
 });
+else {
+  socket = io.connect("/", { query: { client: true } });
 
-// on client connected
-socket.on('client_init', data => {
-  $("#server i").css("color", "green");
-  process_status(data.status);
+  // on socket lost
+  socket.on('connect_error', () => {
+    $("#server i").css("color", "red");
+  });
 
-  // set telemetry
-  telemetry = data.status;
-})
+  // on client connected
+  socket.on('client_init', data => {
+    $("#server i").css("color", "green");
+    process_status(data.status);
 
-// on data report update
-let telemetry = { };
-socket.on('telemetry-repeat', data => {
-  process_data(data.data);
-  process_status(data.status);
-  
-  if (data.status.session && graphs.length) {
-    // on session generated
-    if(!telemetry.session ) {
-      for(const graph of $('#graph-car:checked, #graph-hv_batt:checked, #graph-motor:checked')) {
-        socket.emit('graph-request', { target: graph.id.split('-')[1] });
-      }
+    // set telemetry
+    telemetry = data.status;
+  })
+
+  // on data report update
+  socket.on('telemetry-repeat', data => {
+    console.log(data.status.system.sd)
+    process_data(data.data);
+    process_status(data.status);
+
+    if (isLiveCANTrafficOn && data.data.key.includes("CAN")) {
+      const item = liveCANTrafficData.find(x => x.id === data.data.key);
+      if (item) item = {
+        id: data.data.key,
+        byte0: data.data.bytes[0],
+        byte1: data.data.bytes[1],
+        byte2: data.data.bytes[2],
+        byte3: data.data.bytes[3],
+        byte4: data.data.bytes[4],
+        byte5: data.data.bytes[5],
+        byte6: data.data.bytes[6],
+        byte7: data.data.bytes[7],
+        cnt: item.cnt++
+      };
+
+      else liveCANTrafficData.push({
+        id: data.data.key,
+        byte0: data.data.bytes[0],
+        byte1: data.data.bytes[1],
+        byte2: data.data.bytes[2],
+        byte3: data.data.bytes[3],
+        byte4: data.data.bytes[4],
+        byte5: data.data.bytes[5],
+        byte6: data.data.bytes[6],
+        byte7: data.data.bytes[7],
+        cnt: 0
+      });
     }
-  }
 
-  // update telemetry
-  telemetry = data.status;
-});
+    // update telemetry
+    telemetry = data.status;
+  });
+  
+  // button handlers
+  $("#reset").on("click", e => {
+    socket.emit('reset-request');
+  });
 
+  socket.on('reset-reply', data => {
+    Swal.fire(data).then(result => {
+      if(result.isConfirmed) socket.emit('reset-confirm');
+    });
+  });
+}
+
+let telemetry = { };
 
 // realtime status updater
 function process_status(status) {
@@ -311,7 +350,7 @@ $('input.tooltips').on('change', e => {
 });
 
 let tooltips = {
-  'speed': { title: '차량 속도', desc: '모터 컨트롤러의 RPM 데이터로 계산한 차량의 주행 속도입니다.' },
+  'speed': { title: '차량 속도', desc: '모터 컨트롤러의 RPM 데이터로 계산한 차량의 주행 속도입니다.<br><br><dfn>Velocity(km/h) = (RPM / 6) &times; (π * 0.495) * 0.06</dfn>' },
   'acceleration': { title: '가속', desc: '모터 컨트롤러가 보고하는 가속 페달의 아날로그 입력값입니다.'},
   'braking': { title: '제동', desc: '모터 컨트롤러가 보고하는 브레이크 페달의 아날로그 입력값입니다.'},
   'core-temperature': { title: '프로세서 온도', desc: 'ECU 프로세서의 온도입니다.' },
@@ -333,7 +372,7 @@ let tooltips = {
   'voltage-failsafe': { title: 'Voltage failsafe mode', desc: '<div class="failsafe-desc">BMS가 셀 또는 배터리 팩 전압을 정확히 측정할 수 없을 때 작동하는 가장 심각한 비상 모드입니다. BMS가 더 이상 셀을 보호할 수 없으므로, BMS는 배터리 팩의 충방전 전류 제한을 서서히 0으로 낮추어 배터리 작동을 정지시킵니다. 이 비상 모드가 발동하면 반드시 배터리 팩을 다시 사용하기 전에 문제 발생 원인을 조사해야 합니다.<br><br>이 문제는 셀 전압이 0.09V 이하이거나 5V 이상일 때 또는 voltage tap 와이어 일부가 분리되었을 때 발생할 수 있습니다.</div>' },
   'current-failsafe': { title: 'Current failsafe mode', desc: '<div class="failsafe-desc">이 문제는 전류 센서가 부정확하거나 분리되었다고 BMS가 판단할 때 발생할 수 있습니다. BMS 프로파일에 전류 센서가 사용 설정되지 않았을 때도 발생합니다.<br><br>이 모드에서 전류 센서는 비활성화되어 측정값은 0A로 고정되며, BMS는 전류 센서를 무시하고 오로지 전압 센서에 의존해서 셀을 보호합니다. 배터리 팩 자체는 계속 작동합니다.<br><br>이 비상 모드는 다음의 기능에 영향을 미칩니다.<ol><li>셀 내부 저항 측정이 비활성화됩니다.</li><li>충전량(%) 측정값이 부정확해집니다.</li><li>충방전 전류 제한이 voltage failsafe mode로 전환되며 실제 값과 다를 수 있습니다.</li><li>과전류 보호 기능이 사실상 작동하지 않습니다.</li></ol></div>' },
   'relay-failsafe': { title: 'Relay failsafe mode', desc: '<div class="failsafe-desc">이 모드는 BMS가 릴레이 제어 출력 신호를 꺼 릴레이를 비활성화했음에도 불구하고 배터리에 500ms 이상 전류 흐름이 측정될 때 발생합니다. 이 모드에서 BMS의 모든 릴레이 제어 출력 신호는 에러 코드를 초기화하기 전까지 비활성화 상태로 유지됩니다.<br><br>이 모드는 BMS 프로파일에서 활성화된 릴레이에 대해서만 작동합니다. 비활성화된 릴레이에서는 무시됩니다.</div>' },
-  'balancing-active': { title: 'Cell Balancing Active', desc: '<div class="failsafe-desc">BMS가 셀 밸런싱 중일 때 활성화됩니다. 셀 밸런싱이 비활성화되었을 때 적색으로 표시됩니다.</div>' },
+  'balancing-active': { title: 'Cell Balancing Active', desc: '<div class="failsafe-desc">BMS가 셀 밸런싱 중일 때 활성화되어 녹색으로 표시됩니다.</div>' },
   'interlock-failsafe': { title: 'Charge Interlock failsafe mode', desc: '<div class="failsafe-desc">충전 중에 충전기 인터락이 분리되었을 때 활성화됩니다.</div>' },
   'thermistor-invalid': { title: 'Thermistor b-value table invalid', desc: '<div class="failsafe-desc">뭔지 모르겠음</div>' },
   'input-power-failsafe': { title: 'Input Power Supply Failsafe', desc: '<div class="failsafe-desc">BMS에 공급되는 12V 전원의 실제 전압이 너무 낮아 정상 작동을 보장할 수 없을 때 발생하는 비상 모드입니다. 공급 전원이 8초 이상 8V 이하로 유지될 때 발생합니다.<br><br>이 모드에서 charge enable, discharge enable, charger safety 출력은 모두 비활성화됩니다. 또한 모든 디지털 출력은 꺼지며, 충방전 전류 제한은 즉시 0A로 설정됩니다. 5V 아날로그 출력은 동작할 수 있으나 측정값은 신뢰할 수 없습니다.<br><br>이 문제로 인한 에러 코드는 기록에 남지만, 정상 전압이 복구되면 BMS는 즉시 다시 정상 작동합니다.<br><br>한편, BMS는 5초 미만의 시간 동안 발생하는 전압 강하로 전압이 4.5V까지 내려가더라도 이 비상 모드를 활성화하지 않고 정상 작동할 수 있습니다.</div>' },
@@ -351,58 +390,40 @@ function fault_toHTML(faults) {
   else return "<ul><li>N/A</li></ul>";
 }
 
-
-// button handlers
-$("#reset").on("click", e => {
-  socket.emit('reset-request');
-});
-
-socket.on('reset-reply', data => {
-  Swal.fire(data).then(result => {
-    if(result.isConfirmed) socket.emit('reset-confirm');
-  });
-});
-
-$("#log").on("click", e => {
-  socket.emit('log-request');
-});
-
-socket.on('log-reply', data => {
-  if (data.result) {
-    Swal.fire({
-      html: `<table id="log_table" class="compact cell-border stripe"><thead><tr><th>timestamp</th><th>level</th><th>device</th><th>key</th><th>value</th></tr></thead></table>`,
-      showCloseButton: true,
-      willOpen: dom => {
-        $('#log_table').DataTable({
-          data: data.data,
-          paging: false,
-          order: [[ 0, 'desc' ]],
-          columns: [
-            { data: 'datetime' },
-            { data: 'level' },
-            { data: 'component' },
-            { data: 'key' },
-            { data: 'value' }
-          ],
-          columnDefs: [{
-            targets: 0,
-            render: (data, type, row, meta) => {
-              const date = new Date(data);
-              return `${date.getHours()}:${String(date.getMinutes()).padStart(2, '0')}:${String(date.getSeconds()).padStart(2, '0')}.${String(date.getMilliseconds()).padStart(3, '0')}`;
-            } 
-          }, {
-            targets: "_all",
-            className: "dt-head-center",
-            orderable: false,
-          }],
-        });
-      }
-    });
-  }
-  else Swal.fire({
-    icon: 'error',
-    title: 'ECU 부트 로그 없음',
-    html: `표시할 시스템 로그가 없습니다.`
+let isLiveCANTrafficOn = false;
+let liveCANTrafficData = [];
+$("#livecan").on("click", e => {
+  isLiveCANTrafficOn = true;
+  Swal.fire({
+    html: `<table id="can_table" class="compact cell-border stripe"><thead><tr><th>id</th><th>#0</th><th>#1</th><th>#2</th><th>#3</th><th>#4</th><th>#5</th><th>#6</th><th>#7</th><th>cnt</th></thead></table>`,
+    showCloseButton: true,
+    willOpen: dom => {
+      $('#can_table').DataTable({
+        data: liveCANTrafficData,
+        paging: false,
+        columns: [
+          { data: 'id' },
+          { data: 'byte0' },
+          { data: 'byte1' },
+          { data: 'byte2' },
+          { data: 'byte3' },
+          { data: 'byte4' },
+          { data: 'byte5' },
+          { data: 'byte6' },
+          { data: 'byte7' },
+          { data: 'count' }
+        ],
+        columnDefs: [{
+          targets: "_all",
+          className: "dt-head-center",
+          orderable: false,
+        }],
+      });
+    },
+    willClose: dom => {
+      isLiveCANTrafficOn = false;
+      liveCANTrafficData = [];
+    }
   });
 });
 

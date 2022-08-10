@@ -186,15 +186,6 @@ io.sockets.on('connection', socket => {
       ECU = JSON.parse(ECU_INIT);
       io.to('client').emit('client_init', { data: null, status: ECU });
     });
-
-    socket.on('log-request', async () => {
-      if (!ECU.session) return socket.emit('log-reply', { result: false });
-      const db = await pool.getConnection();
-      const query = `SELECT * FROM log WHERE datetime >= '${ECU.session.getFullYear()}-${ECU.session.getMonth() + 1}-${ECU.session.getDate()} ${ECU.session.getHours()}:${ECU.session.getMinutes()}:${ECU.session.getSeconds()}';`;
-      const result = await db.query(query);
-      await db.end();
-      socket.emit('log-reply', { result: true, data: result });
-    });
   }
 });
 
@@ -254,17 +245,17 @@ function process_telemetry(data) {
         break;
 
       case "BMS":
+      case "INV":
+        ECU.system.can = true;
+        data.bytes = data.value.split(' ').map(x => x.replace('0x', ''));
+        
         switch (data.key) {
           case "CAN_BMS_CORE":
-            ECU.system.can = true;
-            data.data = data.value.split(' ').map(x => x.replace('0x', ''));
-
-            const failsafe = parseInt(data.data[5].concat(data.data[6]), 16);
-
+            const failsafe = parseInt(data.bytes[5].concat(data.bytes[6]), 16);
             data.data = {
-              soc: parseInt(data.data[0], 16) * 0.5,
-              voltage: parseInt(data.data[1].concat(data.data[2]), 16),
-              current: signedParseInt(data.data[3].concat(data.data[4]), 16, 16) * 0.1,
+              soc: parseInt(data.bytes[0], 16) * 0.5,
+              voltage: parseInt(data.bytes[1].concat(data.bytes[2]), 16),
+              current: signedParseInt(data.bytes[3].concat(data.bytes[4]), 16, 16) * 0.1,
               failsafe: {
                 voltage: failsafe & 1 << 0 ? true : false,
                 current: failsafe & 1 << 1 ? true : false,
@@ -283,39 +274,31 @@ function process_telemetry(data) {
             break;
 
           case "CAN_BMS_TEMP":
-            ECU.system.can = true;
-            data.data = data.value.split(' ').map(x => x.replace('0x', ''));
             data.data = {
               temperature: {
-                max: signedParseInt(data.data[0], 16, 8),
-                max_id: parseInt(data.data[1], 16),
-                min: signedParseInt(data.data[2], 16, 8),
-                min_id: parseInt(data.data[3], 16),
-                internal: signedParseInt(data.data[7], 16, 8),
+                max: signedParseInt(data.bytes[0], 16, 8),
+                max_id: parseInt(data.bytes[1], 16),
+                min: signedParseInt(data.bytes[2], 16, 8),
+                min_id: parseInt(data.bytes[3], 16),
+                internal: signedParseInt(data.bytes[7], 16, 8),
               },
               adapdtive: {
-                soc: parseInt(data.data[4], 16) * 0.5,
-                capacity: parseInt(data.data[5].concat(data.data[6]), 16) * 0.1,
+                soc: parseInt(data.bytes[4], 16) * 0.5,
+                capacity: parseInt(data.bytes[5].concat(data.bytes[6]), 16) * 0.1,
               }
             };
             ECU.battery.temperature = data.data.temperature;
             ECU.battery.adapdtive = data.data.adapdtive;
             break;
-        }
-        break;
 
-      case "INV":
-        switch (data.key) {
           case "CAN_INV_TEMP_1":
-            ECU.system.can = true;
-            data.data = data.value.split(' ').map(x => x.replace('0x', ''));
             data.data = {
               igbt: {
-                a: signedParseInt(data.data[1].concat(data.data[0]), 16, 16) * 0.1,
-                b: signedParseInt(data.data[3].concat(data.data[2]), 16, 16) * 0.1,
-                c: signedParseInt(data.data[5].concat(data.data[4]), 16, 16) * 0.1,
+                a: signedParseInt(data.bytes[1].concat(data.bytes[0]), 16, 16) * 0.1,
+                b: signedParseInt(data.bytes[3].concat(data.bytes[2]), 16, 16) * 0.1,
+                c: signedParseInt(data.bytes[5].concat(data.bytes[4]), 16, 16) * 0.1,
               },
-              gatedriver: signedParseInt(data.data[7].concat(data.data[6]), 16, 16) * 0.1,
+              gatedriver: signedParseInt(data.bytes[7].concat(data.bytes[6]), 16, 16) * 0.1,
             };
             data.data.igbt.max = data.data.igbt.a > data.data.igbt.b ? (data.data.igbt.a > data.data.igbt.c ? { temperature: data.data.igbt.a, id: "A" } : { temperature: data.data.igbt.c, id: "C" }) : (data.data.igbt.b > data.data.igbt.c ? { temperature: data.data.igbt.b, id: "B" } : { temperature: data.data.igbt.c, id: "C" });
 
@@ -324,22 +307,17 @@ function process_telemetry(data) {
             break;
 
           case "CAN_INV_TEMP_3":
-            ECU.system.can = true;
-            data.data = data.value.split(' ').map(x => x.replace('0x', ''));
             data.data = {
-              motor: signedParseInt(data.data[5].concat(data.data[4]), 16, 16) * 0.1,
+              motor: signedParseInt(data.bytes[5].concat(data.bytes[4]), 16, 16) * 0.1,
             };
 
             ECU.motor.temperature.motor = data.data.motor;
             break;
 
-          // !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
           case "CAN_INV_ANALOG_IN":
-            ECU.system.can = true;
-            data.data = data.value.split(' ').map(x => x.replace('0x', ''));
             data.data = {
-              accelerator: signedParseInt(parseInt(data.data[1].concat(data.data[0]), 16).toString(2).padStart(16, 0).slice(6), 2, 10) * 0.01 / (ECU.reference.v5 ? ECU.reference.v5 : 5) * 100,
-              brake: signedParseInt(parseInt(data.data[3].concat(data.data[2]), 16).toString(2).padStart(16, 0).slice(2).slice(0, 11), 2, 10) * 0.01 / (ECU.reference.v5 ? ECU.reference.v5 : 5) * 100,
+              accelerator: signedParseInt(parseInt(data.bytes[1].concat(data.bytes[0]), 16).toString(2).padStart(16, 0).slice(6), 2, 10) * 0.01 / (ECU.reference.v5 ? ECU.reference.v5 : 5) * 100,
+              brake: signedParseInt(parseInt(data.bytes[3].concat(data.bytes[2]), 16).toString(2).padStart(16, 0).slice(2).slice(0, 11), 2, 10) * 0.01 / (ECU.reference.v5 ? ECU.reference.v5 : 5) * 100,
             };
             
             ECU.car.accelerator = data.data.accelerator;
@@ -347,10 +325,8 @@ function process_telemetry(data) {
             break;
 
           case "CAN_INV_MOTOR_POS":
-            ECU.system.can = true;
-            data.data = data.value.split(' ').map(x => x.replace('0x', ''));
             data.data = {
-              rpm: signedParseInt(data.data[3].concat(data.data[2]), 16, 16),
+              rpm: signedParseInt(data.bytes[3].concat(data.bytes[2]), 16, 16),
             };
             data.data.speed = (data.data.rpm / 6) * (Math.PI * 0.495) * 0.06;
 
@@ -359,14 +335,10 @@ function process_telemetry(data) {
             break;
 
           case "CAN_INV_STATE":
-            ECU.system.can = true;
-            data.data = data.value.split(' ').map(x => x.replace('0x', ''));
-
-            const relay = parseInt(data.data[3], 16);
-            
+            const relay = parseInt(data.bytes[3], 16);
             data.data = {
-              vsm: state.vsm[parseInt(data.data[0], 16)] ? state.vsm[parseInt(data.data[0], 16)] : "N/A",
-              inverter: state.inverter[parseInt(data.data[2], 16)] ? state.inverter[parseInt(data.data[2], 16)] : "N/A",
+              vsm: state.vsm[parseInt(data.bytes[0], 16)] ? state.vsm[parseInt(data.bytes[0], 16)] : "N/A",
+              inverter: state.inverter[parseInt(data.bytes[2], 16)] ? state.inverter[parseInt(data.bytes[2], 16)] : "N/A",
               relay: {
                 precharge: relay & 1 << 0 ? true : false,
                 pump: relay & 1 << 4 ? true : false,
@@ -378,39 +350,29 @@ function process_telemetry(data) {
             break;
 
           case "CAN_INV_FAULT":
-            ECU.system.can = true;
-            data.data = data.value.split(' ').map(x => x.replace('0x', ''));
-
-            const post = parseInt(data.data[3].concat(data.data[2]).concat(data.data[1]).concat(data.data[0]), 16);
-            const run = parseInt(data.data[7].concat(data.data[6]).concat(data.data[5]).concat(data.data[4]), 16);
-
+            const post = parseInt(data.bytes[3].concat(data.bytes[2]).concat(data.bytes[1]).concat(data.bytes[0]), 16);
+            const run = parseInt(data.bytes[7].concat(data.bytes[6]).concat(data.bytes[5]).concat(data.bytes[4]), 16);
             data.data = { post: [], run: [] };
-
             for(let i = 0; i < 32; i++) {
               if(post & 1 << i) data.data.post.push(fault.post[i]);
               if(run & 1 << i) data.data.run.push(fault.run[i + 32]);
             }
-
             ECU.motor.fault = data.data;
             break;
 
           case "CAN_INV_TORQUE":
-            ECU.system.can = true;
-            data.data = data.value.split(' ').map(x => x.replace('0x', ''));
             data.data = {
-              feedback: signedParseInt(data.data[3].concat(data.data[2]), 16, 16) * 0.1,
-              commanded: signedParseInt(data.data[1].concat(data.data[0]), 16, 16) * 0.1,
+              feedback: signedParseInt(data.bytes[3].concat(data.bytes[2]), 16, 16) * 0.1,
+              commanded: signedParseInt(data.bytes[1].concat(data.bytes[0]), 16, 16) * 0.1,
             }
             break;
 
           case "CAN_INV_REF":
-            ECU.system.can = true;
-            data.data = data.value.split(' ').map(x => x.replace('0x', ''));
             data.data = {
-              v1p5: signedParseInt(data.data[1].concat(data.data[0]), 16, 16) * 0.01,
-              v2p5: signedParseInt(data.data[3].concat(data.data[2]), 16, 16) * 0.01,
-              v5: signedParseInt(data.data[5].concat(data.data[4]), 16, 16) * 0.01,
-              v12: signedParseInt(data.data[7].concat(data.data[6]), 16, 16) * 0.01
+              v1p5: signedParseInt(data.bytes[1].concat(data.bytes[0]), 16, 16) * 0.01,
+              v2p5: signedParseInt(data.bytes[3].concat(data.bytes[2]), 16, 16) * 0.01,
+              v5: signedParseInt(data.bytes[5].concat(data.bytes[4]), 16, 16) * 0.01,
+              v12: signedParseInt(data.bytes[7].concat(data.bytes[6]), 16, 16) * 0.01
             };
             ECU.reference = data.data;
             break;
@@ -419,7 +381,6 @@ function process_telemetry(data) {
           case "CAN_INV_VOLTAGE":
           case "CAN_INV_FLUX":
           case "CAN_INV_FLUX_WEAKING":
-            ECU.system.can = true;
             break;
         }
         break;
