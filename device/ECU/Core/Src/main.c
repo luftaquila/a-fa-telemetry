@@ -44,14 +44,14 @@
 /* Private typedef -----------------------------------------------------------*/
 /* USER CODE BEGIN PTD */
 typedef struct {
-	char* component;
-	char* level;
-	char* key;
-	char* value;
+	uint8_t* component;
+	uint8_t* level;
+	uint8_t* key;
+	uint8_t* value;
 } log_t;
 
 typedef struct {
-	char* name;
+	uint8_t* name;
 	uint32_t value;
 	GPIO_TypeDef* port;
 	uint16_t pin;
@@ -118,14 +118,14 @@ typedef enum {
 
 /* Private define ------------------------------------------------------------*/
 /* USER CODE BEGIN PD */
-#define DEBUG_MODE (0)
-#define GPS_DEBUG (0)
+#define DEBUG_MODE 0
+#define GPS_DEBUG 0
 
-#define INPUT_GPIO_COUNT (7)
+#define INPUT_GPIO_COUNT 7
 
 // ADC temperature sensor calibration values
-#define TS_CAL1 *((uint16_t*) 0x1FFF7A2C)
-#define TS_CAL2 *((uint16_t*) 0x1FFF7A2E)
+#define TS_CAL1 *((uint16_t*)0x1FFF7A2C)
+#define TS_CAL2 *((uint16_t*)0x1FFF7A2E)
 
 // LCD
 #define LCD_I2C_ADRESS 0x27 << 1
@@ -152,7 +152,7 @@ FATFS SDFatFs;
 
 // boot RTC time
 uint64_t boot;
-char logfile[30];
+uint8_t logfile[30];
 uint32_t isRTCFixed = false;
 
 uint32_t isGPSFixed = false;
@@ -216,7 +216,7 @@ void SystemClock_Config(void);
 
 /* Private user code ---------------------------------------------------------*/
 /* USER CODE BEGIN 0 */
-int _write(int file, char *ptr, int len)
+int _write(int file, uint8_t *ptr, int len)
 {
    HAL_UART_Transmit(&huart1, (uint8_t *)ptr, (uint16_t)len, 100);
    return (len);
@@ -273,7 +273,7 @@ void SD_Setup() {
 }
 
 
-char* log_string_generator(log_t* log, char* str, uint32_t* logsize) {
+uint8_t* log_string_generator(log_t* log, uint8_t* str, uint32_t* logsize) {
 	uint64_t timestamp = getDateTimeBits();
 
 	// set log content
@@ -288,18 +288,10 @@ char* log_string_generator(log_t* log, char* str, uint32_t* logsize) {
 }
 
 void LOGGER(log_t* log) {
-	char* content = malloc(100);
+	uint8_t* content = malloc(100);
 	uint32_t logsize;
 
-#if DEBUG_MODE
-	printf("LOG value: %s %s %s %s\n", log->level, log->component, log->key, log->value);
-#endif
-
 	log_string_generator(log, content, &logsize);
-
-#if DEBUG_MODE
-	printf("LOG content: %s", content);
-#endif
 
 	// append log to buffer
 	ring_buffer_queue_arr(&logbuffer, content, logsize + 1);
@@ -779,15 +771,15 @@ void GPS_Manager() {
 #endif
 
 	    // process received GPRMC string
-		char *gps[11];
-		char *ptr = strchr(gps_rxs, ',');
+		uint8_t *gps[11];
+		uint8_t *ptr = strchr(gps_rxs, ',');
 
 		uint32_t count = 0;
 
 		// store GPS data fields
 		while (strchr(ptr + 1, ',')) {
 			// calculate data field length
-			uint32_t len = strchr(ptr + 1, ',') - ptr - 1;
+			uint32_t len = (uint8_t *)strchr(ptr + 1, ',') - ptr - 1;
 
 			// NULL if there is no data
 			if (!len) {
@@ -812,7 +804,7 @@ void GPS_Manager() {
 			RTC_DateTypeDef sDate;
 			RTC_TimeTypeDef sTime;
 
-			char timebuffer[3];
+			uint8_t timebuffer[3];
 
 			strncpy(timebuffer, gps[GPS_TIME], 2);
 			sTime.Hours = (uint8_t)strtol(timebuffer, NULL, 10) + 9;
@@ -937,8 +929,8 @@ void WiFi_Manager() {
 			// process if message is RTC_FIX
 			if(strstr(wifi_rxs, "RTC_FIX")) {
 				// datetime string start index
-				char *index = strstr(wifi_rxs, "RTC_FIX") + 10;
-				char temp[3];
+				uint8_t *index = strstr(wifi_rxs, "RTC_FIX") + 10;
+				uint8_t temp[3];
 
 				uint32_t cnt = 0;
 
@@ -1333,7 +1325,7 @@ void Error_Handler(void)
 	HAL_GPIO_WritePin(GPIOA, LED1_Pin, GPIO_PIN_SET);
 	HAL_GPIO_WritePin(GPIOA, LED2_Pin, GPIO_PIN_RESET);
 
-	char* errstr = malloc(100);
+	uint8_t* errstr = malloc(100);
 	uint32_t errsize;
 	log_string_generator(&errlog, errstr, &errsize);
 	ring_buffer_queue_arr(&logbuffer, errstr, errsize);

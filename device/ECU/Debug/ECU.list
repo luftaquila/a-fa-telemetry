@@ -29,23 +29,23 @@ Idx Name          Size      VMA       LMA       File off  Algn
                   ALLOC
  12 .ARM.attributes 00000030  00000000  00000000  00020128  2**0
                   CONTENTS, READONLY
- 13 .debug_info   00023939  00000000  00000000  00020158  2**0
+ 13 .debug_info   00023929  00000000  00000000  00020158  2**0
                   CONTENTS, READONLY, DEBUGGING, OCTETS
- 14 .debug_abbrev 00004ca6  00000000  00000000  00043a91  2**0
+ 14 .debug_abbrev 00004ca6  00000000  00000000  00043a81  2**0
                   CONTENTS, READONLY, DEBUGGING, OCTETS
- 15 .debug_aranges 00001d90  00000000  00000000  00048738  2**3
+ 15 .debug_aranges 00001d90  00000000  00000000  00048728  2**3
                   CONTENTS, READONLY, DEBUGGING, OCTETS
- 16 .debug_ranges 00001b60  00000000  00000000  0004a4c8  2**3
+ 16 .debug_ranges 00001b60  00000000  00000000  0004a4b8  2**3
                   CONTENTS, READONLY, DEBUGGING, OCTETS
- 17 .debug_macro  000294fb  00000000  00000000  0004c028  2**0
+ 17 .debug_macro  000294fb  00000000  00000000  0004c018  2**0
                   CONTENTS, READONLY, DEBUGGING, OCTETS
- 18 .debug_line   00028f30  00000000  00000000  00075523  2**0
+ 18 .debug_line   00028f5e  00000000  00000000  00075513  2**0
                   CONTENTS, READONLY, DEBUGGING, OCTETS
- 19 .debug_str    000ec39b  00000000  00000000  0009e453  2**0
+ 19 .debug_str    000ec393  00000000  00000000  0009e471  2**0
                   CONTENTS, READONLY, DEBUGGING, OCTETS
- 20 .comment      00000050  00000000  00000000  0018a7ee  2**0
+ 20 .comment      00000050  00000000  00000000  0018a804  2**0
                   CONTENTS, READONLY
- 21 .debug_frame  0000822c  00000000  00000000  0018a840  2**2
+ 21 .debug_frame  0000822c  00000000  00000000  0018a854  2**2
                   CONTENTS, READONLY, DEBUGGING, OCTETS
 
 Disassembly of section .text:
@@ -2467,7 +2467,7 @@ void SD_Setup() {
 08001760 <log_string_generator>:
 
 
-char* log_string_generator(log_t* log, char* str, uint32_t* logsize) {
+uint8_t* log_string_generator(log_t* log, uint8_t* str, uint32_t* logsize) {
  8001760:	e92d 47f0 	stmdb	sp!, {r4, r5, r6, r7, r8, r9, sl, lr}
  8001764:	b094      	sub	sp, #80	; 0x50
  8001766:	af0a      	add	r7, sp, #40	; 0x28
@@ -2628,17 +2628,14 @@ void LOGGER(log_t* log) {
  80018c4:	af00      	add	r7, sp, #0
  80018c6:	f107 0348 	add.w	r3, r7, #72	; 0x48
  80018ca:	f843 0c44 	str.w	r0, [r3, #-68]
-	char* content = malloc(100);
+	uint8_t* content = malloc(100);
  80018ce:	2064      	movs	r0, #100	; 0x64
  80018d0:	f00d f876 	bl	800e9c0 <malloc>
  80018d4:	4603      	mov	r3, r0
  80018d6:	f507 5282 	add.w	r2, r7, #4160	; 0x1040
  80018da:	f102 0204 	add.w	r2, r2, #4
  80018de:	6013      	str	r3, [r2, #0]
-
-#if DEBUG_MODE
-	printf("LOG value: %s %s %s %s\n", log->level, log->component, log->key, log->value);
-#endif
+	uint32_t logsize;
 
 	log_string_generator(log, content, &logsize);
  80018e0:	f507 5381 	add.w	r3, r7, #4128	; 0x1020
@@ -2651,9 +2648,6 @@ void LOGGER(log_t* log) {
  80018f8:	6819      	ldr	r1, [r3, #0]
  80018fa:	f850 0c44 	ldr.w	r0, [r0, #-68]
  80018fe:	f7ff ff2f 	bl	8001760 <log_string_generator>
-#if DEBUG_MODE
-	printf("LOG content: %s", content);
-#endif
 
 	// append log to buffer
 	ring_buffer_queue_arr(&logbuffer, content, logsize + 1);
@@ -4491,8 +4485,8 @@ void GPS_Manager() {
 #endif
 
 	    // process received GPRMC string
-		char *gps[11];
-		char *ptr = strchr(gps_rxs, ',');
+		uint8_t *gps[11];
+		uint8_t *ptr = strchr(gps_rxs, ',');
  80025c4:	212c      	movs	r1, #44	; 0x2c
  80025c6:	4859      	ldr	r0, [pc, #356]	; (800272c <GPS_Manager+0x178>)
  80025c8:	f00c fb30 	bl	800ec2c <strchr>
@@ -4506,7 +4500,7 @@ void GPS_Manager() {
 		while (strchr(ptr + 1, ',')) {
  80025d2:	e042      	b.n	800265a <GPS_Manager+0xa6>
 			// calculate data field length
-			uint32_t len = strchr(ptr + 1, ',') - ptr - 1;
+			uint32_t len = (uint8_t *)strchr(ptr + 1, ',') - ptr - 1;
  80025d4:	6efb      	ldr	r3, [r7, #108]	; 0x6c
  80025d6:	3301      	adds	r3, #1
  80025d8:	212c      	movs	r1, #44	; 0x2c
@@ -4856,14 +4850,14 @@ void WiFi_Manager() {
  80027f0:	2b00      	cmp	r3, #0
  80027f2:	f000 80b5 	beq.w	8002960 <WiFi_Manager+0x20c>
 				// datetime string start index
-				char *index = strstr(wifi_rxs, "RTC_FIX") + 10;
+				uint8_t *index = strstr(wifi_rxs, "RTC_FIX") + 10;
  80027f6:	4956      	ldr	r1, [pc, #344]	; (8002950 <WiFi_Manager+0x1fc>)
  80027f8:	484f      	ldr	r0, [pc, #316]	; (8002938 <WiFi_Manager+0x1e4>)
  80027fa:	f00c fa37 	bl	800ec6c <strstr>
  80027fe:	4603      	mov	r3, r0
  8002800:	330a      	adds	r3, #10
  8002802:	67fb      	str	r3, [r7, #124]	; 0x7c
-				char temp[3];
+				uint8_t temp[3];
 
 				uint32_t cnt = 0;
  8002804:	2300      	movs	r3, #0
@@ -6198,7 +6192,7 @@ void Error_Handler(void)
  8003150:	480d      	ldr	r0, [pc, #52]	; (8003188 <Error_Handler+0x4c>)
  8003152:	f003 f809 	bl	8006168 <HAL_GPIO_WritePin>
 
-	char* errstr = malloc(100);
+	uint8_t* errstr = malloc(100);
  8003156:	2064      	movs	r0, #100	; 0x64
  8003158:	f00b fc32 	bl	800e9c0 <malloc>
  800315c:	4603      	mov	r3, r0
