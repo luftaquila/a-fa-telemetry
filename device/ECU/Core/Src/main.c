@@ -122,16 +122,15 @@ typedef enum {
 #define GPS_DEBUG 0
 
 #define INPUT_GPIO_COUNT 7
+#define CAN_MSG_COUNT 14
 
 // ADC temperature sensor calibration values
 #define TS_CAL1 *((uint16_t*)0x1FFF7A2C)
 #define TS_CAL2 *((uint16_t*)0x1FFF7A2E)
 
-// LCD
-#define LCD_I2C_ADRESS 0x27 << 1
-
-// CAN
-#define CAN_MSG_COUNT 14
+// I2C
+#define LCD_I2C_ADDRESS 0x27 << 1
+#define ACC_I2C_ADDRESS 0x53 << 1
 
 /* USER CODE END PD */
 
@@ -157,7 +156,7 @@ uint32_t isRTCFixed = false;
 
 uint32_t isGPSFixed = false;
 
-// 8KB log buffer
+// 64KB log buffer
 ring_buffer_t logbuffer;
 
 // GPS UART6 receive buffer
@@ -185,9 +184,8 @@ GPIO_t GPIO[8] = {
 uint32_t adc_valid = false;
 uint32_t core_temperature;
 
-// GPIO update on socket connection
-uint32_t isGPIOcheckedAfterSocketConnected = false;
-uint32_t socketConnectedTime;
+// GPIO check
+uint32_t gpio_valid = false;
 
 // LCD update flag
 uint32_t lcd_valid = false;
@@ -199,12 +197,16 @@ uint8_t can_rxd[CAN_MSG_COUNT][8];
 uint32_t can_valid[CAN_MSG_COUNT] = { false, };
 uint32_t can_active = false;
 uint8_t *can_msg_id[CAN_MSG_COUNT] = { "CAN_BMS_CORE", "CAN_BMS_TEMP", "CAN_INV_TEMP_1", "CAN_INV_TEMP_3",
-						   "CAN_INV_ANALOG_IN", "CAN_INV_MOTOR_POS", "CAN_INV_CURRENT", "CAN_INV_VOLTAGE",
-						   "CAN_INV_FLUX", "CAN_INV_REF", "CAN_INV_STATE", "CAN_INV_FAULT",
-						   "CAN_INV_TORQUE", "CAN_INV_FLUX_WEAKING" };
+						   	   	   	   "CAN_INV_ANALOG_IN", "CAN_INV_MOTOR_POS", "CAN_INV_CURRENT", "CAN_INV_VOLTAGE",
+									   "CAN_INV_FLUX", "CAN_INV_REF", "CAN_INV_STATE", "CAN_INV_FAULT",
+									   "CAN_INV_TORQUE", "CAN_INV_FLUX_WEAKING" };
 
 // SD mount flag
 uint32_t sd_valid = false;
+
+// Accelerometer data
+uint8_t acc_rxd[6];
+uint8_t acc_valid = false;
 
 /* USER CODE END PV */
 
@@ -218,7 +220,7 @@ void SystemClock_Config(void);
 /* USER CODE BEGIN 0 */
 int _write(int file, uint8_t *ptr, int len)
 {
-   HAL_UART_Transmit(&huart1, (uint8_t *)ptr, (uint16_t)len, 100);
+   HAL_UART_Transmit(&huart1, (uint8_t *)ptr, (uint16_t)len, 10);
    return (len);
 }
 
@@ -388,19 +390,6 @@ void Sensor_Setup() {
 }
 
 void Sensor_Manager() {
-	if (adc_valid) {
-		log_t log;
-		log.component = "ECU";
-		log.level = "INFO";
-		log.key = "TEMPERATURE";
-		log.value = malloc(5);
-		sprintf(log.value, "%d", core_temperature);
-		LOGGER(&log);
-		free(log.value);
-
-		adc_valid = false;
-	}
-
 	// detect GPIO state change
 	for (uint32_t i = 0; i < INPUT_GPIO_COUNT; i++) {
 		if (GPIO[i].value != HAL_GPIO_ReadPin(GPIO[i].port, GPIO[i].pin)) {
@@ -415,6 +404,49 @@ void Sensor_Manager() {
 
 			GPIO[i].value = !(GPIO[i].value);
 		}
+	}
+
+	// log gpio state
+	if (gpio_valid) {
+
+		static uint32_t checkedGPIOcount = 0;
+		static uint32_t gpioCheckStartTime = 0;
+		if (!gpioCheckStartTime) gpioCheckStartTime = HAL_GetTick();
+
+		if (HAL_GetTick() > gpioCheckStartTime + 100 * checkedGPIOcount) {
+			GPIO[checkedGPIOcount].value = HAL_GPIO_ReadPin(GPIO[checkedGPIOcount].port, GPIO[checkedGPIOcount].pin);
+
+			log_t log;
+			log.component = "ECU";
+			log.level = "INFO";
+			log.key = "GPIO";
+			log.value = malloc(strlen(GPIO[checkedGPIOcount].name) + 3);
+			sprintf(log.value, "%s %d", GPIO[checkedGPIOcount].name, (GPIO[checkedGPIOcount].value));
+			LOGGER(&log);
+			free(log.value);
+
+			checkedGPIOcount++;
+
+			if (checkedGPIOcount == INPUT_GPIO_COUNT) {
+				gpio_valid = false;
+				checkedGPIOcount = 0;
+				gpioCheckStartTime = 0;
+			}
+		}
+	}
+
+	// log internal temperature
+	if (adc_valid) {
+		log_t log;
+		log.component = "ECU";
+		log.level = "INFO";
+		log.key = "TEMPERATURE";
+		log.value = malloc(5);
+		sprintf(log.value, "%d", core_temperature);
+		LOGGER(&log);
+		free(log.value);
+
+		adc_valid = false;
 	}
 }
 /* ========== GPIO END ========== */
@@ -752,12 +784,12 @@ void GPS_Setup() {
 	};
 	const uint8_t UBX_cmd[14] = { 0xB5, 0x62, 0x06, 0x08, 0x06, 0x00, 0xC8, 0x00, 0x01, 0x00, 0x01, 0x00, 0xDE, 0x6A }; // set update rate 5Hz
 
-	HAL_UART_Transmit(&huart6, NMEA_cmd[0], 16 ,100);
-	HAL_UART_Transmit(&huart6, NMEA_cmd[1], 16 ,100);
-	HAL_UART_Transmit(&huart6, NMEA_cmd[2], 16 ,100);
-	HAL_UART_Transmit(&huart6, NMEA_cmd[3], 16 ,100);
-	HAL_UART_Transmit(&huart6, NMEA_cmd[4], 16 ,100);
-	HAL_UART_Transmit(&huart6, UBX_cmd, 14 ,100);
+	HAL_UART_Transmit(&huart6, NMEA_cmd[0], 16, 10);
+	HAL_UART_Transmit(&huart6, NMEA_cmd[1], 16, 10);
+	HAL_UART_Transmit(&huart6, NMEA_cmd[2], 16, 10);
+	HAL_UART_Transmit(&huart6, NMEA_cmd[3], 16, 10);
+	HAL_UART_Transmit(&huart6, NMEA_cmd[4], 16, 10);
+	HAL_UART_Transmit(&huart6, UBX_cmd, 14, 10);
 
 	HAL_UART_Receive_IT(&huart6, &gps_rxd, 1);
 }
@@ -985,31 +1017,6 @@ void WiFi_Manager() {
 	}
 
 	if (isWiFiSocketConnected) {
-		// check all GPIO in 100ms interval after socket connection
-		if (!isGPIOcheckedAfterSocketConnected) {
-			static uint32_t checkedGPIOcount = 0;
-			if (!socketConnectedTime) socketConnectedTime = HAL_GetTick();
-
-			if (HAL_GetTick() > socketConnectedTime + 100 * (checkedGPIOcount + 5)) {
-				GPIO[checkedGPIOcount].value = HAL_GPIO_ReadPin(GPIO[checkedGPIOcount].port, GPIO[checkedGPIOcount].pin);
-
-				log_t log;
-				log.component = "ECU";
-				log.level = "INFO";
-				log.key = "GPIO";
-				log.value = malloc(strlen(GPIO[checkedGPIOcount].name) + 3);
-				sprintf(log.value, "%s %d", GPIO[checkedGPIOcount].name, (GPIO[checkedGPIOcount].value));
-				LOGGER(&log);
-				free(log.value);
-
-				checkedGPIOcount++;
-
-				if (checkedGPIOcount == INPUT_GPIO_COUNT) {
-					isGPIOcheckedAfterSocketConnected = true;
-				}
-			}
-		}
-
 		// flush ring buffer on ESP online
 		while(!ring_buffer_is_empty(&logbuffer)) {
 			uint32_t size = strlen(logbuffer.buffer + logbuffer.tail_index) + 1;
@@ -1017,7 +1024,7 @@ void WiFi_Manager() {
 
 			ring_buffer_dequeue_arr(&logbuffer, buf, size);
 
-			HAL_UART_Transmit(&huart3, buf, size, 100);
+			HAL_UART_Transmit(&huart3, buf, size, 10);
 			free(buf);
 		}
 	}
@@ -1041,13 +1048,20 @@ void HAL_TIM_PeriodElapsedCallback(TIM_HandleTypeDef *htim) {
 	  }
 	}
 
-	// internal temperature sensor
-	else if (htim->Instance == TIM4) { // 5s
-		HAL_ADC_Start_IT(&hadc1);
-	}
-
+	// LCD
 	else if (htim->Instance == TIM3) { // 100ms
 		lcd_valid = true;
+	}
+
+	// internal temperature sensor & GPIO check
+	else if (htim->Instance == TIM4) { // 5s
+		HAL_ADC_Start_IT(&hadc1);
+		gpio_valid = true;
+	}
+
+	// accelerometer
+	else if (htim->Instance == TIM5) { // 200ms
+		acc_valid = true;
 	}
 }
 
@@ -1059,7 +1073,7 @@ void HAL_ADC_ConvCpltCallback(ADC_HandleTypeDef* hadc) {
 
 
 /* ========== LCD START ========== */
-void LCD_Send_CMD (uint8_t cmd) {
+void LCD_Send_CMD(uint8_t cmd) {
 	uint8_t data_u, data_l;
 	uint8_t data_t[4];
 	data_u = (cmd & 0xF0);
@@ -1068,10 +1082,10 @@ void LCD_Send_CMD (uint8_t cmd) {
 	data_t[1] = data_u | 0x08;
 	data_t[2] = data_l | 0x0C;
 	data_t[3] = data_l | 0x08;
-	HAL_I2C_Master_Transmit(&hi2c2, LCD_I2C_ADRESS, (uint8_t *)data_t, 4, 10);
+	HAL_I2C_Master_Transmit(&hi2c2, LCD_I2C_ADDRESS, (uint8_t *)data_t, 4, 10);
 }
 
-void LCD_Send_DATA (uint8_t data) {
+void LCD_Send_DATA(uint8_t data) {
 	uint8_t data_u, data_l;
 	uint8_t data_t[4];
 	data_u = (data & 0xF0);
@@ -1080,7 +1094,7 @@ void LCD_Send_DATA (uint8_t data) {
 	data_t[1] = data_u | 0x09;
 	data_t[2] = data_l | 0x0D;
 	data_t[3] = data_l | 0x09;
-	HAL_I2C_Master_Transmit(&hi2c2, LCD_I2C_ADRESS, (uint8_t *)data_t, 4, 10);
+	HAL_I2C_Master_Transmit(&hi2c2, LCD_I2C_ADDRESS, (uint8_t *)data_t, 4, 10);
 }
 
 void LCD_Write(uint8_t *str, uint8_t col, uint8_t row) {
@@ -1158,6 +1172,43 @@ void LCD_Manager() {
 }
 /* ========== LCD END ========== */
 
+
+/* ========== Accelerometer START ========== */
+void ACC_Send(uint8_t reg, uint8_t value) {
+	uint8_t data[2] = { reg, value };
+	HAL_I2C_Master_Transmit(&hi2c1, ACC_I2C_ADDRESS, data, 2, 10);
+}
+
+void ACC_Read(uint8_t reg) {
+	HAL_I2C_Mem_Read(&hi2c1, ACC_I2C_ADDRESS, reg, 1, (uint8_t *)acc_rxd, 6, 10);
+}
+
+void ACC_Setup() {
+	ACC_Send(0x31, 0x01);  // data_format range +- 4g
+	ACC_Send(0x2d, 0x00);  // reset all bits
+	ACC_Send(0x2d, 0x08);  // power_cntl measure and wake up 8hz
+
+	// start 200ms timer
+	HAL_TIM_Base_Start_IT(&htim5);
+}
+
+void ACC_Manager() {
+	if (acc_valid) {
+		ACC_Read(0x32);
+
+		log_t log;
+		log.component = "ECU";
+		log.level = "INFO";
+		log.key = "ACC";
+		log.value = malloc(30);
+		sprintf(log.value, "0x%02X 0x%02X 0x%02X 0x%02X 0x%02X 0x%02X", acc_rxd[0], acc_rxd[1], acc_rxd[2], acc_rxd[3], acc_rxd[4], acc_rxd[5]);
+		LOGGER(&log);
+		acc_valid = false;
+	}
+}
+/* ========== Accelerometer END ========== */
+
+
 /* USER CODE END 0 */
 
 /**
@@ -1230,13 +1281,16 @@ int main(void)
 
   // set WiFi
   HAL_UART_Receive_IT(&huart3, &wifi_rxd, 1);
-  HAL_UART_Transmit(&huart3, "ESP CHECK", 10, 100);
+  HAL_UART_Transmit(&huart3, "ESP CHECK", 10, 10);
 
   // initialize GPIOs
   Sensor_Setup();
 
   // set CAN
   CAN_Setup();
+
+  // set accelerometer
+  ACC_Setup();
 
   // set GPS
   GPS_Setup();
@@ -1252,6 +1306,7 @@ int main(void)
 	GPS_Manager();
 	WiFi_Manager();
 	LCD_Manager();
+	ACC_Manager();
     /* USER CODE END WHILE */
 
     /* USER CODE BEGIN 3 */
