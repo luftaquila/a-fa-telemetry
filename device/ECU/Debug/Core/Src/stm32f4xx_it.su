@@ -16,8 +16,8 @@
 ../Core/Src/stm32f4xx_it.c:302:6:I2C1_EV_IRQHandler	8	static
 ../Core/Src/stm32f4xx_it.c:316:6:I2C2_EV_IRQHandler	8	static
 ../Core/Src/stm32f4xx_it.c:330:6:USART3_IRQHandler	8	static
-../Core/Src/stm32f4xx_it.c:344:6:SDIO_IRQHandler	8	static
-../Core/Src/stm32f4xx_it.c:358:6:TIM5_IRQHandler	8	static
+../Core/Src/stm32f4xx_it.c:344:6:TIM8_BRK_TIM12_IRQHandler	8	static
+../Core/Src/stm32f4xx_it.c:358:6:SDIO_IRQHandler	8	static
 ../Core/Src/stm32f4xx_it.c:372:6:DMA2_Stream3_IRQHandler	8	static
 ../Core/Src/stm32f4xx_it.c:386:6:DMA2_Stream6_IRQHandler	8	static
 ../Core/Src/stm32f4xx_it.c:400:6:USART6_IRQHandler	8	static

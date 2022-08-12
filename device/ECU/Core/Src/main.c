@@ -118,7 +118,7 @@ typedef enum {
 
 /* Private define ------------------------------------------------------------*/
 /* USER CODE BEGIN PD */
-#define DEBUG_MODE 0
+#define DEBUG_MODE 1
 #define GPS_DEBUG 0
 
 #define INPUT_GPIO_COUNT 7
@@ -218,8 +218,7 @@ void SystemClock_Config(void);
 
 /* Private user code ---------------------------------------------------------*/
 /* USER CODE BEGIN 0 */
-int _write(int file, uint8_t *ptr, int len)
-{
+int _write(int file, uint8_t *ptr, int len) {
    HAL_UART_Transmit(&huart1, (uint8_t *)ptr, (uint16_t)len, 10);
    return (len);
 }
@@ -916,7 +915,7 @@ void GPS_Manager() {
 
 /* ========== WiFi START ========== */
 void WiFi_Manager() {
-	static uint32_t isWiFiSocketConnected = false;
+	static uint32_t wifiSocketConnectedTime = false;
 
 	if (wifi_valid) {
 #if DEBUG_MODE
@@ -932,12 +931,12 @@ void WiFi_Manager() {
 			log.value = wifi_rxs;
 			LOGGER(&log);
 
-			isWiFiSocketConnected = true;
+			wifiSocketConnectedTime = HAL_GetTick();
 		}
 
 		// on ESP socket disconnection
 		else if (strstr(wifi_rxs, "SOCKET_DISCONNECTED")) {
-			if (isWiFiSocketConnected) {
+			if (wifiSocketConnectedTime) {
 				log_t log;
 				log.component = "ECU";
 				log.level = "INFO";
@@ -946,7 +945,7 @@ void WiFi_Manager() {
 				LOGGER(&log);
 			}
 
-			isWiFiSocketConnected = false;
+			wifiSocketConnectedTime = false;
 		}
 
 		// on other ESP messages
@@ -1007,7 +1006,7 @@ void WiFi_Manager() {
 
 			// check if ESP is online on ECU boot
 			else if (strstr(wifi_rxs, "STANDBY")) {
-				isWiFiSocketConnected = true;
+				wifiSocketConnectedTime = HAL_GetTick();
 			}
 		}
 
@@ -1016,17 +1015,19 @@ void WiFi_Manager() {
 		HAL_UART_Receive_IT(&huart3, &wifi_rxd, 1);
 	}
 
-	if (isWiFiSocketConnected) {
-		// flush ring buffer on ESP online
-		while(!ring_buffer_is_empty(&logbuffer)) {
-			uint32_t size = strlen(logbuffer.buffer + logbuffer.tail_index) + 1;
-			uint8_t* buf = malloc(size);
+	// flush ring buffer on ESP online, wait 5 seconds for stable transmission, send message every 10ms
+	static uint32_t lastSentTime = 0;
+	uint32_t currentTime = HAL_GetTick();
+	if (wifiSocketConnectedTime && currentTime > wifiSocketConnectedTime + 5000 && !ring_buffer_is_empty(&logbuffer) && currentTime > lastSentTime + 10) {
+		uint32_t size = strlen(logbuffer.buffer + logbuffer.tail_index) + 1;
+		uint8_t* buf = malloc(size);
 
-			ring_buffer_dequeue_arr(&logbuffer, buf, size);
+		ring_buffer_dequeue_arr(&logbuffer, buf, size);
 
-			HAL_UART_Transmit(&huart3, buf, size, 10);
-			free(buf);
-		}
+		HAL_UART_Transmit(&huart3, buf, size, 10);
+		printf("SENT: %s\n", buf);
+		free(buf);
+		lastSentTime = HAL_GetTick();
 	}
 }
 /* ========== WiFi END ========== */
@@ -1060,7 +1061,7 @@ void HAL_TIM_PeriodElapsedCallback(TIM_HandleTypeDef *htim) {
 	}
 
 	// accelerometer
-	else if (htim->Instance == TIM5) { // 200ms
+	else if (htim->Instance == TIM12) { // 200ms
 		acc_valid = true;
 	}
 }
@@ -1184,12 +1185,12 @@ void ACC_Read(uint8_t reg) {
 }
 
 void ACC_Setup() {
-	ACC_Send(0x31, 0x01);  // data_format range +- 4g
-	ACC_Send(0x2d, 0x00);  // reset all bits
-	ACC_Send(0x2d, 0x08);  // power_cntl measure and wake up 8hz
+	ACC_Send(0x31, 0x01);  // DATA_FORMAT range +-4g
+	ACC_Send(0x2D, 0x00);  // POWER_CTL bit reset
+	ACC_Send(0x2D, 0x08);  // POWER_CTL set measure mode. 100hz default rate
 
 	// start 200ms timer
-	HAL_TIM_Base_Start_IT(&htim5);
+	HAL_TIM_Base_Start_IT(&htim12);
 }
 
 void ACC_Manager() {
@@ -1253,6 +1254,7 @@ int main(void)
   MX_TIM4_Init();
   MX_I2C1_Init();
   MX_TIM3_Init();
+  MX_TIM12_Init();
   /* USER CODE BEGIN 2 */
 
   // set boot time and log file name
@@ -1374,7 +1376,7 @@ void SystemClock_Config(void)
   */
 void Error_Handler(void)
 {
-	/* USER CODE BEGIN Error_Handler_Debug */
+  /* USER CODE BEGIN Error_Handler_Debug */
 	/* User can add his own implementation to report the HAL error return state */
 	//__disable_irq();
 	HAL_GPIO_WritePin(GPIOA, LED1_Pin, GPIO_PIN_SET);
@@ -1391,7 +1393,7 @@ void Error_Handler(void)
 	while (1) {
 	  break;
 	}
-	/* USER CODE END Error_Handler_Debug */
+  /* USER CODE END Error_Handler_Debug */
 }
 
 #ifdef  USE_FULL_ASSERT
