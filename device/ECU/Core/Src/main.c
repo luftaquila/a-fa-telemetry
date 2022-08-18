@@ -118,7 +118,7 @@ typedef enum {
 
 /* Private define ------------------------------------------------------------*/
 /* USER CODE BEGIN PD */
-#define DEBUG_MODE 1
+#define DEBUG_MODE 0
 #define GPS_DEBUG 0
 
 #define INPUT_GPIO_COUNT 7
@@ -368,7 +368,7 @@ void Sensor_Setup() {
 	HAL_TIM_Base_Start_IT(&htim4);
 
 	// initialize APPS pin
-	HAL_GPIO_WritePin(GPIOD, APPS_Pin, GPIO_PIN_SET);
+	HAL_GPIO_WritePin(GPIOD, RTD_ACTIVE_Pin, GPIO_PIN_SET);
 
 	// initialize RTDS pin
 	HAL_GPIO_WritePin(GPIOA, RTDS_Pin, GPIO_PIN_SET);
@@ -405,9 +405,8 @@ void Sensor_Manager() {
 		}
 	}
 
-	// log gpio state
+	// log GPIO state
 	if (gpio_valid) {
-
 		static uint32_t checkedGPIOcount = 0;
 		static uint32_t gpioCheckStartTime = 0;
 		if (!gpioCheckStartTime) gpioCheckStartTime = HAL_GetTick();
@@ -459,7 +458,7 @@ void RTD_Manager() {
 
 	// read RTD related GPIO state
 	uint32_t LV_ACTIVE    = HAL_GPIO_ReadPin(GPIOD, LV_ACTIVE_Pin);
-	uint32_t RTD       	 = HAL_GPIO_ReadPin(GPIOD, RTD_Pin);
+	uint32_t RTD       	  = HAL_GPIO_ReadPin(GPIOD, RTD_Pin);
 	uint32_t BRAKE        = HAL_GPIO_ReadPin(GPIOD, BRAKE_Pin);
 
 	// on RTD condition
@@ -479,10 +478,7 @@ void RTD_Manager() {
 		 HAL_GPIO_WritePin(GPIOA, RTDS_Pin, GPIO_PIN_RESET);
 		 HAL_TIM_Base_Start_IT(&htim2);
 
-		 // Activate APPS relay
-		 HAL_GPIO_WritePin(GPIOD, APPS_Pin, GPIO_PIN_SET);
-
-		 // Turn on RTD indicator LED
+		 // Activate APPS relay and RTD indicator LED
 		 HAL_GPIO_WritePin(GPIOD, RTD_ACTIVE_Pin, GPIO_PIN_SET);
 
 		 log_t log;
@@ -774,6 +770,7 @@ void HAL_UART_RxCpltCallback(UART_HandleTypeDef *huart) {
 
 /* ========== GPS RECEIVER START ========== */
 void GPS_Setup() {
+	/*
 	const uint8_t NMEA_cmd[5][16] = {
 		{ 0xB5, 0x62, 0x06, 0x01, 0x08, 0x00, 0xF0, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x01, 0x00, 0x24 }, // disable GxGGA
 		{ 0xB5, 0x62, 0x06, 0x01, 0x08, 0x00, 0xF0, 0x01, 0x00, 0x00, 0x00, 0x00, 0x00, 0x01, 0x01, 0x2B }, // disable GxGLL
@@ -781,15 +778,21 @@ void GPS_Setup() {
 		{ 0xB5, 0x62, 0x06, 0x01, 0x08, 0x00, 0xF0, 0x03, 0x00, 0x00, 0x00, 0x00, 0x00, 0x01, 0x03, 0x39 }, // disable GxGSV
 		{ 0xB5, 0x62, 0x06, 0x01, 0x08, 0x00, 0xF0, 0x05, 0x00, 0x00, 0x00, 0x00, 0x00, 0x01, 0x05, 0x47 }  // disable GxVTG
 	};
-	const uint8_t UBX_cmd[14] = { 0xB5, 0x62, 0x06, 0x08, 0x06, 0x00, 0xC8, 0x00, 0x01, 0x00, 0x01, 0x00, 0xDE, 0x6A }; // set update rate 5Hz
 
 	HAL_UART_Transmit(&huart6, NMEA_cmd[0], 16, 10);
 	HAL_UART_Transmit(&huart6, NMEA_cmd[1], 16, 10);
 	HAL_UART_Transmit(&huart6, NMEA_cmd[2], 16, 10);
 	HAL_UART_Transmit(&huart6, NMEA_cmd[3], 16, 10);
 	HAL_UART_Transmit(&huart6, NMEA_cmd[4], 16, 10);
-	HAL_UART_Transmit(&huart6, UBX_cmd, 14, 10);
+	*/
 
+	const uint8_t UBX_rate_cmd[14] = { 0xB5, 0x62, 0x06, 0x08, 0x06, 0x00, 0xC8, 0x00, 0x01, 0x00, 0x01, 0x00, 0xDE, 0x6A }; // set update rate 5Hz
+	const uint8_t UBX_power_cmd[16] = { 0xB5, 0x62, 0x06, 0x86, 0x08, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x94, 0x5A }; // set full power
+
+	HAL_UART_Transmit(&huart6, UBX_rate_cmd, 14, 10);
+	HAL_UART_Transmit(&huart6, UBX_power_cmd, 16, 10);
+
+	// enable UART receive
 	HAL_UART_Receive_IT(&huart6, &gps_rxd, 1);
 }
 
@@ -797,7 +800,7 @@ void GPS_Setup() {
 void GPS_Manager() {
 	// process only if received buffer data is ready
 	if(gps_valid) {
-#if DEBUG_MODE && GPS_DEBUG
+#if GPS_DEBUG
 		printf("GPS: %s\n", gps_rxs);
 #endif
 
@@ -1025,7 +1028,6 @@ void WiFi_Manager() {
 		ring_buffer_dequeue_arr(&logbuffer, buf, size);
 
 		HAL_UART_Transmit(&huart3, buf, size, 10);
-		printf("SENT: %s\n", buf);
 		free(buf);
 		lastSentTime = HAL_GetTick();
 	}
@@ -1204,7 +1206,9 @@ void ACC_Manager() {
 		log.value = malloc(30);
 		sprintf(log.value, "0x%02X 0x%02X 0x%02X 0x%02X 0x%02X 0x%02X", acc_rxd[0], acc_rxd[1], acc_rxd[2], acc_rxd[3], acc_rxd[4], acc_rxd[5]);
 		LOGGER(&log);
+		free(log.value);
 		acc_valid = false;
+
 	}
 }
 /* ========== Accelerometer END ========== */

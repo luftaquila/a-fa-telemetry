@@ -98,6 +98,11 @@ void HardFault_Handler(void)
 {
   /* USER CODE BEGIN HardFault_IRQn 0 */
 
+	HAL_GPIO_WritePin(GPIOA, LED1_Pin, GPIO_PIN_SET);
+	HAL_GPIO_WritePin(GPIOA, LED2_Pin, GPIO_PIN_SET);
+
+	printf("!!!!! HARD FAULT !!!!!\n");
+
   /* USER CODE END HardFault_IRQn 0 */
   while (1)
   {

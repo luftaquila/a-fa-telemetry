@@ -73,8 +73,6 @@ void Error_Handler(void);
 #define RTDS_GPIO_Port GPIOA
 #define RTD_ACTIVE_Pin GPIO_PIN_3
 #define RTD_ACTIVE_GPIO_Port GPIOD
-#define APPS_Pin GPIO_PIN_4
-#define APPS_GPIO_Port GPIOD
 #define BRAKE_Pin GPIO_PIN_5
 #define BRAKE_GPIO_Port GPIOD
 #define RTD_Pin GPIO_PIN_6
