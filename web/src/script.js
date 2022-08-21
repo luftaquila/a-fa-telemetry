@@ -36,7 +36,7 @@ else {
         item.byte5 = data.data.bytes[5];
         item.byte6 = data.data.bytes[6];
         item.byte7 = data.data.bytes[7];
-        item.cnt = item.cnt++;
+        item.cnt++;
         item.index = item.index;
         item.interval = new Date(data.data.datetime) - new Date(item.timestamp);
         item.timestamp = data.data.datetime;
@@ -117,7 +117,7 @@ function process_status(status) {
   $("#battery-temperature-max").text(parseFloat(status.battery.temperature.max).toFixed(0));
   $("#battery-temperature-max-id").text(status.battery.temperature.max_id);
   $("#battery-temperature-min").text(parseFloat(status.battery.temperature.min).toFixed(0));
-  $("#battery-temperature-min-id").text(status.battery.temperature.max_id);
+  $("#battery-temperature-min-id").text(status.battery.temperature.min_id);
   $("#battery-temperature-internal").text(parseFloat(status.battery.temperature.internal).toFixed(0));
   $("#battery-adaptive-capacity").text(parseFloat(status.battery.adaptive.capacity).toFixed(1));
 
