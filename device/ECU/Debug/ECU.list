@@ -2224,10 +2224,10 @@ int _write(int file, uint8_t *ptr, int len) {
  800153e:	60f8      	str	r0, [r7, #12]
  8001540:	60b9      	str	r1, [r7, #8]
  8001542:	607a      	str	r2, [r7, #4]
-   HAL_UART_Transmit(&huart1, (uint8_t *)ptr, (uint16_t)len, 10);
+   HAL_UART_Transmit(&huart1, (uint8_t *)ptr, (uint16_t)len, 100);
  8001544:	687b      	ldr	r3, [r7, #4]
  8001546:	b29a      	uxth	r2, r3
- 8001548:	230a      	movs	r3, #10
+ 8001548:	2364      	movs	r3, #100	; 0x64
  800154a:	68b9      	ldr	r1, [r7, #8]
  800154c:	4803      	ldr	r0, [pc, #12]	; (800155c <_write+0x24>)
  800154e:	f00a fc3a 	bl	800bdc6 <HAL_UART_Transmit>
@@ -3799,7 +3799,10 @@ void HAL_CAN_RxFifo0MsgPendingCallback(CAN_HandleTypeDef *CAN_Handle) {
  80020e8:	68db      	ldr	r3, [r3, #12]
  80020ea:	4618      	mov	r0, r3
  80020ec:	f00e fd38 	bl	8010b60 <free>
-	}
+
+#if DEBUG_MODE
+	printf("id: %x\tdata: 0x%02X 0x%02X 0x%02X 0x%02X 0x%02X 0x%02X 0x%02X 0x%02X\n", can_rxh.StdId, can_rxb[0], can_rxb[1], can_rxb[2], can_rxb[3], can_rxb[4], can_rxb[5], can_rxb[6], can_rxb[7]);
+#endif
 
 	switch (can_rxh.StdId) {
  80020f0:	4b6b      	ldr	r3, [pc, #428]	; (80022a0 <HAL_CAN_RxFifo0MsgPendingCallback+0x204>)
@@ -4570,9 +4573,9 @@ void GPS_Setup() {
  8002648:	b590      	push	{r4, r7, lr}
  800264a:	b089      	sub	sp, #36	; 0x24
  800264c:	af00      	add	r7, sp, #0
-	HAL_UART_Transmit(&huart6, NMEA_cmd[2], 16, 10);
-	HAL_UART_Transmit(&huart6, NMEA_cmd[3], 16, 10);
-	HAL_UART_Transmit(&huart6, NMEA_cmd[4], 16, 10);
+	HAL_UART_Transmit(&huart6, NMEA_cmd[2], 16, 50);
+	HAL_UART_Transmit(&huart6, NMEA_cmd[3], 16, 50);
+	HAL_UART_Transmit(&huart6, NMEA_cmd[4], 16, 50);
 	*/
 
 	const uint8_t UBX_rate_cmd[14] = { 0xB5, 0x62, 0x06, 0x08, 0x06, 0x00, 0xC8, 0x00, 0x01, 0x00, 0x01, 0x00, 0xDE, 0x6A }; // set update rate 5Hz
@@ -4587,15 +4590,15 @@ void GPS_Setup() {
  800265e:	cb0f      	ldmia	r3, {r0, r1, r2, r3}
  8002660:	e884 000f 	stmia.w	r4, {r0, r1, r2, r3}
 
-	HAL_UART_Transmit(&huart6, UBX_rate_cmd, 14, 10);
+	HAL_UART_Transmit(&huart6, UBX_rate_cmd, 14, 50);
  8002664:	f107 0110 	add.w	r1, r7, #16
- 8002668:	230a      	movs	r3, #10
+ 8002668:	2332      	movs	r3, #50	; 0x32
  800266a:	220e      	movs	r2, #14
  800266c:	480a      	ldr	r0, [pc, #40]	; (8002698 <GPS_Setup+0x50>)
  800266e:	f009 fbaa 	bl	800bdc6 <HAL_UART_Transmit>
-	HAL_UART_Transmit(&huart6, UBX_power_cmd, 16, 10);
+	HAL_UART_Transmit(&huart6, UBX_power_cmd, 16, 50);
  8002672:	4639      	mov	r1, r7
- 8002674:	230a      	movs	r3, #10
+ 8002674:	2332      	movs	r3, #50	; 0x32
  8002676:	2210      	movs	r2, #16
  8002678:	4807      	ldr	r0, [pc, #28]	; (8002698 <GPS_Setup+0x50>)
  800267a:	f009 fba4 	bl	800bdc6 <HAL_UART_Transmit>
@@ -5242,10 +5245,10 @@ void WiFi_Manager() {
  8002a9a:	481a      	ldr	r0, [pc, #104]	; (8002b04 <WiFi_Manager+0x2c4>)
  8002a9c:	f000 fcea 	bl	8003474 <ring_buffer_dequeue_arr>
 
-		HAL_UART_Transmit(&huart3, buf, size, 10);
+		HAL_UART_Transmit(&huart3, buf, size, 50);
  8002aa0:	6e3b      	ldr	r3, [r7, #96]	; 0x60
  8002aa2:	b29a      	uxth	r2, r3
- 8002aa4:	230a      	movs	r3, #10
+ 8002aa4:	2332      	movs	r3, #50	; 0x32
  8002aa6:	6df9      	ldr	r1, [r7, #92]	; 0x5c
  8002aa8:	4815      	ldr	r0, [pc, #84]	; (8002b00 <WiFi_Manager+0x2c0>)
  8002aaa:	f009 f98c 	bl	800bdc6 <HAL_UART_Transmit>

@@ -219,7 +219,7 @@ void SystemClock_Config(void);
 /* Private user code ---------------------------------------------------------*/
 /* USER CODE BEGIN 0 */
 int _write(int file, uint8_t *ptr, int len) {
-   HAL_UART_Transmit(&huart1, (uint8_t *)ptr, (uint16_t)len, 10);
+   HAL_UART_Transmit(&huart1, (uint8_t *)ptr, (uint16_t)len, 100);
    return (len);
 }
 
@@ -575,6 +575,10 @@ void HAL_CAN_RxFifo0MsgPendingCallback(CAN_HandleTypeDef *CAN_Handle) {
 		free(errlog.value);
 	}
 
+#if DEBUG_MODE
+	printf("CAN: %x 0x%02X 0x%02X 0x%02X 0x%02X 0x%02X 0x%02X 0x%02X 0x%02X\n", can_rxh.StdId, can_rxb[0], can_rxb[1], can_rxb[2], can_rxb[3], can_rxb[4], can_rxb[5], can_rxb[6], can_rxb[7]);
+#endif
+
 	switch (can_rxh.StdId) {
 		case CAN_BMS_CORE_ID:
 			memcpy(can_rxd[CAN_BMS_CORE], can_rxb, 8);
@@ -779,18 +783,18 @@ void GPS_Setup() {
 		{ 0xB5, 0x62, 0x06, 0x01, 0x08, 0x00, 0xF0, 0x05, 0x00, 0x00, 0x00, 0x00, 0x00, 0x01, 0x05, 0x47 }  // disable GxVTG
 	};
 
-	HAL_UART_Transmit(&huart6, NMEA_cmd[0], 16, 10);
-	HAL_UART_Transmit(&huart6, NMEA_cmd[1], 16, 10);
-	HAL_UART_Transmit(&huart6, NMEA_cmd[2], 16, 10);
-	HAL_UART_Transmit(&huart6, NMEA_cmd[3], 16, 10);
-	HAL_UART_Transmit(&huart6, NMEA_cmd[4], 16, 10);
+	HAL_UART_Transmit(&huart6, NMEA_cmd[0], 16, 50);
+	HAL_UART_Transmit(&huart6, NMEA_cmd[1], 16, 50);
+	HAL_UART_Transmit(&huart6, NMEA_cmd[2], 16, 50);
+	HAL_UART_Transmit(&huart6, NMEA_cmd[3], 16, 50);
+	HAL_UART_Transmit(&huart6, NMEA_cmd[4], 16, 50);
 	*/
 
 	const uint8_t UBX_rate_cmd[14] = { 0xB5, 0x62, 0x06, 0x08, 0x06, 0x00, 0xC8, 0x00, 0x01, 0x00, 0x01, 0x00, 0xDE, 0x6A }; // set update rate 5Hz
 	const uint8_t UBX_power_cmd[16] = { 0xB5, 0x62, 0x06, 0x86, 0x08, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x94, 0x5A }; // set full power
 
-	HAL_UART_Transmit(&huart6, UBX_rate_cmd, 14, 10);
-	HAL_UART_Transmit(&huart6, UBX_power_cmd, 16, 10);
+	HAL_UART_Transmit(&huart6, UBX_rate_cmd, 14, 50);
+	HAL_UART_Transmit(&huart6, UBX_power_cmd, 16, 50);
 
 	// enable UART receive
 	HAL_UART_Receive_IT(&huart6, &gps_rxd, 1);
@@ -1027,7 +1031,7 @@ void WiFi_Manager() {
 
 		ring_buffer_dequeue_arr(&logbuffer, buf, size);
 
-		HAL_UART_Transmit(&huart3, buf, size, 10);
+		HAL_UART_Transmit(&huart3, buf, size, 50);
 		free(buf);
 		lastSentTime = HAL_GetTick();
 	}

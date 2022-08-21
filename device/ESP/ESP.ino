@@ -88,7 +88,7 @@ void loop() {
 
   if(rxs.length()) {
     // Socket.emit
-    DynamicJsonDocument payload(250);
+    DynamicJsonDocument payload(300);
     JsonArray array = payload.to<JsonArray>();
     socketIO.loop();
   
