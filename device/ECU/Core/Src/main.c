@@ -118,7 +118,7 @@ typedef enum {
 
 /* Private define ------------------------------------------------------------*/
 /* USER CODE BEGIN PD */
-#define DEBUG_MODE 0
+#define DEBUG_MODE 1
 #define GPS_DEBUG 0
 
 #define INPUT_GPIO_COUNT 7
@@ -368,7 +368,7 @@ void Sensor_Setup() {
 	HAL_TIM_Base_Start_IT(&htim4);
 
 	// initialize APPS pin
-	HAL_GPIO_WritePin(GPIOD, RTD_ACTIVE_Pin, GPIO_PIN_SET);
+	HAL_GPIO_WritePin(GPIOD, RTD_ACTIVE_Pin, GPIO_PIN_RESET);
 
 	// initialize RTDS pin
 	HAL_GPIO_WritePin(GPIOA, RTDS_Pin, GPIO_PIN_SET);
@@ -1089,7 +1089,7 @@ void LCD_Send_CMD(uint8_t cmd) {
 	data_t[1] = data_u | 0x08;
 	data_t[2] = data_l | 0x0C;
 	data_t[3] = data_l | 0x08;
-	HAL_I2C_Master_Transmit(&hi2c2, LCD_I2C_ADDRESS, (uint8_t *)data_t, 4, 10);
+	HAL_I2C_Master_Transmit(&hi2c2, LCD_I2C_ADDRESS, (uint8_t *)data_t, 4, 50);
 }
 
 void LCD_Send_DATA(uint8_t data) {
@@ -1101,7 +1101,7 @@ void LCD_Send_DATA(uint8_t data) {
 	data_t[1] = data_u | 0x09;
 	data_t[2] = data_l | 0x0D;
 	data_t[3] = data_l | 0x09;
-	HAL_I2C_Master_Transmit(&hi2c2, LCD_I2C_ADDRESS, (uint8_t *)data_t, 4, 10);
+	HAL_I2C_Master_Transmit(&hi2c2, LCD_I2C_ADDRESS, (uint8_t *)data_t, 4, 50);
 }
 
 void LCD_Write(uint8_t *str, uint8_t col, uint8_t row) {
@@ -1249,7 +1249,6 @@ int main(void)
   /* Initialize all configured peripherals */
   MX_GPIO_Init();
   MX_DMA_Init();
-  MX_CAN1_Init();
   MX_TIM2_Init();
   MX_USART1_UART_Init();
   MX_I2C2_Init();
@@ -1263,6 +1262,7 @@ int main(void)
   MX_I2C1_Init();
   MX_TIM3_Init();
   MX_TIM12_Init();
+  MX_CAN1_Init();
   /* USER CODE BEGIN 2 */
 
   // set boot time and log file name
