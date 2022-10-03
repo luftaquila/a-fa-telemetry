@@ -242,6 +242,9 @@ function process_telemetry(data) {
             case "CAN":
               ECU.system.can = data.level === "ERRR" ? false : true;
               break;
+
+            case "ACC":
+              break;
           }
           break;
 
@@ -388,7 +391,7 @@ function process_telemetry(data) {
       }
       io.to('client').emit('telemetry-repeat', { data: data, status: ECU });
     }
-  } catch(e) { }
+  } catch(e) { console.log(e); }
 }
 
 function signedParseInt(value, base, bit) {
