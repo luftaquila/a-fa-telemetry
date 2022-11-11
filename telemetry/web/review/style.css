@@ -30,34 +30,29 @@ html {
 }
 
 body {
+  min-width: 320px;
+  min-height: 568px;
   overflow-y: auto;
   border-radius: 10px;
 }
 
 #logo {
   text-align: center;
+  padding-top: .5rem;
   max-width: 414px;
-  margin: auto;
 }
 
 #logo img {
   width: 70%;
 }
 
-div#container, div#header {
+div#container {
   padding: 1rem;
   padding-top: 0rem;
   display: flex;
   max-width: none;
   flex-wrap: wrap;
-}
-div#container {
   justify-content: space-evenly;
-}
-div#header {
-  padding-top: 1rem;
-  padding-bottom: 0rem;
-  justify-content: space-between;
 }
 
 header {
@@ -163,10 +158,6 @@ div.toggle_graph label.double {
 table.param {
   margin-top: 1rem;
   width: -webkit-fill-available;
-}
-
-table.param .graph {
-  display: none;
 }
 
 table.param .param-label {
