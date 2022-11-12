@@ -1,17 +1,28 @@
 let telemetry = { };
+let graphs = { };
+let graph_data = { };
 
 $("#file").change(function() {
   let file = document.getElementById("file").files[0];
   if (file) {
-      var reader = new FileReader();
-      reader.readAsText(file, "UTF-8");
-      reader.onload = function (evt) {
-          telemetry = evt.target.result;
-          for (let line of telemetry.split('\n')) {
-            process_telemetry(line);
-          }
-          drawGraph();
+    for(graph of Object.keys(graphs)) {
+      graphs[graph].destroy();
+      delete graphs[graph];
+    }
+    graphs = { };
+    graph_data = { };
+    for (const canvas of document.getElementsByTagName('canvas')) graph_data[canvas.id] = [];
+    graph_data["graph-motor-torque-commanded"] = [];
+
+    let reader = new FileReader();
+    reader.readAsText(file, "UTF-8");
+    reader.onload = function (evt) {
+      telemetry = evt.target.result;
+      for (let line of telemetry.split('\n')) {
+        process_telemetry(line);
       }
+      drawGraph();
+    }
   }
 });
 
@@ -102,6 +113,13 @@ function process_telemetry(data) {
             case "CAN_INV_TEMP_3":
               data.data = {
                 motor: signedParseInt(data.bytes[5].concat(data.bytes[4]), 16, 16) * 0.1,
+              };
+              break;
+
+            case "CAN_INV_ANALOG_IN":
+              data.data = {
+                accelerator: signedParseInt(parseInt(data.bytes[1].concat(data.bytes[0]), 16).toString(2).padStart(16, 0).slice(6), 2, 10) * 0.01 / 5 * 100,
+                brake: signedParseInt(parseInt(data.bytes[3].concat(data.bytes[2]), 16).toString(2).padStart(16, 0).slice(2).slice(0, 11), 2, 10) * 0.01 / 5 * 100,
               };
               break;
 
@@ -260,11 +278,6 @@ function process_data(data) {
 }
 
 // graph configs
-let graphs = { };
-let graph_data = { };
-for (const canvas of document.getElementsByTagName('canvas')) graph_data[canvas.id] = [];
-graph_data["graph-motor-torque-commanded"] = [];
-
 const graph_config = {
   'graph-speed': { delay: 1000, grace: 5, color: 'rgb(54, 162, 235)' },
   'graph-acceleration': { delay: 1000, grace: 5, color: 'rgb(54, 162, 235)' },
