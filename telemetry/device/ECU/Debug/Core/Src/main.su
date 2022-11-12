@@ -7,7 +7,7 @@
 ../Core/Src/main.c:391:6:Sensor_Manager	72	static
 ../Core/Src/main.c:453:6:RTD_Manager	48	static
 ../Core/Src/main.c:502:6:CAN_Setup	48	static
-../Core/Src/main.c:566:6:HAL_CAN_RxFifo0MsgPendingCallback	16	static
+../Core/Src/main.c:566:6:HAL_CAN_RxFifo0MsgPendingCallback	56	static
 ../Core/Src/main.c:655:6:HAL_CAN_RxFifo0FullCallback	16	static
 ../Core/Src/main.c:670:6:CAN_Manager	80	static
 ../Core/Src/main.c:701:6:HAL_CAN_ErrorCallback	16	static
