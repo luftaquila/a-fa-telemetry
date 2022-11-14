@@ -9,83 +9,31 @@
 		<meta property="og:image" content="https://a-fa.luftaquila.io/assets/A-FA.jpeg"/>
 		<meta property="og:description" content=" "/>	
 
-    <link rel="stylesheet" href="src/style.css">
-    <link rel="stylesheet" href="src/fontawesome/css/all.min.css">
-    <link rel="stylesheet" href="src/toggleSwitch/toggleSwitch.css">
-    <link rel="stylesheet" href="src/btn/btn.css">
-    <link rel="stylesheet" href="//cdn.datatables.net/1.12.1/css/jquery.dataTables.min.css">
-    <link rel="shortcut icon" href="assets/favicon.svg" type="image/x-icon">
+    <link rel="stylesheet" href="style.css">
+    <link rel="stylesheet" href="../src/fontawesome/css/all.min.css">
+    <link rel="stylesheet" href="../src/toggleSwitch/toggleSwitch.css">
+    <link rel="stylesheet" href="../src/btn/btn.css">
+    <link rel="shortcut icon" href="../assets/favicon.svg" type="image/x-icon">
   </head>
   <body>
-    <div id="header">
+    <div style="display: flex;">
       <div id="logo">
         <a href="/">
-          <img src="assets/logo-transparent.png">
+          <img src="../assets/logo-transparent.png">
         </a>
       </div>
-
-      <header style="margin: auto; max-width: 414px;">
-        <div id="server" class="status left">
-          <i class="fa-solid fa-fw fa-network-wired" style="color: red"></i>
-          <div class="text">서버</div>
-        </div>
-        <div id="telemetry" class="status left">
-          <i class="fa-duotone fa-fw fa-tower-broadcast" style="color: red"></i>
-          <div class="text">원격 계측</div>
-        </div>
-        <div id="rtd" class="status right">
-          <i class="fa-duotone fa-fw fa-car-on" style="color: red"></i>
-          <div class="text" style="letter-spacing: 1.5px;">RTD</div>
-        </div>
-        <div id="hv" class="status right">
-          <i class="fa-solid fa-fw fa-transformer-bolt" style="color: red;"></i>
-          <div class="text" style="letter-spacing: 1.5px;">HV</div>
-        </div>
-        <div id="lv" class="status right">
-          <i class="fa-solid fa-fw fa-car-battery" style="color: red"></i>
-          <div class="text" style="letter-spacing: 1.5px;">LV</div>
-        </div>
-      </header>
+  
+      <div style="margin-top: 1rem;">
+        <span style="font-size: 1.5rem; font-weight: bold;">로그 파일 선택</span><br>
+        <input id="file" type="file" accept=".log" style="margin-top: 1rem; margin-left: 2rem;">
+      </div>
     </div>
 
     <div id="container">
+
       <article id="car">
         <h1><i class="fa-duotone fa-fw fa-car-bolt"></i>&ensp;차량</h1>
         
-        <div class="fault-indicator">
-          <div id="sd" class="status middle">
-            <i class="fa-solid fa-fw fa-sd-card" style="color: red;"></i>
-            <div class="text" style="letter-spacing: 1.5px;">SD</div>
-          </div>
-          <div id="can" class="status middle">
-            <i class="fa-solid fa-fw fa-ethernet" style="color: red;"></i>
-            <div class="text" style="letter-spacing: 1.5px;">CAN</div>
-          </div>
-          <div id="gps" class="status middle">
-            <i class="fa-duotone fa-fw fa-satellite" style="color: red"></i>
-            <div class="text" style="letter-spacing: 1.5px;">GPS</div>
-          </div>
-        </div>
-
-        <div class="fault-indicator">
-          <div id="imd" class="status middle">
-            <i class="fa-solid fa-fw fa-monitor-waveform" style="color: red"></i>
-            <div class="text">IMD</div>
-          </div>
-          <div id="bms" class="status middle">
-            <i class="fa-solid fa-fw fa-battery-bolt" style="color: red"></i>
-            <div class="text">BMS</div>
-          </div>
-          <div id="bspd" class="status middle">
-            <i class="fa-solid fa-fw fa-brake-warning" style="color: red"></i>
-            <div class="text">BSPD</div>
-          </div>
-          <div id="hvd" class="status middle">
-            <i class="fa-duotone fa-fw fa-plug" style="color: red"></i>
-            <div class="text">HVD</div>
-          </div>
-        </div>
-
         <div class="content">
           <table class="param">
             <tr>
@@ -98,9 +46,7 @@
                   <label class="tgl-btn" data-tg-off="그래프" data-tg-on="그래프" for="toggle-graph-speed"></label>
                 </div>
               </th>
-              <th class="param-data">
-                <h2><span id="speed" class="param-value">0</span><span class="param-unit">&ensp;km/h</span></h2>
-              </th>
+              
             </tr>
             <tr>
               <td colspan="2" class="param-graph">
@@ -119,9 +65,7 @@
                   <label class="tgl-btn" data-tg-off="그래프" data-tg-on="그래프" for="toggle-graph-acceleration"></label>
                 </div>
               </th>
-              <th class="param-data">
-                <h2><span id="acceleration" class="param-value">0</span><span class="param-unit">&ensp;%</span></h2>
-              </th>
+              
             </tr>
             <tr>
               <td colspan="2" class="param-graph">
@@ -140,9 +84,7 @@
                   <label class="tgl-btn" data-tg-off="그래프" data-tg-on="그래프" for="toggle-graph-braking"></label>
                 </div>
               </th>
-              <th class="param-data">
-                <h2><span id="brake" class="param-value">0</span><span class="param-unit">&ensp;%</span></h2>
-              </th>
+              
             </tr>
             <tr>
               <td colspan="2" class="param-graph">
@@ -161,9 +103,7 @@
                   <label class="tgl-btn" data-tg-off="그래프" data-tg-on="그래프" for="toggle-graph-core-temperature"></label>
                 </div>
               </th>
-              <th class="param-data">
-                <h2><span id="core-temperature" class="param-value">0</span><span class="param-unit">&ensp;℃</span></h2>
-              </th>
+              
             </tr>
             <tr>
               <td colspan="2" class="param-graph">
@@ -177,58 +117,6 @@
       <article id="hv_batt">
         <h1 style="margin-top: .3rem;"><i class="fa-solid fa-fw fa-transformer-bolt"></i>&ensp;HV</h1>
 
-        <div class="fault-indicator">
-          <div id="voltage-failsafe" class="status failsafe">
-            <i class="fa-solid fa-fw fa-square-v" style="color: green"></i>
-            <div class="failsafe-help">
-              <input class="tgl tooltips tgl-skewed" id="tooltip-voltage-failsafe" type="checkbox"/>
-              <label class="tgl-btn" data-tg-off="도움말" data-tg-on="도움말" for="tooltip-voltage-failsafe"></label>
-            </div>
-          </div>
-          <div id="current-failsafe" class="status failsafe">
-            <i class="fa-solid fa-fw fa-square-a" style="color: green"></i>
-            <div class="failsafe-help">
-              <input class="tgl tooltips tgl-skewed" id="tooltip-current-failsafe" type="checkbox"/>
-              <label class="tgl-btn" data-tg-off="도움말" data-tg-on="도움말" for="tooltip-current-failsafe"></label>
-            </div>
-          </div>
-          <div id="relay-failsafe" class="status failsafe">
-            <i class="fa-solid fa-fw fa-square-r" style="color: green"></i>
-            <div class="failsafe-help">
-              <input class="tgl tooltips tgl-skewed" id="tooltip-relay-failsafe" type="checkbox"/>
-              <label class="tgl-btn" data-tg-off="도움말" data-tg-on="도움말" for="tooltip-relay-failsafe"></label>
-            </div>
-          </div>
-          <div id="balancing-active" class="status failsafe">
-            <i class="fa-solid fa-fw fa-square-b" style="color: red"></i>
-            <div class="failsafe-help">
-              <input class="tgl tooltips tgl-skewed" id="tooltip-balancing-active" type="checkbox"/>
-              <label class="tgl-btn" data-tg-off="도움말" data-tg-on="도움말" for="tooltip-balancing-active"></label>
-            </div>
-          </div>
-          <div id="interlock-failsafe" class="status failsafe">
-            <i class="fa-solid fa-fw fa-square-i" style="color: green"></i>
-            <div class="failsafe-help">
-              <input class="tgl tooltips tgl-skewed" id="tooltip-interlock-failsafe" type="checkbox"/>
-              <label class="tgl-btn" data-tg-off="도움말" data-tg-on="도움말" for="tooltip-interlock-failsafe"></label>
-            </div>
-          </div>
-          <div id="thermistor-invalid" class="status failsafe">
-            <i class="fa-solid fa-fw fa-square-t" style="color: green"></i>
-            <div class="failsafe-help">
-              <input class="tgl tooltips tgl-skewed" id="tooltip-thermistor-invalid" type="checkbox"/>
-              <label class="tgl-btn" data-tg-off="도움말" data-tg-on="도움말" for="tooltip-thermistor-invalid"></label>
-            </div>
-          </div>
-          <div id="input-power-failsafe" class="status failsafe">
-            <i class="fa-solid fa-fw fa-square-p" style="color: green"></i>
-            <div class="failsafe-help">
-              <input class="tgl tooltips tgl-skewed" id="tooltip-input-power-failsafe" type="checkbox"/>
-              <label class="tgl-btn" data-tg-off="도움말" data-tg-on="도움말" for="tooltip-input-power-failsafe"></label>
-            </div>
-          </div>
-        </div>
-
         <div class="content">
           <table class="param" style="margin-top: 1.2rem;">
             <tr>
@@ -241,9 +129,7 @@
                   <label class="tgl-btn" data-tg-off="그래프" data-tg-on="그래프" for="toggle-graph-battery-percent"></label>
                 </div>
               </th>
-              <th class="param-data">
-                <h2><span id="battery-percent" class="param-value">0</span><span class="param-unit">&ensp;%</span></h2>
-              </th>
+              
             </tr>
             <tr>
               <td colspan="2" class="param-graph">
@@ -262,9 +148,7 @@
                   <label class="tgl-btn" data-tg-off="그래프" data-tg-on="그래프" for="toggle-graph-battery-voltage"></label>
                 </div>
               </th>
-              <th class="param-data">
-                <h2><span id="battery-voltage" class="param-value">0</span><span class="param-unit">&ensp;V</span></h2>
-              </th>
+              
             </tr>
             <tr>
               <td colspan="2" class="param-graph">
@@ -283,9 +167,7 @@
                   <label class="tgl-btn" data-tg-off="그래프" data-tg-on="그래프" for="toggle-graph-battery-current"></label>
                 </div>
               </th>
-              <th class="param-data">
-                <h2><span id="battery-current" class="param-value">0</span><span class="param-unit">&ensp;A</span></h2>
-              </th>
+              
             </tr>
             <tr>
               <td colspan="2" class="param-graph">
@@ -304,12 +186,7 @@
                   <label class="tgl-btn" data-tg-off="그래프" data-tg-on="그래프" for="toggle-graph-battery-temperature-max"></label>
                 </div>
               </th>
-              <th class="param-data">
-                <h2>
-                  <span id="battery-temperature-max" class="param-value">0</span><span class="param-unit">&ensp;℃</span>
-                  <span class="param-unit">&nbsp;#</span><span id="battery-temperature-max-id" class="param-subvalue">0</span>
-                </h2>
-              </th>
+              
             </tr>
             <tr>
               <td colspan="2" class="param-graph">
@@ -328,12 +205,7 @@
                   <label class="tgl-btn" data-tg-off="그래프" data-tg-on="그래프" for="toggle-graph-battery-temperature-min"></label>
                 </div>
               </th>
-              <th class="param-data">
-                <h2>
-                  <span id="battery-temperature-min" class="param-value">0</span><span class="param-unit">&ensp;℃</span>
-                  <span class="param-unit">&nbsp;#</span><span id="battery-temperature-min-id" class="param-subvalue">0</span>
-                </h2>
-              </th>
+              
             </tr>
             <tr>
               <td colspan="2" class="param-graph">
@@ -352,28 +224,12 @@
                   <label class="tgl-btn" data-tg-off="그래프" data-tg-on="그래프" for="toggle-graph-battery-temperature-internal"></label>
                 </div>
               </th>
-              <th class="param-data">
-                <h2><span id="battery-temperature-internal" class="param-value">0</span><span class="param-unit">&ensp;℃</span></h2>
-              </th>
+              
             </tr>
             <tr>
               <td colspan="2" class="param-graph">
                 <canvas id="graph-battery-temperature-internal" class="graph" width="100%" height="60vh"></canvas>
               </td>
-            </tr>
-            <tr><td>&ensp;</td></tr>
-            
-            <tr>
-              <th class="param-label">
-                <h2><i class="fa-solid fa-fw fa-flux-capacitor"></i>&ensp;용량</h2>
-                <div class="toggle_graph">
-                  <input class="tgl tooltips tgl-skewed" id="tooltip-battery-adaptive-capacity" type="checkbox"/>
-                  <label class="tgl-btn double" data-tg-off="도움말" data-tg-on="도움말" for="tooltip-battery-adaptive-capacity"></label>
-                </div>
-              </th>
-              <th class="param-data">
-                <h2><span id="battery-adaptive-capacity" class="param-value">0</span><span class="param-unit">&ensp;Ah</span></h2>
-              </th>
             </tr>
           </table>
         </div>
@@ -385,20 +241,6 @@
         </h1>
         <div class="content">
           <table class="param" style="margin-top: 1.4rem;">
-            <tr>
-              <th class="param-label" style="padding-top: .4rem;">
-                <h2><i id='inverter-status-indicator' class="fa-solid fa-fw fa-square-exclamation" style="color: red;"></i>&ensp;상태
-                </h2>
-                <div class="toggle_graph">
-                  <input class="tgl tooltips tgl-skewed" id="tooltip-inverter-status" type="checkbox"/>
-                  <label class="tgl-btn double" data-tg-off="세부 정보" data-tg-on="세부 정보" for="tooltip-inverter-status"></label>
-                </div>
-              </th>
-              <th class="param-data" style="text-align: left;">
-                <span id="inverter-status" class="param-subvalue" style="font-size: 1.4rem">N/A</span>
-              </th>
-            </tr>
-            <tr><td>&ensp;</td></tr>
 
             <tr>
               <th class="param-label" style="padding-top: .4rem;">
@@ -410,9 +252,7 @@
                   <label class="tgl-btn" data-tg-off="그래프" data-tg-on="그래프" for="toggle-graph-rpm"></label>
                 </div>
               </th>
-              <th class="param-data">
-                <h2><span id="rpm" class="param-value">0</span><span class="param-unit">&ensp;rpm</span></h2>
-              </th>
+              
             </tr>
             <tr>
               <td colspan="2" class="param-graph">
@@ -431,11 +271,7 @@
                   <label class="tgl-btn" data-tg-off="그래프" data-tg-on="그래프" for="toggle-graph-motor-torque"></label>
                 </div>
               </th>
-              <th class="param-data">
-                <h2>
-                  <span id="motor-torque" class="param-value">0</span><span class="param-unit">&ensp;N·m</span>
-                </h2>
-              </th>
+              
             </tr>
             <tr>
               <td colspan="2" class="param-graph">
@@ -454,11 +290,7 @@
                   <label class="tgl-btn" data-tg-off="그래프" data-tg-on="그래프" for="toggle-graph-motor-temperature"></label>
                 </div>
               </th>
-              <th class="param-data">
-                <h2>
-                  <span id="motor-temperature" class="param-value">0</span><span class="param-unit">&ensp;℃</span>
-                </h2>
-              </th>
+              
             </tr>
             <tr>
               <td colspan="2" class="param-graph">
@@ -477,12 +309,7 @@
                   <label class="tgl-btn" data-tg-off="그래프" data-tg-on="그래프" for="toggle-graph-motor-igbt-temperature"></label>
                 </div>
               </th>
-              <th class="param-data">
-                <h2>
-                  <span id="motor-igbt-temperature" class="param-value">0</span><span class="param-unit">&ensp;℃</span>
-                  <span class="param-unit">&nbsp;#</span><span id="motor-igbt-temperature-id" class="param-subvalue">X</span>
-                </h2>
-              </th>
+              
             </tr>
             <tr>
               <td colspan="2" class="param-graph">
@@ -501,9 +328,7 @@
                   <label class="tgl-btn" data-tg-off="그래프" data-tg-on="그래프" for="toggle-graph-inverter-temperature"></label>
                 </div>
               </th>
-              <th class="param-data">
-                <h2><span id="inverter-temperature" class="param-value">0</span><span class="param-unit">&ensp;℃</span></h2>
-              </th>
+              
             </tr>
             <tr>
               <td colspan="2" class="param-graph">
@@ -512,13 +337,6 @@
             </tr>
             <tr><td>&ensp;</td></tr>
           </table>
-        </div>
-      </article>
-
-      <article id="gps">
-        <h1><i class="fa-solid fa-fw fa-earth-asia"></i>&ensp;GPS</h1>
-        <div class="content" style="padding-left: 0; padding-top: 1rem;">
-          <div id="map" style="width: 100%; height: 40vh;"></div>
         </div>
       </article>
 
@@ -533,25 +351,20 @@
             </colgroup>
             <tr>
               <td><a href="https://db.luftaquila.io/?username=ajouafa&db=a-fa&select=log" target="_blank"><span class="btn green"><i class="fa-solid fa-fw fa-database"></i>&ensp;LOG DB</span></a></td>
-              <td><span id="livecan" class="btn blue"><i class="fa-solid fa-fw fa-tv"></i>&ensp;LIVE CAN</span></td>
-            </tr>
               <td><a href="https://github.com/luftaquila/a-fa" target="_blank"><span class="btn purple"><i class="fa-brands fa-fw fa-github"></i>&ensp;CODE</span></a></td>
-              <td><span id="reset" class="btn red"><i class="fa-solid fa-fw fa-triangle-exclamation"></i>&ensp;초 기 화</span></td>
+            </tr>
           </table>
           
         </div>
       </article>
     </div>
 
-    <script src="/socket.io/socket.io.js"></script>
-    <script src="src/jquery/jquery-3.6.0.slim.min.js"></script>
+    <script src="../src/jquery/jquery-3.6.0.slim.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/chart.js@3.8.2/dist/chart.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/luxon@1.27.0"></script>
     <script src="https://cdn.jsdelivr.net/npm/chartjs-adapter-luxon@1.0.0"></script>
-    <script src="https://cdn.jsdelivr.net/npm/chartjs-plugin-streaming@2.0.0"></script>
     <script src="//cdn.jsdelivr.net/npm/sweetalert2@11"></script>
-    <script src="https://cdn.datatables.net/v/dt/dt-1.12.1/r-2.3.0/sl-1.4.0/datatables.min.js"></script>
     <script type="text/javascript" src="//dapi.kakao.com/v2/maps/sdk.js?appkey=104567b3d9ce11bfc56d92f7c5883307&libraries=clusterer,drawing"></script>
-    <script src="src/script.js"></script>
+    <script src="script.js"></script>
   </body>
 </html>

@@ -173,8 +173,7 @@ const graph = new Chart(document.getElementById("graph"), {
 $("#help").click(function() {
   Swal.fire({
     icon: 'info',
-    title: '도움말',
-    html: `<div style="text-align: left; font-size: 1rem; line-height: 1.5rem;"><h3>사용법</h3><ol><li>저울의 아두이노를 USB 케이블로 컴퓨터와 연결합니다.</li><li><span class="connect noselect btn green" ><i class="fa-solid fa-fw fa-plug"></i>&ensp;연결</span>을 누르고, 표시되는 시리얼 장치와 연결합니다.</li><li>잠시 기다리면 측정값이 표시됩니다</li></ol><h3>주의사항</h3><ul><li><b>영점 조정</b><br>영점은 아두이노가 처음 켜지는 순간을 기준으로 설정됩니다. 영점이 맞지 않는다면 아두이노 보드에 있는 리셋 버튼을 눌러 새로 영점을 맞추세요.<br><br></li><li><b>몇 가지 버그</b><br>기능이 완전하지 않아 가끔 페이지가 멈추거나 튕깁니다(...) 차트가 움직이지 않는다면 탭을 닫고 새 탭에서 재접속해 보세요.<br><br>특히 연결 해제가 정상적으로 작동하지 않습니다. 연결을 해제했다가 다시 연결할 때는 페이지를 새로고침해야 합니다.</li></ul></div>`
+    html: `<div style="text-align: left; font-size: 1rem; line-height: 1.5rem;"><h3>사용법</h3><ol><li>저울의 아두이노를 USB 케이블로 컴퓨터와 연결합니다.</li><li><span class="connect noselect btn green" ><i class="fa-solid fa-fw fa-plug"></i>&ensp;연결</span>을 누르고, 표시되는 시리얼 장치와 연결합니다.</li><li>연결될 때까지 잠시 기다립니다. 10초 이상 기다려도 연결되지 않으면 페이지를 새로고침하고, 연결 상태를 확인한 후 다시 시도하세요.</li></ol><h3>주의사항</h3><ul><li><b>영점 조정</b><br>영점은 아두이노가 처음 켜지는 순간을 기준으로 설정됩니다. 영점이 맞지 않는다면 아두이노 보드에 있는 리셋 버튼을 눌러 새로 영점을 맞추세요.<br><br></li><li><b>몇 가지 버그</b><br>기능이 완전하지 않아 가끔 페이지가 멈추거나 튕깁니다(...)<ul><li>차트가 움직이지 않거나 페이지가 멈춘 것 같다면 멈춘 탭을 닫고, 새 탭에서 재접속해 보세요.</li><li>여러 개러 탭에 이 서비스를 동시에 띄워놓고 사용할 수는 없습니다. 새 탭에서 열었다면, 멈춘 탭은 꼭 닫아 주어야 합니다.</li><li>특히 연결 해제가 정상적으로 작동하지 않습니다. 연결을 해제했다가 다시 연결할 때는 페이지를 새로고침해야 합니다.</li></ul><br></li><li><b>브라우저</b><br>이 서비스는 Web Serial API를 지원하는 Chrome, Edge, Opera 최신 버전 브라우저에서만 작동합니다.</li></ul><div style="text-align: right; margin-top: 1rem">개발: 소프트웨어학과 18학번 <a href="https://luftaquila.io">오병준</a></div></div>`
   });
 });
 
