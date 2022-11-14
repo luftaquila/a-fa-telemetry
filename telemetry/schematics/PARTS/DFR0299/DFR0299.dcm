@@ -1,9 +1,0 @@
-EESchema-DOCLIB  Version 2.0
-#
-$CMP DFR0299
-D DFRobot Accessories DFPlayer
-K
-F https://github.com/Arduinolibrary/DFPlayer_Mini_mp3/raw/master/DFPlayer%20Mini%20Manual.pdf
-$ENDCMP
-#
-#End Doc Library

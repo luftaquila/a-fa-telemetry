@@ -56,6 +56,9 @@ default.size.stdout \
 OBJDUMP_LIST += \
 ECU.list \
 
+OBJCOPY_HEX += \
+ECU.hex \
+
 OBJCOPY_BIN += \
 ECU.bin \
 
@@ -67,8 +70,8 @@ all: main-build
 main-build: ECU.elf secondary-outputs
 
 # Tool invocations
-ECU.elf ECU.map: $(OBJS) $(USER_OBJS) C:\Users\LUFT-AQUILA\Nextcloud\storage\git\a-fa\device\ECU\STM32F407VETX_FLASH.ld makefile objects.list $(OPTIONAL_TOOL_DEPS)
-	arm-none-eabi-gcc -o "ECU.elf" @"objects.list" $(USER_OBJS) $(LIBS) -mcpu=cortex-m4 -T"C:\Users\LUFT-AQUILA\Nextcloud\storage\git\a-fa\device\ECU\STM32F407VETX_FLASH.ld" --specs=nosys.specs -Wl,-Map="ECU.map" -Wl,--gc-sections -static --specs=nano.specs -mfpu=fpv4-sp-d16 -mfloat-abi=hard -mthumb -Wl,--start-group -lc -lm -Wl,--end-group
+ECU.elf ECU.map: $(OBJS) $(USER_OBJS) C:\Users\LUFT-AQUILA\Nextcloud\storage\git\a-fa\telemetry\device\ECU\STM32F407VETX_FLASH.ld makefile objects.list $(OPTIONAL_TOOL_DEPS)
+	arm-none-eabi-gcc -o "ECU.elf" @"objects.list" $(USER_OBJS) $(LIBS) -mcpu=cortex-m4 -T"C:\Users\LUFT-AQUILA\Nextcloud\storage\git\a-fa\telemetry\device\ECU\STM32F407VETX_FLASH.ld" --specs=nosys.specs -Wl,-Map="ECU.map" -Wl,--gc-sections -static --specs=nano.specs -mfpu=fpv4-sp-d16 -mfloat-abi=hard -mthumb -Wl,--start-group -lc -lm -Wl,--end-group
 	@echo 'Finished building target: $@'
 	@echo ' '
 
@@ -82,6 +85,11 @@ ECU.list: $(EXECUTABLES) makefile objects.list $(OPTIONAL_TOOL_DEPS)
 	@echo 'Finished building: $@'
 	@echo ' '
 
+ECU.hex: $(EXECUTABLES) makefile objects.list $(OPTIONAL_TOOL_DEPS)
+	arm-none-eabi-objcopy  -O ihex $(EXECUTABLES) "ECU.hex"
+	@echo 'Finished building: $@'
+	@echo ' '
+
 ECU.bin: $(EXECUTABLES) makefile objects.list $(OPTIONAL_TOOL_DEPS)
 	arm-none-eabi-objcopy  -O binary $(EXECUTABLES) "ECU.bin"
 	@echo 'Finished building: $@'
@@ -89,10 +97,10 @@ ECU.bin: $(EXECUTABLES) makefile objects.list $(OPTIONAL_TOOL_DEPS)
 
 # Other Targets
 clean:
-	-$(RM) ECU.bin ECU.elf ECU.list ECU.map default.size.stdout
+	-$(RM) ECU.bin ECU.elf ECU.hex ECU.list ECU.map default.size.stdout
 	-@echo ' '
 
-secondary-outputs: $(SIZE_OUTPUT) $(OBJDUMP_LIST) $(OBJCOPY_BIN)
+secondary-outputs: $(SIZE_OUTPUT) $(OBJDUMP_LIST) $(OBJCOPY_HEX) $(OBJCOPY_BIN)
 
 fail-specified-linker-script-missing:
 	@echo 'Error: Cannot find the specified linker script. Check the linker settings in the build configuration.'

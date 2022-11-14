@@ -1,9 +1,0 @@
-EESchema-DOCLIB  Version 2.0
-#
-$CMP ADJ14024
-D General Purpose Relays 1 Form C, 24VDC 2-Coil Latch
-K
-F https://www3.panasonic.biz/ac/e_download/control/relay/power/catalog/mech_eng_dj.pdf
-$ENDCMP
-#
-#End Doc Library

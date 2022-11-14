@@ -1022,10 +1022,10 @@ void WiFi_Manager() {
 		HAL_UART_Receive_IT(&huart3, &wifi_rxd, 1);
 	}
 
-	// flush ring buffer on ESP online, wait 5 seconds for stable transmission, send message every 10ms
+	// flush ring buffer on ESP online, wait 5 seconds for stable transmission, send message every 50ms
 	static uint32_t lastSentTime = 0;
 	uint32_t currentTime = HAL_GetTick();
-	if (wifiSocketConnectedTime && currentTime > wifiSocketConnectedTime + 5000 && !ring_buffer_is_empty(&logbuffer) && currentTime > lastSentTime + 10) {
+	if (wifiSocketConnectedTime && currentTime > wifiSocketConnectedTime + 5000 && !ring_buffer_is_empty(&logbuffer) && currentTime > lastSentTime + 50) {
 		uint32_t size = strlen(logbuffer.buffer + logbuffer.tail_index) + 1;
 		uint8_t* buf = malloc(size);
 
@@ -1300,7 +1300,7 @@ int main(void)
   CAN_Setup();
 
   // set accelerometer
-  ACC_Setup();
+  //ACC_Setup();
 
   // set GPS
   GPS_Setup();
@@ -1316,7 +1316,7 @@ int main(void)
 	GPS_Manager();
 	WiFi_Manager();
 	LCD_Manager();
-	ACC_Manager();
+	//ACC_Manager();
     /* USER CODE END WHILE */
 
     /* USER CODE BEGIN 3 */
