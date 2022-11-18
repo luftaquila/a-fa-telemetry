@@ -1,6 +1,11 @@
 let telemetry = { };
 let graphs = { };
 let graph_data = { };
+let log = [ ];
+let graph_time = {
+  start: '',
+  end: ''
+};
 
 loadfile();
 async function loadfile() {
@@ -21,6 +26,12 @@ async function loadfile() {
     for (let line of data.split('\n')) {
       process_telemetry(line);
     }
+
+    graph_time = {
+      start: log[0].datetime,
+      end: log[log.length - 1].datetime,
+    };
+
     drawGraph();
   }
 }
@@ -44,6 +55,12 @@ $("#file").change(async function() {
       for (let line of telemetry.split('\n')) {
         process_telemetry(line);
       }
+
+      graph_time = {
+        start: log[0].datetime,
+        end: log[log.length - 1].datetime,
+      };
+
       drawGraph();
     }
 
@@ -56,7 +73,7 @@ $("#file").change(async function() {
 
     const urlParams = new URLSearchParams(window.location.search);
     urlParams.set('file', file.name);
-    window.location.search = urlParams;
+    window.history.pushState({}, '', '?' + urlParams);
   }
 });
 
@@ -64,7 +81,7 @@ $("#file").change(async function() {
 function process_telemetry(data) {
   try {
     if(data[0] === '!') {
-      data = data.substring(1, data.length - 1).split('\t').filter(o => o).map(o => o.trim().replace(/\[|\]/g, ""));
+      data = data.substring(1, data.length).split('\t').filter(o => o).map(o => o.trim().replace(/\[|\]/g, ""));
       if(data.length != 5) return;
 
       data = {
@@ -198,6 +215,7 @@ function process_telemetry(data) {
           }
           break;
       }
+      log.push(data);
       process_data(data);
     }
   } catch(e) { console.log(e); }
@@ -214,10 +232,12 @@ function process_data(data) {
     case "ECU": {
       switch (data.key) {
         case "TEMPERATURE":
-          graph_data['graph-core-temperature'].push({
-            x: data.datetime,
-            y: data.value / 10
-          });
+          if ( data.value > 0 && validator(graph_data['graph-core-temperature'], data.value / 10, 10) ) {
+            graph_data['graph-core-temperature'].push({
+              x: data.datetime,
+              y: data.value / 10
+            });
+          }
           break;
       }
     }
@@ -261,7 +281,7 @@ function process_data(data) {
     case "INV": {
       switch (data.key) {
         case "CAN_INV_ANALOG_IN":
-          if ( validator(graph_data['graph-acceleration'], data.data.accelerator, 100) ) {
+          if ( data.data.brake < 100 && data.data.accelerator > 0 && validator(graph_data['graph-braking'], data.data.brake, 50) ) {
             graph_data['graph-acceleration'].push({
               x: data.datetime,
               y: data.data.accelerator
@@ -393,13 +413,10 @@ function drawGraph() {
                 hour: 'h:mm:ss',
                 minute: 'h:mm:ss',
                 second: 'h:mm:ss'
-              }
+              },
             },
-            realtime: {
-              duration: 60000,
-              refresh: 500,
-              delay: graph_config[canvas.id].delay
-            }
+            min: graph_time.start,
+            max: graph_time.end,
           },
           y: {
             grace: graph_config[canvas.id].grace
