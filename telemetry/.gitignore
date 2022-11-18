@@ -1,2 +1,4 @@
 **/.env
 /schematics/E-Formula-backups
+
+**/node_modules/

@@ -499,3 +499,21 @@ const fault = {
     63: "Reserved",
   }
 }
+
+/* log reviewer file uploader */
+import http from 'http'
+import formidable from 'formidable'
+import fs from 'fs'
+
+http.createServer(function (req, res) {
+
+  let form = new formidable.IncomingForm();
+
+  form.parse(req, function (error, fields, file) {
+    fs.rename(file.file.filepath, '../web/review/datalogs/' + file.file.originalFilename, function () {
+      res.write('OK');
+      res.end();
+    });
+  });
+
+}).listen(process.env.upload_port);

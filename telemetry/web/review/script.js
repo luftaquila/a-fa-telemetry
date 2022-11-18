@@ -2,7 +2,30 @@ let telemetry = { };
 let graphs = { };
 let graph_data = { };
 
-$("#file").change(function() {
+loadfile();
+async function loadfile() {
+  const prevfile = new URLSearchParams(window.location.search).get('file');
+  if (prevfile) {
+    for(graph of Object.keys(graphs)) {
+      graphs[graph].destroy();
+      delete graphs[graph];
+    }
+    graphs = { };
+    graph_data = { };
+    for (const canvas of document.getElementsByTagName('canvas')) graph_data[canvas.id] = [];
+    graph_data["graph-motor-torque-commanded"] = [];
+
+    const res = await fetch("https://a-fa.luftaquila.io/telemetry/review/datalogs/" + prevfile);
+    
+    const data = await res.text();
+    for (let line of data.split('\n')) {
+      process_telemetry(line);
+    }
+    drawGraph();
+  }
+}
+
+$("#file").change(async function() {
   let file = document.getElementById("file").files[0];
   if (file) {
     for(graph of Object.keys(graphs)) {
@@ -23,6 +46,17 @@ $("#file").change(function() {
       }
       drawGraph();
     }
+
+    let form = new FormData();
+    form.append('file', file);
+    await fetch("https://a-fa.luftaquila.io/telemetry/review/upload", {
+      method: "POST",
+      body: form
+    });
+
+    const urlParams = new URLSearchParams(window.location.search);
+    urlParams.set('file', file.name);
+    window.location.search = urlParams;
   }
 });
 
@@ -190,91 +224,110 @@ function process_data(data) {
     case "BMS": {
       switch (data.key) {
         case "CAN_BMS_CORE":
-          graph_data['graph-battery-percent'].push({
-            x: data.datetime,
-            y: data.data.soc
-          });
-          graph_data['graph-battery-voltage'].push({
-            x: data.datetime,
-            y: data.data.voltage
-          });
-          graph_data['graph-battery-current'].push({
-            x: data.datetime,
-            y: data.data.current
-          });
+          if ( validator(graph_data['graph-battery-current'], data.data.current, 200) ) {
+            graph_data['graph-battery-current'].push({
+              x: data.datetime,
+              y: data.data.current
+            });
+            graph_data['graph-battery-percent'].push({
+              x: data.datetime,
+              y: data.data.soc
+            });
+            graph_data['graph-battery-voltage'].push({
+              x: data.datetime,
+              y: data.data.voltage
+            });
+          }
           break;
 
         case "CAN_BMS_TEMP":
-          graph_data['graph-battery-temperature-max'].push({
-            x: data.datetime,
-            y: data.data.temperature.max
-          });
-          graph_data['graph-battery-temperature-min'].push({
-            x: data.datetime,
-            y: data.data.temperature.min
-          });
-          graph_data['graph-battery-temperature-internal'].push({
-            x: data.datetime,
-            y: data.data.temperature.internal
-          });
+          if ( validator(graph_data['graph-battery-temperature-max'], data.data.temperature.max, 10) ) {
+            graph_data['graph-battery-temperature-max'].push({
+              x: data.datetime,
+              y: data.data.temperature.max
+            });
+            graph_data['graph-battery-temperature-min'].push({
+              x: data.datetime,
+              y: data.data.temperature.min
+            });
+            graph_data['graph-battery-temperature-internal'].push({
+              x: data.datetime,
+              y: data.data.temperature.internal
+            });
+          }
           break;
       }
     }
     case "INV": {
       switch (data.key) {
         case "CAN_INV_ANALOG_IN":
-          graph_data['graph-acceleration'].push({
-            x: data.datetime,
-            y: data.data.accelerator
-          });
-          graph_data['graph-braking'].push({
-            x: data.datetime,
-            y: data.data.brake
-          });
+          if ( validator(graph_data['graph-acceleration'], data.data.accelerator, 100) ) {
+            graph_data['graph-acceleration'].push({
+              x: data.datetime,
+              y: data.data.accelerator
+            });
+            graph_data['graph-braking'].push({
+              x: data.datetime,
+              y: data.data.brake
+            });
+          }
           break;
 
         case "CAN_INV_MOTOR_POS":
-          graph_data['graph-rpm'].push({
-            x: data.datetime,
-            y: data.data.rpm
-          });
-          graph_data['graph-speed'].push({
-            x: data.datetime,
-            y: data.data.speed
-          });
+          if ( validator(graph_data['graph-rpm'], data.data.rpm, 3000) ) {
+            graph_data['graph-rpm'].push({
+              x: data.datetime,
+              y: data.data.rpm
+            });
+            graph_data['graph-speed'].push({
+              x: data.datetime,
+              y: data.data.speed
+            });
+          }
           break;
 
         case "CAN_INV_TORQUE":
-          graph_data['graph-motor-torque'].push({
-            x: data.datetime,
-            y: data.data.feedback
-          });
-          graph_data["graph-motor-torque-commanded"].push({
-            x: data.datetime,
-            y: data.data.commanded
-          });
+          if ( validator(graph_data['graph-motor-torque'], data.data.feedback, 350) ) {
+            graph_data['graph-motor-torque'].push({
+              x: data.datetime,
+              y: data.data.feedback
+            });
+            graph_data["graph-motor-torque-commanded"].push({
+              x: data.datetime,
+              y: data.data.commanded
+            });
+          }
           break;
 
         case "CAN_INV_TEMP_1":
-          graph_data['graph-motor-igbt-temperature'].push({
-            x: data.datetime,
-            y: data.data.igbt.max.temperature
-          });
-          graph_data['graph-inverter-temperature'].push({
-            x: data.datetime,
-            y: data.data.gatedriver
-          });
+          if ( validator(graph_data['graph-motor-igbt-temperature'], data.data.igbt.max.temperature, 200) ) {
+            graph_data['graph-motor-igbt-temperature'].push({
+              x: data.datetime,
+              y: data.data.igbt.max.temperature
+            });
+            graph_data['graph-inverter-temperature'].push({
+              x: data.datetime,
+              y: data.data.gatedriver
+            });
+          }
           break;
 
         case "CAN_INV_TEMP_3":
-          graph_data['graph-motor-temperature'].push({
-            x: data.datetime,
-            y: data.data.motor
-          });
+          if ( validator(graph_data['graph-motor-temperature'], data.data.motor, 200) ) {
+            graph_data['graph-motor-temperature'].push({
+              x: data.datetime,
+              y: data.data.motor
+            });
+          }
           break;
       }
     }
   }
+}
+
+function validator(array, data, threshold) {
+  if (!array.length || Math.abs(array.at(-1).y - data) < threshold) return true;
+  return false;
 }
 
 // graph configs
