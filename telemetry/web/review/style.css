@@ -124,7 +124,7 @@ article {
   background-color: white;
   border-radius: 10px;
   min-width: 320px;
-  width: 500px;
+  width: 25vw; /* 40vw */
   max-width: 600px;
 }
 
@@ -227,4 +227,8 @@ div.failsafe-desc {
 ul {
   margin-top: 0rem;
   line-height: 1.75rem;;
+}
+
+.swal-wide{
+  width:90vw !important;
 }

@@ -507,13 +507,22 @@ import fs from 'fs'
 
 http.createServer(function (req, res) {
 
-  let form = new formidable.IncomingForm();
-
-  form.parse(req, function (error, fields, file) {
-    fs.rename(file.file.filepath, '../web/review/datalogs/' + file.file.originalFilename, function () {
-      res.write('OK');
-      res.end();
+  if (req.method == 'GET') {
+    fs.readdir('../web/review/datalogs', function (err, files) {
+      res.write(JSON.stringify(files));
+      res.end()
     });
-  });
+  }
+
+  else if (req.method == 'POST') {
+    let form = new formidable.IncomingForm();
+
+    form.parse(req, function (error, fields, file) {
+      fs.rename(file.file.filepath, '../web/review/datalogs/' + file.file.originalFilename, function () {
+        res.write('OK');
+        res.end();
+      });
+    });
+  }
 
 }).listen(process.env.upload_port);

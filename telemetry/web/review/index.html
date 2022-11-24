@@ -24,8 +24,15 @@
       </div>
   
       <div style="margin-top: 1rem;">
-        <span style="font-size: 1.5rem; font-weight: bold;">로그 파일 선택</span><br>
-        <input id="file" type="file" name="file" accept=".log" style="margin-top: 1rem; margin-left: 2rem;">
+        <span style="font-size: 1.5rem; font-weight: bold;">로그 파일 업로드</span><br>
+        <input id="file" type="file" name="file" accept=".log" style="margin-top: 1rem; margin-left:2rem;">
+      </div>
+  
+      <div style="margin-top: 1rem;">
+        <span style="font-size: 1.5rem; font-weight: bold;">이전 로그 파일</span><br>
+        <select id="prevlog" style="margin-top: 1rem; margin-left: 1rem;">
+          <option role="placeholder" value="" disabled selected>로그 파일 선택</option>
+        </select>
       </div>
     </div>
 
@@ -44,6 +51,8 @@
                   <label class="tgl-btn" data-tg-off="도움말" data-tg-on="도움말" for="tooltip-speed"></label>
                   <input class="tgl toggle-graph tgl-skewed" id="toggle-graph-speed" type="checkbox"/>
                   <label class="tgl-btn" data-tg-off="그래프" data-tg-on="그래프" for="toggle-graph-speed"></label>
+                  <input class="tgl enlarge-graph tgl-skewed" id="enlarge-graph-speed" type="checkbox"/>
+                  <label class="tgl-btn" data-tg-off="확대" data-tg-on="확대" for="enlarge-graph-speed"></label>
                 </div>
               </th>
               
@@ -63,6 +72,8 @@
                   <label class="tgl-btn" data-tg-off="도움말" data-tg-on="도움말" for="tooltip-acceleration"></label>
                   <input class="tgl toggle-graph tgl-skewed" id="toggle-graph-acceleration" type="checkbox"/>
                   <label class="tgl-btn" data-tg-off="그래프" data-tg-on="그래프" for="toggle-graph-acceleration"></label>
+                  <input class="tgl enlarge-graph tgl-skewed" id="enlarge-graph-acceleration" type="checkbox"/>
+                  <label class="tgl-btn" data-tg-off="확대" data-tg-on="확대" for="enlarge-graph-acceleration"></label>
                 </div>
               </th>
               
@@ -82,6 +93,8 @@
                   <label class="tgl-btn" data-tg-off="도움말" data-tg-on="도움말" for="tooltip-braking"></label>
                   <input class="tgl toggle-graph tgl-skewed" id="toggle-graph-braking" type="checkbox"/>
                   <label class="tgl-btn" data-tg-off="그래프" data-tg-on="그래프" for="toggle-graph-braking"></label>
+                  <input class="tgl enlarge-graph tgl-skewed" id="enlarge-graph-braking" type="checkbox"/>
+                  <label class="tgl-btn" data-tg-off="확대" data-tg-on="확대" for="enlarge-graph-braking"></label>
                 </div>
               </th>
               
@@ -101,6 +114,8 @@
                   <label class="tgl-btn" data-tg-off="도움말" data-tg-on="도움말" for="tooltip-core-temperature"></label>
                   <input class="tgl toggle-graph tgl-skewed" id="toggle-graph-core-temperature" type="checkbox"/>
                   <label class="tgl-btn" data-tg-off="그래프" data-tg-on="그래프" for="toggle-graph-core-temperature"></label>
+                  <input class="tgl enlarge-graph tgl-skewed" id="enlarge-graph-core-temperature" type="checkbox"/>
+                  <label class="tgl-btn" data-tg-off="확대" data-tg-on="확대" for="enlarge-graph-core-temperature"></label>
                 </div>
               </th>
               
@@ -127,6 +142,8 @@
                   <label class="tgl-btn" data-tg-off="도움말" data-tg-on="도움말" for="tooltip-battery-percent"></label>
                   <input class="tgl toggle-graph tgl-skewed" id="toggle-graph-battery-percent" type="checkbox"/>
                   <label class="tgl-btn" data-tg-off="그래프" data-tg-on="그래프" for="toggle-graph-battery-percent"></label>
+                  <input class="tgl enlarge-graph tgl-skewed" id="enlarge-graph-battery-percent" type="checkbox"/>
+                  <label class="tgl-btn" data-tg-off="확대" data-tg-on="확대" for="enlarge-graph-battery-percent"></label>
                 </div>
               </th>
               
@@ -146,6 +163,8 @@
                   <label class="tgl-btn" data-tg-off="도움말" data-tg-on="도움말" for="tooltip-battery-voltage"></label>
                   <input class="tgl toggle-graph tgl-skewed" id="toggle-graph-battery-voltage" type="checkbox"/>
                   <label class="tgl-btn" data-tg-off="그래프" data-tg-on="그래프" for="toggle-graph-battery-voltage"></label>
+                  <input class="tgl enlarge-graph tgl-skewed" id="enlarge-graph-battery-voltage" type="checkbox"/>
+                  <label class="tgl-btn" data-tg-off="확대" data-tg-on="확대" for="enlarge-graph-battery-voltage"></label>
                 </div>
               </th>
               
@@ -165,6 +184,8 @@
                   <label class="tgl-btn" data-tg-off="도움말" data-tg-on="도움말" for="tooltip-battery-current"></label>
                   <input class="tgl toggle-graph tgl-skewed" id="toggle-graph-battery-current" type="checkbox"/>
                   <label class="tgl-btn" data-tg-off="그래프" data-tg-on="그래프" for="toggle-graph-battery-current"></label>
+                  <input class="tgl enlarge-graph tgl-skewed" id="enlarge-graph-battery-current" type="checkbox"/>
+                  <label class="tgl-btn" data-tg-off="확대" data-tg-on="확대" for="enlarge-graph-battery-current"></label>
                 </div>
               </th>
               
@@ -184,6 +205,8 @@
                   <label class="tgl-btn" data-tg-off="도움말" data-tg-on="도움말" for="tooltip-battery-temperature-max"></label>
                   <input class="tgl toggle-graph tgl-skewed" id="toggle-graph-battery-temperature-max" type="checkbox"/>
                   <label class="tgl-btn" data-tg-off="그래프" data-tg-on="그래프" for="toggle-graph-battery-temperature-max"></label>
+                  <input class="tgl enlarge-graph tgl-skewed" id="enlarge-graph-battery-temperature-max" type="checkbox"/>
+                  <label class="tgl-btn" data-tg-off="확대" data-tg-on="확대" for="enlarge-graph-battery-temperature-max"></label>
                 </div>
               </th>
               
@@ -203,6 +226,8 @@
                   <label class="tgl-btn" data-tg-off="도움말" data-tg-on="도움말" for="tooltip-battery-temperature-min"></label>
                   <input class="tgl toggle-graph tgl-skewed" id="toggle-graph-battery-temperature-min" type="checkbox"/>
                   <label class="tgl-btn" data-tg-off="그래프" data-tg-on="그래프" for="toggle-graph-battery-temperature-min"></label>
+                  <input class="tgl enlarge-graph tgl-skewed" id="enlarge-graph-battery-temperature-min" type="checkbox"/>
+                  <label class="tgl-btn" data-tg-off="확대" data-tg-on="확대" for="enlarge-graph-battery-temperature-min"></label>
                 </div>
               </th>
               
@@ -222,6 +247,8 @@
                   <label class="tgl-btn" data-tg-off="도움말" data-tg-on="도움말" for="tooltip-battery-temperature-internal"></label>
                   <input class="tgl toggle-graph tgl-skewed" id="toggle-graph-battery-temperature-internal" type="checkbox"/>
                   <label class="tgl-btn" data-tg-off="그래프" data-tg-on="그래프" for="toggle-graph-battery-temperature-internal"></label>
+                  <input class="tgl enlarge-graph tgl-skewed" id="enlarge-graph-battery-temperature-internal" type="checkbox"/>
+                  <label class="tgl-btn" data-tg-off="확대" data-tg-on="확대" for="enlarge-graph-battery-temperature-internal"></label>
                 </div>
               </th>
               
@@ -250,6 +277,8 @@
                   <label class="tgl-btn" data-tg-off="도움말" data-tg-on="도움말" for="tooltip-rpm"></label>
                   <input class="tgl toggle-graph tgl-skewed" id="toggle-graph-rpm" type="checkbox"/>
                   <label class="tgl-btn" data-tg-off="그래프" data-tg-on="그래프" for="toggle-graph-rpm"></label>
+                  <input class="tgl enlarge-graph tgl-skewed" id="enlarge-graph-rpm" type="checkbox"/>
+                  <label class="tgl-btn" data-tg-off="확대" data-tg-on="확대" for="enlarge-graph-rpm"></label>
                 </div>
               </th>
               
@@ -269,6 +298,8 @@
                   <label class="tgl-btn" data-tg-off="도움말" data-tg-on="도움말" for="tooltip-motor-torque"></label>
                   <input class="tgl toggle-graph tgl-skewed" id="toggle-graph-motor-torque" type="checkbox"/>
                   <label class="tgl-btn" data-tg-off="그래프" data-tg-on="그래프" for="toggle-graph-motor-torque"></label>
+                  <input class="tgl enlarge-graph tgl-skewed" id="enlarge-graph-motor-torque" type="checkbox"/>
+                  <label class="tgl-btn" data-tg-off="확대" data-tg-on="확대" for="enlarge-graph-motor-torque"></label>
                 </div>
               </th>
               
@@ -288,6 +319,8 @@
                   <label class="tgl-btn" data-tg-off="도움말" data-tg-on="도움말" for="tooltip-motor-temperature"></label>
                   <input class="tgl toggle-graph tgl-skewed" id="toggle-graph-motor-temperature" type="checkbox"/>
                   <label class="tgl-btn" data-tg-off="그래프" data-tg-on="그래프" for="toggle-graph-motor-temperature"></label>
+                  <input class="tgl enlarge-graph tgl-skewed" id="enlarge-graph-motor-temperature" type="checkbox"/>
+                  <label class="tgl-btn" data-tg-off="확대" data-tg-on="확대" for="enlarge-graph-motor-temperature"></label>
                 </div>
               </th>
               
@@ -307,6 +340,8 @@
                   <label class="tgl-btn" data-tg-off="도움말" data-tg-on="도움말" for="tooltip-motor-igbt-temperature"></label>
                   <input class="tgl toggle-graph tgl-skewed" id="toggle-graph-motor-igbt-temperature" type="checkbox"/>
                   <label class="tgl-btn" data-tg-off="그래프" data-tg-on="그래프" for="toggle-graph-motor-igbt-temperature"></label>
+                  <input class="tgl enlarge-graph tgl-skewed" id="enlarge-graph-motor-igbt-temperature" type="checkbox"/>
+                  <label class="tgl-btn" data-tg-off="확대" data-tg-on="확대" for="enlarge-graph-motor-igbt-temperature"></label>
                 </div>
               </th>
               
@@ -326,6 +361,8 @@
                   <label class="tgl-btn" data-tg-off="도움말" data-tg-on="도움말" for="tooltip-inverter-temperature"></label>
                   <input class="tgl toggle-graph tgl-skewed" id="toggle-graph-inverter-temperature" type="checkbox"/>
                   <label class="tgl-btn" data-tg-off="그래프" data-tg-on="그래프" for="toggle-graph-inverter-temperature"></label>
+                  <input class="tgl enlarge-graph tgl-skewed" id="enlarge-graph-inverter-temperature" type="checkbox"/>
+                  <label class="tgl-btn" data-tg-off="확대" data-tg-on="확대" for="enlarge-graph-inverter-temperature"></label>
                 </div>
               </th>
               

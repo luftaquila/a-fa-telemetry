@@ -9,6 +9,11 @@ let graph_time = {
 
 loadfile();
 async function loadfile() {
+  const res = await fetch("https://a-fa.luftaquila.io/telemetry/review/list");
+  for (const log of JSON.parse(await res.text()).reverse()) {
+    $('#prevlog').append(`<option value="${log}">${log}</option>`);
+  }
+
   const prevfile = new URLSearchParams(window.location.search).get('file');
   if (prevfile) {
     for(graph of Object.keys(graphs)) {
@@ -35,6 +40,12 @@ async function loadfile() {
     drawGraph();
   }
 }
+
+$("#prevlog").change(function() {
+  const urlParams = new URLSearchParams(window.location.search);
+  urlParams.set('file', $("#prevlog option:selected").text());
+  window.location.search = urlParams;
+});
 
 $("#file").change(async function() {
   let file = document.getElementById("file").files[0];
@@ -244,7 +255,7 @@ function process_data(data) {
     case "BMS": {
       switch (data.key) {
         case "CAN_BMS_CORE":
-          if ( validator(graph_data['graph-battery-current'], data.data.current, 200) ) {
+          if ( validator(graph_data['graph-battery-percent'], data.data.soc, 20) ) {
             graph_data['graph-battery-current'].push({
               x: data.datetime,
               y: data.data.current
@@ -294,7 +305,7 @@ function process_data(data) {
           break;
 
         case "CAN_INV_MOTOR_POS":
-          if ( validator(graph_data['graph-rpm'], data.data.rpm, 3000) ) {
+          if ( data.data.rpm < 6000 && data.data.rpm > -100 ) {
             graph_data['graph-rpm'].push({
               x: data.datetime,
               y: data.data.rpm
@@ -307,7 +318,7 @@ function process_data(data) {
           break;
 
         case "CAN_INV_TORQUE":
-          if ( validator(graph_data['graph-motor-torque'], data.data.feedback, 350) ) {
+          if ( data.data.feedback < 200 && data.data.feedback > -100 && validator(graph_data['graph-motor-torque'], data.data.feedback, 350) ) {
             graph_data['graph-motor-torque'].push({
               x: data.datetime,
               y: data.data.feedback
@@ -320,7 +331,7 @@ function process_data(data) {
           break;
 
         case "CAN_INV_TEMP_1":
-          if ( validator(graph_data['graph-motor-igbt-temperature'], data.data.igbt.max.temperature, 200) ) {
+          if ( validator(graph_data['graph-motor-igbt-temperature'], data.data.igbt.max.temperature, 10) ) {
             graph_data['graph-motor-igbt-temperature'].push({
               x: data.datetime,
               y: data.data.igbt.max.temperature
@@ -438,6 +449,78 @@ function drawGraph() {
     });
   }
 }
+
+$('input.enlarge-graph').on('change', e => {
+  if ($(e.target).prop('checked')) {
+    const target = e.target.id.replace('enlarge-', '');
+
+    Swal.fire({
+      html: `<canvas id='enlarge-graph' class="graph" width="100%" height="60vh"></canvas>`,
+      customClass: 'swal-wide',
+      willOpen: () => {
+        let canvas = { id: target };
+
+        new Chart(document.getElementById('enlarge-graph'), {
+          type: 'line',
+          data: {
+            datasets: [{
+              data: graph_data[canvas.id],
+              cubicInterpolationMode: 'monotone',
+              tension: 0.2,
+              borderColor: graph_config[canvas.id].color
+            }, ((canvas.id == "graph-motor-torque") ? {
+              data: graph_data["graph-motor-torque-commanded"],
+              cubicInterpolationMode: 'monotone',
+              tension: 0.2,
+              borderColor: 'rgb(255, 159, 64)'
+            } : {})
+          ]
+          },
+          options: {
+            responsive: true,
+            interaction: {
+              intersect: false,
+            },
+            scales: {
+              x: {
+                type: 'time',
+                distribution: 'linear',
+                time: {
+                  unit: 'second',
+                  unitStepSize: 15,
+                  stepSize: 15,
+                  displayFormats: {
+                    hour: 'h:mm:ss',
+                    minute: 'h:mm:ss',
+                    second: 'h:mm:ss'
+                  },
+                },
+                min: graph_time.start,
+                max: graph_time.end,
+              },
+              y: {
+                grace: graph_config[canvas.id].grace
+              }
+            },
+            plugins: {
+              legend: {
+                display: false
+              }
+            },
+            elements: {
+              point: {
+                borderWidth: 0,
+                radius: 10,
+                backgroundColor: 'rgba(0, 0, 0, 0)'
+              }
+            }
+          }
+        });
+      },
+      willClose: () => e.target.click(),
+    });
+  }
+});
 
 // on tooltip toggle
 $('input.tooltips').on('change', e => {
