@@ -23,7 +23,7 @@
 
 /* USER CODE BEGIN 0 */
 extern FIL logfile;
-extern LOG log_data;
+extern LOG syslog;
 char logname[30];
 
 int SD_SETUP(uint64_t boot) {
@@ -57,7 +57,7 @@ int SD_SETUP(uint64_t boot) {
 
 int SD_WRITE() {
   uint32_t written_count;
-  int ret = f_write(&logfile, &log_data, 16 /* sizeof(LOG) */, (void *)&written_count);
+  int ret = f_write(&logfile, &syslog, 16 /* sizeof(LOG) */, (void *)&written_count);
   if (ret != FR_OK) {
     #ifdef DEBUG_MODE
       printf("[%8lu] [ERR] SD write failed: %d\n", HAL_GetTick(), ret);

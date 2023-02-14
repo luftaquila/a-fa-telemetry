@@ -50,7 +50,7 @@
 ERROR_CODE err;
 
 FIL logfile;
-LOG log_data;
+LOG syslog;
 
 int timer_flag[8] = { 0, };
 /* USER CODE END PV */
@@ -130,15 +130,29 @@ int main(void)
     #endif
   }
 
-  /*
+  syslog.value[0] = 1;
+  SYS_LOG(LOG_INFO, ECU, ECU_BOOT);
+
   ret = ESP_SETUP();
   if (ret != 0) {
     #ifdef DEBUG_MODE
       printf("[%8lu] [ERR] ESP setup failed: %d\n", HAL_GetTick(), ret);
     #endif
+
+    syslog.value[0] = 0;
+    SYS_LOG(LOG_ERROR, ESP, ESP_SETUP);
   }
 
-  LCD_SETUP();
+  ret = LCD_SETUP();
+  if (ret != 0) {
+    #ifdef DEBUG_MODE
+      printf("[%8lu] [ERR] LCD setup failed: %d\n", HAL_GetTick(), ret);
+    #endif
+
+    syslog.value[0] = 0;
+    SYS_LOG(LOG_ERROR, ESP, ESP_SETUP);
+  }
+
   CAN_SETUP();
   ANALOG_SETUP();
   GPS_SETUP();

@@ -10,13 +10,16 @@
 #include "sdio.h"
 #include "i2c.h"
 
-extern LOG log_data;
+extern LOG syslog;
 
-inline int SYS_LOG() {
+inline int SYS_LOG(LOG_LEVEL level, LOG_SOURCE source, int key) {
+  syslog.timestamp = HAL_GetTick();
+  syslog.level = level;
+  syslog.source = source;
+  syslog.key = key;
+
   SD_WRITE();
-
-  // i2c transmit
-  HAL_I2C_Master_Transmit_IT(&hi2c1, ESP_I2C_ADDR, (uint8_t *)&log_data, 16 /* sizeof(LOG) */);
+  // HAL_I2C_Master_Transmit_IT(&hi2c1, ESP_I2C_ADDR, (uint8_t *)&syslog, 16 /* sizeof(LOG) */);
 
   return 0;
 }

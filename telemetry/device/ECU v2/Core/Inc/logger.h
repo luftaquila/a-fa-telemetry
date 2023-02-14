@@ -11,7 +11,7 @@
 #include "main.h"
 
 /* Prototypes */
-int SYS_LOG();
+inline int SYS_LOG(LOG_LEVEL level, LOG_SOURCE source, int key);
 
 /* system log data type */
 typedef struct {
@@ -51,7 +51,8 @@ typedef enum {
 } LOG_KEY_ECU;
 
 typedef enum {
-  ESP_REMOTE_CONNECT = 0,
+  ESP_SETUP = 0,
+  ESP_REMOTE_CONNECT,
   ESP_RTC_SYNC,
 } LOG_KEY_ESP;
 
@@ -95,12 +96,19 @@ typedef enum {
 } LOG_KEY_GPIO;
 
 typedef enum {
-  ACC_DATA = 0,
+  ACC_SETUP = 0,
+  ACC_DATA,
 } LOG_KEY_ACC;
 
 typedef enum {
-  GPS_DATA = 0,
+  GPS_SETUP = 0,
+  GPS_DATA,
 } LOG_KEY_GPS;
+
+typedef enum {
+  LCD_SETUP = 0,
+  LCD_DATA,
+} LOG_KEY_LCD;
 
 
 #endif /* INC_LOGGER_H_ */

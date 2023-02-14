@@ -21,7 +21,19 @@
 #include "i2c.h"
 
 /* USER CODE BEGIN 0 */
+int ESP_SETUP() {
+  // i2c init
+  
+  // RTC SYNC
+  
+  return 0;
+}
 
+int LCD_SETUP() {
+  // lcd init
+  
+  return 0;
+}
 /* USER CODE END 0 */
 
 I2C_HandleTypeDef hi2c1;
