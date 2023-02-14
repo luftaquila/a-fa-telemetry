@@ -19,10 +19,11 @@
 /* USER CODE END Header */
 /* Includes ------------------------------------------------------------------*/
 #include "sdio.h"
+#include "logger.h"
 
 /* USER CODE BEGIN 0 */
 extern FIL logfile;
-extern LOG log;
+extern LOG log_data;
 char logname[30];
 
 int SD_SETUP(uint64_t boot) {
@@ -41,7 +42,7 @@ int SD_SETUP(uint64_t boot) {
          (uint32_t)(boot >> 48), (uint32_t)(boot << 16 >> 56), (uint32_t)(boot << 24 >> 56),
          (uint32_t)(boot << 32 >> 56), (uint32_t)(boot << 40 >> 56), (uint32_t)(boot << 48 >> 56));
 
-  ret = f_open(logfile, logname, FA_OPEN_APPEND | FA_WRITE);
+  ret = f_open(&logfile, logname, FA_OPEN_APPEND | FA_WRITE);
   if (ret != FR_OK) {
     #ifdef DEBUG_MODE
       printf("[%8lu] [ERR] SD open failed: %d\n", HAL_GetTick(), ret);
@@ -56,7 +57,7 @@ int SD_SETUP(uint64_t boot) {
 
 int SD_WRITE() {
   uint32_t written_count;
-  int ret = f_write(logfile, &log, 16 /* sizeof(LOG) */, (void *)&written_count);
+  int ret = f_write(&logfile, &log_data, 16 /* sizeof(LOG) */, (void *)&written_count);
   if (ret != FR_OK) {
     #ifdef DEBUG_MODE
       printf("[%8lu] [ERR] SD write failed: %d\n", HAL_GetTick(), ret);
@@ -67,7 +68,7 @@ int SD_WRITE() {
 }
 
 int SD_SYNC() {
-  int ret = f_sync(logfile);
+  int ret = f_sync(&logfile);
   if (ret != FR_OK) {
     #ifdef DEBUG_MODE
       printf("[%8lu] [ERR] SD sync failed: %d\n", HAL_GetTick(), ret);

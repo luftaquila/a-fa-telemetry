@@ -42,7 +42,7 @@ Core/Src/sdio.o: ../Core/Src/sdio.c ../Core/Inc/sdio.h ../Core/Inc/main.h \
  ../Core/Inc/main.h ../FATFS/Target/bsp_driver_sd.h \
  ../FATFS/Target/fatfs_platform.h \
  ../Middlewares/Third_Party/FatFs/src/diskio.h ../Core/Inc/tim.h \
- ../Core/Inc/sdio.h
+ ../Core/Inc/sdio.h ../Core/Inc/logger.h
 ../Core/Inc/sdio.h:
 ../Core/Inc/main.h:
 ../Drivers/STM32F4xx_HAL_Driver/Inc/stm32f4xx_hal.h:
@@ -93,3 +93,4 @@ Core/Src/sdio.o: ../Core/Src/sdio.c ../Core/Inc/sdio.h ../Core/Inc/main.h \
 ../Middlewares/Third_Party/FatFs/src/diskio.h:
 ../Core/Inc/tim.h:
 ../Core/Inc/sdio.h:
+../Core/Inc/logger.h:

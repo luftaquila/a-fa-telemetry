@@ -50,6 +50,7 @@
 ERROR_CODE err;
 
 FIL logfile;
+LOG log_data;
 
 int timer_flag[8] = { 0, };
 /* USER CODE END PV */
@@ -122,7 +123,7 @@ int main(void)
     Error_Handler();
   }
 
-  ret = SD_SETUP(&logfile, boot);
+  ret = SD_SETUP(boot);
   if (ret != 0) {
     #ifdef DEBUG_MODE
       printf("[%8lu] [ERR] SD setup failed: %d\n", HAL_GetTick(), ret);

@@ -37,7 +37,13 @@ Core/Src/logger.o: ../Core/Src/logger.c ../Core/Inc/logger.h \
  ../Drivers/STM32F4xx_HAL_Driver/Inc/stm32f4xx_hal_tim.h \
  ../Drivers/STM32F4xx_HAL_Driver/Inc/stm32f4xx_hal_tim_ex.h \
  ../Drivers/STM32F4xx_HAL_Driver/Inc/stm32f4xx_hal_uart.h \
- ../Core/Inc/types.h
+ ../Core/Inc/types.h ../Core/Inc/sdio.h \
+ ../Middlewares/Third_Party/FatFs/src/ff.h \
+ ../Middlewares/Third_Party/FatFs/src/integer.h ../FATFS/Target/ffconf.h \
+ ../Core/Inc/main.h ../FATFS/Target/bsp_driver_sd.h \
+ ../FATFS/Target/fatfs_platform.h \
+ ../Middlewares/Third_Party/FatFs/src/diskio.h ../Core/Inc/tim.h \
+ ../Core/Inc/sdio.h ../Core/Inc/i2c.h
 ../Core/Inc/logger.h:
 ../Core/Inc/main.h:
 ../Drivers/STM32F4xx_HAL_Driver/Inc/stm32f4xx_hal.h:
@@ -79,3 +85,14 @@ Core/Src/logger.o: ../Core/Src/logger.c ../Core/Inc/logger.h \
 ../Drivers/STM32F4xx_HAL_Driver/Inc/stm32f4xx_hal_tim_ex.h:
 ../Drivers/STM32F4xx_HAL_Driver/Inc/stm32f4xx_hal_uart.h:
 ../Core/Inc/types.h:
+../Core/Inc/sdio.h:
+../Middlewares/Third_Party/FatFs/src/ff.h:
+../Middlewares/Third_Party/FatFs/src/integer.h:
+../FATFS/Target/ffconf.h:
+../Core/Inc/main.h:
+../FATFS/Target/bsp_driver_sd.h:
+../FATFS/Target/fatfs_platform.h:
+../Middlewares/Third_Party/FatFs/src/diskio.h:
+../Core/Inc/tim.h:
+../Core/Inc/sdio.h:
+../Core/Inc/i2c.h:

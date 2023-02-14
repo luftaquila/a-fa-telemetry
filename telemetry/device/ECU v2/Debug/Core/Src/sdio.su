@@ -1,6 +1,6 @@
-../Core/Src/sdio.c:26:5:SD_SETUP	4216	static
-../Core/Src/sdio.c:55:5:SD_WRITE	24	static
-../Core/Src/sdio.c:67:5:SD_SYNC	24	static
-../Core/Src/sdio.c:86:6:MX_SDIO_SD_Init	4	static
-../Core/Src/sdio.c:109:6:HAL_SD_MspInit	48	static
-../Core/Src/sdio.c:201:6:HAL_SD_MspDeInit	16	static
+../Core/Src/sdio.c:29:5:SD_SETUP	4208	static
+../Core/Src/sdio.c:58:5:SD_WRITE	16	static
+../Core/Src/sdio.c:70:5:SD_SYNC	16	static
+../Core/Src/sdio.c:89:6:MX_SDIO_SD_Init	4	static
+../Core/Src/sdio.c:112:6:HAL_SD_MspInit	48	static
+../Core/Src/sdio.c:204:6:HAL_SD_MspDeInit	16	static
