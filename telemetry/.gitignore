@@ -2,3 +2,6 @@
 /schematics/E-Formula-backups
 
 **/node_modules/
+**/tags
+
+*.swp

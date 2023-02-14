@@ -21,9 +21,11 @@
 #include "sdio.h"
 
 /* USER CODE BEGIN 0 */
+extern FIL logfile;
+extern LOG log;
 char logname[30];
 
-int SD_SETUP(FIL* file, uint64_t boot) {
+int SD_SETUP(uint64_t boot) {
   FATFS SD_FATFS;
 
   disk_initialize((BYTE) 0);
@@ -39,7 +41,7 @@ int SD_SETUP(FIL* file, uint64_t boot) {
          (uint32_t)(boot >> 48), (uint32_t)(boot << 16 >> 56), (uint32_t)(boot << 24 >> 56),
          (uint32_t)(boot << 32 >> 56), (uint32_t)(boot << 40 >> 56), (uint32_t)(boot << 48 >> 56));
 
-  ret = f_open(file, logname, FA_OPEN_APPEND | FA_WRITE);
+  ret = f_open(logfile, logname, FA_OPEN_APPEND | FA_WRITE);
   if (ret != FR_OK) {
     #ifdef DEBUG_MODE
       printf("[%8lu] [ERR] SD open failed: %d\n", HAL_GetTick(), ret);
@@ -52,9 +54,9 @@ int SD_SETUP(FIL* file, uint64_t boot) {
   return ret;
 }
 
-int SD_WRITE(FIL *file, char *data) {
+int SD_WRITE() {
   uint32_t written_count;
-  int ret = f_write(file, data, strlen(data), (void *)&written_count);
+  int ret = f_write(logfile, &log, 16 /* sizeof(LOG) */, (void *)&written_count);
   if (ret != FR_OK) {
     #ifdef DEBUG_MODE
       printf("[%8lu] [ERR] SD write failed: %d\n", HAL_GetTick(), ret);
@@ -64,8 +66,8 @@ int SD_WRITE(FIL *file, char *data) {
   return ret;
 }
 
-int SD_SYNC(FIL *file) {
-  int ret = f_sync(file);
+int SD_SYNC() {
+  int ret = f_sync(logfile);
   if (ret != FR_OK) {
     #ifdef DEBUG_MODE
       printf("[%8lu] [ERR] SD sync failed: %d\n", HAL_GetTick(), ret);

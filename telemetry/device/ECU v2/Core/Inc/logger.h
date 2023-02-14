@@ -10,13 +10,16 @@
 
 #include "main.h"
 
+/* Prototypes */
+int SYS_LOG();
+
 /* system log data type */
 typedef struct {
   uint32_t timestamp;
   uint8_t level;
-  uint8_t _reserved;
   uint8_t source;
   uint8_t key;
+  uint8_t _reserved;
   uint8_t value[8];
 } LOG;
 
@@ -98,5 +101,6 @@ typedef enum {
 typedef enum {
   GPS_DATA = 0,
 } LOG_KEY_GPS;
+
 
 #endif /* INC_LOGGER_H_ */

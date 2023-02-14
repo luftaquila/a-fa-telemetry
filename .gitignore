@@ -1,1 +1,6 @@
-*/tags
+TAGS
+.TAGS
+!TAGS/
+tags
+.tags
+!tags/

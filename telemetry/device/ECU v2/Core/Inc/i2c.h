@@ -37,7 +37,9 @@ extern I2C_HandleTypeDef hi2c1;
 extern I2C_HandleTypeDef hi2c2;
 
 /* USER CODE BEGIN Private defines */
-
+#define ESP_I2C_ADDR 0x00 << 1
+#define LCD_I2C_ADDR 0x27 << 1
+#define ACC_I2C_ADDR 0x53 << 1
 /* USER CODE END Private defines */
 
 void MX_I2C1_Init(void);

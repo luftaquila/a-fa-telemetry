@@ -10,7 +10,6 @@
 
 
 /* system state type */
-#pragma pack(push, 4)
 typedef struct {
   /* GPIOs */
   uint8_t HV :1;
@@ -24,8 +23,9 @@ typedef struct {
   uint8_t CAN :1;
   uint8_t GPS :1;
   uint8_t ACC :1;
+
+  uint32_t _reserved :23;
 } SYSTEM_STATE;
-#pragma pack(pop)
 
 /* system error code type */
 typedef enum {
