@@ -2,3 +2,5 @@
 /schematics/E-Formula-backups
 
 **/node_modules/
+**/Debug
+**/Release
