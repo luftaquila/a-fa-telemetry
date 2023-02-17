@@ -189,7 +189,7 @@ function process_telemetry(data) {
               data.data = {
                 rpm: signedParseInt(data.bytes[3].concat(data.bytes[2]), 16, 16),
               };
-              data.data.speed = (data.data.rpm / 6) * (Math.PI * 0.495) * 0.06;
+              data.data.speed = (data.data.rpm / 6) * (Math.PI * 0.2475) * 0.06;
               break;
 
             case "CAN_INV_FAULT":
@@ -546,7 +546,7 @@ $('input.tooltips').on('change', e => {
 });
 
 let tooltips = {
-  'speed': { title: '차량 속도', desc: '모터 컨트롤러의 RPM 데이터로 계산한 차량의 주행 속도입니다.<br><br><dfn>Velocity(km/h) = (RPM / 6) &times; (π * 0.495) * 0.06</dfn>' },
+  'speed': { title: '차량 속도', desc: '모터 컨트롤러의 RPM 데이터로 계산한 차량의 주행 속도입니다.<br><br><dfn>Velocity(km/h) = (RPM / 6) &times; (π * 0.2475) * 0.06</dfn>' },
   'acceleration': { title: '가속', desc: '모터 컨트롤러가 보고하는 가속 페달의 아날로그 입력값입니다.'},
   'braking': { title: '제동', desc: '모터 컨트롤러가 보고하는 브레이크 페달의 아날로그 입력값입니다.'},
   'core-temperature': { title: '프로세서 온도', desc: 'ECU 프로세서의 온도입니다.' },

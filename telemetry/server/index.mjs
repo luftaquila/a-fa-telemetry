@@ -332,7 +332,7 @@ function process_telemetry(data) {
               data.data = {
                 rpm: signedParseInt(data.bytes[3].concat(data.bytes[2]), 16, 16),
               };
-              data.data.speed = (data.data.rpm / 6) * (Math.PI * 0.495) * 0.06;
+              data.data.speed = (data.data.rpm / 6) * (Math.PI * 0.2475) * 0.06;
 
               ECU.motor.rpm = data.data.rpm;
               ECU.car.speed = data.data.speed;
