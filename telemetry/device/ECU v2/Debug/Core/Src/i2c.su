@@ -1,4 +1,6 @@
-../Core/Src/i2c.c:31:6:MX_I2C1_Init	8	static
-../Core/Src/i2c.c:60:6:MX_I2C2_Init	8	static
-../Core/Src/i2c.c:89:6:HAL_I2C_MspInit	56	static
-../Core/Src/i2c.c:151:6:HAL_I2C_MspDeInit	16	static
+../Core/Src/i2c.c:24:5:ESP_SETUP	4	static
+../Core/Src/i2c.c:32:5:LCD_SETUP	4	static
+../Core/Src/i2c.c:43:6:MX_I2C1_Init	8	static
+../Core/Src/i2c.c:72:6:MX_I2C2_Init	8	static
+../Core/Src/i2c.c:101:6:HAL_I2C_MspInit	56	static
+../Core/Src/i2c.c:163:6:HAL_I2C_MspDeInit	16	static

@@ -9,9 +9,7 @@
 #define INC_LOGGER_H_
 
 #include "main.h"
-
-/* Prototypes */
-inline int SYS_LOG(LOG_LEVEL level, LOG_SOURCE source, int key);
+#include "sdio.h"
 
 /* system log data type */
 typedef struct {
@@ -51,7 +49,7 @@ typedef enum {
 } LOG_KEY_ECU;
 
 typedef enum {
-  ESP_SETUP = 0,
+  ESP_INIT = 0,
   ESP_REMOTE_CONNECT,
   ESP_RTC_SYNC,
 } LOG_KEY_ESP;
@@ -106,9 +104,22 @@ typedef enum {
 } LOG_KEY_GPS;
 
 typedef enum {
-  LCD_SETUP = 0,
+  LCD_INIT = 0,
   LCD_DATA,
 } LOG_KEY_LCD;
 
+/* Prototypes */
+extern LOG syslog;
+inline int SYS_LOG(LOG_LEVEL level, LOG_SOURCE source, int key) {
+  syslog.timestamp = HAL_GetTick();
+  syslog.level = level;
+  syslog.source = source;
+  syslog.key = key;
+
+  SD_WRITE();
+  // HAL_I2C_Master_Transmit_IT(&hi2c1, ESP_I2C_ADDR, (uint8_t *)&syslog, 16 /* sizeof(LOG) */);
+
+  return 0;
+}
 
 #endif /* INC_LOGGER_H_ */

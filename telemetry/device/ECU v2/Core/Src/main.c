@@ -38,6 +38,8 @@
 
 /* Private define ------------------------------------------------------------*/
 /* USER CODE BEGIN PD */
+
+extern int SYS_LOG(LOG_LEVEL level, LOG_SOURCE source, int key);
 /* USER CODE END PD */
 
 /* Private macro -------------------------------------------------------------*/
@@ -140,7 +142,7 @@ int main(void)
     #endif
 
     syslog.value[0] = 0;
-    SYS_LOG(LOG_ERROR, ESP, ESP_SETUP);
+    SYS_LOG(LOG_ERROR, ESP, ESP_INIT);
   }
 
   ret = LCD_SETUP();
@@ -150,9 +152,9 @@ int main(void)
     #endif
 
     syslog.value[0] = 0;
-    SYS_LOG(LOG_ERROR, ESP, ESP_SETUP);
+    SYS_LOG(LOG_ERROR, LCD, LCD_INIT);
   }
-
+/*
   CAN_SETUP();
   ANALOG_SETUP();
   GPS_SETUP();
