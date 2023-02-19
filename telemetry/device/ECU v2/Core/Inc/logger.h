@@ -8,8 +8,10 @@
 #ifndef INC_LOGGER_H_
 #define INC_LOGGER_H_
 
-#include "main.h"
+#include "stdio.h"
 #include "sdio.h"
+
+#define DEBUG_MODE
 
 /* system log data type */
 typedef struct {
@@ -75,7 +77,8 @@ typedef enum {
 } LOG_KEY_INV;
 
 typedef enum {
-  ADC_DIST_FL = 0,
+  ADC_TEMP = 0,
+  ADC_DIST_FL,
   ADC_DIST_RL,
   ADC_DIST_FR,
   ADC_DIST_RR,
@@ -83,30 +86,40 @@ typedef enum {
   ADC_SPD_RL,
   ADC_SPD_FR,
   ADC_SPD_RR,
+  ADC_COUNT,
+  ADC_INIT
 } LOG_KEY_ANALOG;
 
 typedef enum {
-  GPIO_RTD_ACTIVE = 0,
-  GPIO_HV_ACTIVE,
-  GPIO_BMS_FAULT,
-  GPIO_IMD_FAULT,
-  GPIO_BSPD_FAULT,
-} LOG_KEY_GPIO;
-
-typedef enum {
-  ACC_SETUP = 0,
+  ACC_INIT = 0,
   ACC_DATA,
 } LOG_KEY_ACC;
 
 typedef enum {
-  GPS_SETUP = 0,
+  GPS_INIT = 0,
   GPS_DATA,
 } LOG_KEY_GPS;
 
 typedef enum {
   LCD_INIT = 0,
-  LCD_DATA,
 } LOG_KEY_LCD;
+
+/* system state type */
+typedef struct {
+  /* GPIOs */
+  uint8_t HV :1;
+  uint8_t RTD :1;
+  uint8_t BMS :1;
+  uint8_t IMD :1;
+  uint8_t BSPD :1;
+
+  /* connections */
+  uint8_t SD :1;
+  uint8_t CAN :1;
+  uint8_t ACC :1;
+  uint8_t LCD :1;
+  uint8_t GPS :1;
+} SYSTEM_STATE;
 
 /* Prototypes */
 extern LOG syslog;
@@ -119,6 +132,9 @@ inline int SYS_LOG(LOG_LEVEL level, LOG_SOURCE source, int key) {
   SD_WRITE();
   // HAL_I2C_Master_Transmit_IT(&hi2c1, ESP_I2C_ADDR, (uint8_t *)&syslog, 16 /* sizeof(LOG) */);
 
+  #ifdef DEBUG_MODE
+    printf("[%8lu] [LOG] level: %d  source: %d  key: %d  value: 0x %02x %02x %02x %02x %02x %02x %02x %02x\r\n", syslog.timestamp, syslog.level, syslog.source, syslog.key, syslog.value[7], syslog.value[6], syslog.value[5], syslog.value[4], syslog.value[3], syslog.value[2], syslog.value[1], syslog.value[0]);
+  #endif
   return 0;
 }
 

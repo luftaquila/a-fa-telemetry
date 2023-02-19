@@ -47,7 +47,7 @@ void MX_ADC2_Init(void);
 void MX_ADC3_Init(void);
 
 /* USER CODE BEGIN Prototypes */
-
+int ANALOG_SETUP(void);
 /* USER CODE END Prototypes */
 
 #ifdef __cplusplus

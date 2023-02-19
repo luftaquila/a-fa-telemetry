@@ -19,11 +19,19 @@
 /* USER CODE END Header */
 /* Includes ------------------------------------------------------------------*/
 #include "sdio.h"
-#include "logger.h"
 
 /* USER CODE BEGIN 0 */
+#include "ff.h"
+#include "diskio.h"
+
+#include "tim.h"
+
+#include "stdio.h"
+#include "string.h"
+
 extern FIL logfile;
 extern LOG syslog;
+extern SYSTEM_STATE sys_state;
 char logname[30];
 
 int SD_SETUP(uint64_t boot) {
@@ -32,8 +40,9 @@ int SD_SETUP(uint64_t boot) {
   disk_initialize((BYTE) 0);
   int ret = f_mount(&SD_FATFS, "", 0);
   if (ret != FR_OK) {
+    sys_state.SD = false;
     #ifdef DEBUG_MODE
-      printf("[%8lu] [ERR] SD mount failed: %d\n", HAL_GetTick(), ret);
+      printf("[%8lu] [ERR] SD mount failed: %d\r\n", HAL_GetTick(), ret);
     #endif
     return -1;
   }
@@ -44,14 +53,14 @@ int SD_SETUP(uint64_t boot) {
 
   ret = f_open(&logfile, logname, FA_OPEN_APPEND | FA_WRITE);
   if (ret != FR_OK) {
+    sys_state.SD = false;
     #ifdef DEBUG_MODE
-      printf("[%8lu] [ERR] SD open failed: %d\n", HAL_GetTick(), ret);
+      printf("[%8lu] [ERR] SD open failed: %d\r\n", HAL_GetTick(), ret);
     #endif
     return ret;
   }
 
-  HAL_TIM_Base_Start_IT(&htim1);
-
+  sys_state.SD = true;
   return ret;
 }
 
@@ -59,8 +68,9 @@ int SD_WRITE() {
   uint32_t written_count;
   int ret = f_write(&logfile, &syslog, 16 /* sizeof(LOG) */, (void *)&written_count);
   if (ret != FR_OK) {
+    sys_state.SD = false;
     #ifdef DEBUG_MODE
-      printf("[%8lu] [ERR] SD write failed: %d\n", HAL_GetTick(), ret);
+      printf("[%8lu] [ERR] SD write failed: %d\r\n", HAL_GetTick(), ret);
     #endif
   }
 
@@ -70,8 +80,9 @@ int SD_WRITE() {
 int SD_SYNC() {
   int ret = f_sync(&logfile);
   if (ret != FR_OK) {
+    sys_state.SD = false;
     #ifdef DEBUG_MODE
-      printf("[%8lu] [ERR] SD sync failed: %d\n", HAL_GetTick(), ret);
+      printf("[%8lu] [ERR] SD sync failed: %d\r\n", HAL_GetTick(), ret);
     #endif
   }
 

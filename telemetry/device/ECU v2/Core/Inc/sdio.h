@@ -29,13 +29,6 @@ extern "C" {
 #include "main.h"
 
 /* USER CODE BEGIN Includes */
-#include "ff.h"
-#include "diskio.h"
-
-#include "tim.h"
-
-#include "stdio.h"
-#include "string.h"
 /* USER CODE END Includes */
 
 extern SD_HandleTypeDef hsd;

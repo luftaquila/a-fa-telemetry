@@ -58,14 +58,22 @@ void Error_Handler(void);
 /* USER CODE END EFP */
 
 /* Private defines -----------------------------------------------------------*/
-#define LED1_Pin GPIO_PIN_4
-#define LED1_GPIO_Port GPIOA
-#define LED2_Pin GPIO_PIN_5
-#define LED2_GPIO_Port GPIOA
-#define LED3_Pin GPIO_PIN_6
-#define LED3_GPIO_Port GPIOA
-#define LED4_Pin GPIO_PIN_7
-#define LED4_GPIO_Port GPIOA
+#define LED00_Pin GPIO_PIN_6
+#define LED00_GPIO_Port GPIOA
+#define LED01_Pin GPIO_PIN_7
+#define LED01_GPIO_Port GPIOA
+#define LED0_Pin GPIO_PIN_10
+#define LED0_GPIO_Port GPIOE
+#define LED1_Pin GPIO_PIN_11
+#define LED1_GPIO_Port GPIOE
+#define LED2_Pin GPIO_PIN_12
+#define LED2_GPIO_Port GPIOE
+#define LED3_Pin GPIO_PIN_13
+#define LED3_GPIO_Port GPIOE
+#define LED4_Pin GPIO_PIN_14
+#define LED4_GPIO_Port GPIOE
+#define LED5_Pin GPIO_PIN_15
+#define LED5_GPIO_Port GPIOE
 #define SDIO_DETECT_Pin GPIO_PIN_12
 #define SDIO_DETECT_GPIO_Port GPIOB
 #define RTD_ACTIVE_Pin GPIO_PIN_10
@@ -80,7 +88,6 @@ void Error_Handler(void);
 #define BSPD_FAULT_GPIO_Port GPIOD
 
 /* USER CODE BEGIN Private defines */
-#define DEBUG_MODE
 /* USER CODE END Private defines */
 
 #ifdef __cplusplus
