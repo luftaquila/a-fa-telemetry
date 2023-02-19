@@ -240,6 +240,8 @@ int main(void)
 
     // 500ms timer set
     if (timer_flag & 0x1 << TIMER_500ms) {
+      timer_flag &= ~(1 << TIMER_500ms);
+
       // update system state
       sys_state.HV = HAL_GPIO_ReadPin(GPIOD, HV_ACTIVE_Pin);
       sys_state.RTD = HAL_GPIO_ReadPin(GPIOD, RTD_ACTIVE_Pin);
