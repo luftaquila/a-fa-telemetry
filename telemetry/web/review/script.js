@@ -26,18 +26,9 @@ async function loadfile() {
     graph_data["graph-motor-torque-commanded"] = [];
 
     const res = await fetch("https://a-fa.luftaquila.io/telemetry/review/datalogs/" + prevfile);
-    
-    const data = await res.text();
-    for (let line of data.split('\n')) {
-      process_telemetry(line);
-    }
 
-    graph_time = {
-      start: log[0].datetime,
-      end: log[log.length - 1].datetime,
-    };
-
-    drawGraph();
+    const raw = await res.blob();
+    processRaw(raw);
   }
 }
 
@@ -50,29 +41,11 @@ $("#prevlog").change(function() {
 $("#file").change(async function() {
   let file = document.getElementById("file").files[0];
   if (file) {
-    for(graph of Object.keys(graphs)) {
-      graphs[graph].destroy();
-      delete graphs[graph];
-    }
-    graphs = { };
-    graph_data = { };
-    for (const canvas of document.getElementsByTagName('canvas')) graph_data[canvas.id] = [];
-    graph_data["graph-motor-torque-commanded"] = [];
-
     let reader = new FileReader();
-    reader.readAsText(file, "UTF-8");
+    reader.readAsArrayBuffer(file);
     reader.onload = function (evt) {
-      telemetry = evt.target.result;
-      for (let line of telemetry.split('\n')) {
-        process_telemetry(line);
-      }
-
-      graph_time = {
-        start: log[0].datetime,
-        end: log[log.length - 1].datetime,
-      };
-
-      drawGraph();
+      let raw = new Blob([evt.target.result], { type: 'application/octet-stream' });
+      processRaw(raw);
     }
 
     let form = new FormData();
@@ -87,6 +60,40 @@ $("#file").change(async function() {
     window.history.pushState({}, '', '?' + urlParams);
   }
 });
+
+async function processRaw(raw) {
+  let buffer = await raw.arrayBuffer();
+  buffer = new Uint8Array(buffer);
+
+  const log_size = 16;
+  let index = 0;
+  let count = buffer.length / log_size;
+
+  while (index < buffer.length) {
+    log.push(convert(buffer.slice(index, index + log_size)));
+    index += 16;
+  }
+
+  console.log(log);
+  const csv = [
+    [ "timestamp", "level", "source", "key", "value" ],
+    ...log.map(item => [ item.timestamp, item.level, item.source, item.key, item.value ])
+  ].map(e => e.join(',')).join('\n');
+  $("#converter").val(csv);
+
+}
+
+  // {
+  //   for(graph of Object.keys(graphs)) {
+  //     graphs[graph].destroy();
+  //     delete graphs[graph];
+  //   }
+  //   graphs = { };
+  //   graph_data = { };
+  //   for (const canvas of document.getElementsByTagName('canvas')) graph_data[canvas.id] = [];
+  //   graph_data["graph-motor-torque-commanded"] = [];
+
+  // }
 
 // telemetry handler
 function process_telemetry(data) {
@@ -230,11 +237,6 @@ function process_telemetry(data) {
       process_data(data);
     }
   } catch(e) { console.log(e); }
-}
-
-function signedParseInt(value, base, bit) {
-  value = parseInt(value, base);
-  return value > Math.pow(2, bit - 1) - 1 ? value - Math.pow(2, bit) : value;
 }
 
 // graph updater

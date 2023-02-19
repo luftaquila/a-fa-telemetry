@@ -22,12 +22,12 @@
           <img src="../assets/logo-transparent.png">
         </a>
       </div>
-  
+
       <div style="margin-top: 1rem;">
         <span style="font-size: 1.5rem; font-weight: bold;">로그 파일 업로드</span><br>
         <input id="file" type="file" name="file" accept=".log" style="margin-top: 1rem; margin-left:2rem;">
       </div>
-  
+
       <div style="margin-top: 1rem;">
         <span style="font-size: 1.5rem; font-weight: bold;">이전 로그 파일</span><br>
         <select id="prevlog" style="margin-top: 1rem; margin-left: 1rem;">
@@ -37,10 +37,16 @@
     </div>
 
     <div id="container">
+      <article style='width: 86vw; max-width: none;'>
+        <h1><i class="fa-duotone fa-fw fa-book"></i>&ensp;로그</h1>
+        <div class="content" style='padding-top: 1rem;'>
+          <textarea id='converter' style='width: 98%; height: 20vw; resize: vertical;' readonly></textarea>
+        </div>
+      </article>
 
       <article id="car">
         <h1><i class="fa-duotone fa-fw fa-car-bolt"></i>&ensp;차량</h1>
-        
+
         <div class="content">
           <table class="param">
             <tr>
@@ -402,6 +408,7 @@
     <script src="https://cdn.jsdelivr.net/npm/chartjs-adapter-luxon@1.0.0"></script>
     <script src="//cdn.jsdelivr.net/npm/sweetalert2@11"></script>
     <script type="text/javascript" src="//dapi.kakao.com/v2/maps/sdk.js?appkey=104567b3d9ce11bfc56d92f7c5883307&libraries=clusterer,drawing"></script>
+    <script src="types.js"></script>
     <script src="script.js"></script>
   </body>
 </html>
