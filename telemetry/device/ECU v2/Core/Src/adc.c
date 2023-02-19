@@ -21,7 +21,93 @@
 #include "adc.h"
 
 /* USER CODE BEGIN 0 */
+#include "tim.h"
 
+#define TS_CAL1 *((uint16_t*)0x1FFF7A2C)
+#define TS_CAL2 *((uint16_t*)0x1FFF7A2E)
+
+extern int adc_flag;
+extern int adc_value[ADC_COUNT];
+
+int ANALOG_SETUP(void) {
+  // ADC calibration - not suppoerted in STM32F4 series
+  /* while(HAL_ADCEx_Calibration_Start(&hadc1) != HAL_OK); */
+  /* while(HAL_ADCEx_Calibration_Start(&hadc2) != HAL_OK); */
+  /* while(HAL_ADCEx_Calibration_Start(&hadc3) != HAL_OK); */
+
+  return 0;
+}
+
+void HAL_ADC_ConvCpltCallback(ADC_HandleTypeDef* hadc) {
+  if (hadc->Instance == ADC1) {
+      adc_value[ADC_TEMP] = (uint32_t)(((110.0 - 30) * (HAL_ADC_GetValue(hadc) - TS_CAL1) / (TS_CAL2 - TS_CAL1) + 30) * 10);
+
+      adc_flag |= 1 << ADC_CPU;
+  }
+
+  else if (hadc->Instance == ADC2) {
+    static int seq = 0;
+
+    switch (seq) {
+      case 0:
+        adc_value[ADC_DIST_FL] = HAL_ADC_GetValue(hadc);
+        seq++;
+        HAL_ADC_Start_IT(&hadc2);
+        break;
+
+      case 1:
+        adc_value[ADC_DIST_RL] = HAL_ADC_GetValue(hadc);
+        seq++;
+        HAL_ADC_Start_IT(&hadc2);
+        break;
+
+      case 2:
+        adc_value[ADC_DIST_FR] = HAL_ADC_GetValue(hadc);
+        seq++;
+        HAL_ADC_Start_IT(&hadc2);
+        break;
+
+      case 3:
+        adc_value[ADC_DIST_RR] = HAL_ADC_GetValue(hadc);
+        adc_flag |= 1 << ADC_DIST;
+        seq = 0;
+        break;
+    }
+  }
+
+  else if (hadc->Instance == ADC3) {
+    static int seq = 0;
+
+    switch (seq) {
+      case 0:
+        adc_value[ADC_SPD_FL] = HAL_ADC_GetValue(hadc);
+        seq++;
+        HAL_ADC_Start_IT(&hadc3);
+        break;
+
+      case 1:
+        adc_value[ADC_SPD_RL] = HAL_ADC_GetValue(hadc);
+        seq++;
+        HAL_ADC_Start_IT(&hadc3);
+        break;
+
+      case 2:
+        adc_value[ADC_SPD_FR] = HAL_ADC_GetValue(hadc);
+        seq++;
+        HAL_ADC_Start_IT(&hadc3);
+        break;
+
+      case 3:
+        adc_value[ADC_SPD_RR] = HAL_ADC_GetValue(hadc);
+        adc_flag |= 1 << ADC_SPD;
+        seq = 0;
+        break;
+    }
+  }
+}
+
+void HAL_ADVEx_InjectedConvCpltCallback(ADC_HandleTypeDef* hadc) {
+}
 /* USER CODE END 0 */
 
 ADC_HandleTypeDef hadc1;
@@ -65,7 +151,7 @@ void MX_ADC1_Init(void)
   */
   sConfig.Channel = ADC_CHANNEL_TEMPSENSOR;
   sConfig.Rank = 1;
-  sConfig.SamplingTime = ADC_SAMPLETIME_3CYCLES;
+  sConfig.SamplingTime = ADC_SAMPLETIME_28CYCLES;
   if (HAL_ADC_ConfigChannel(&hadc1, &sConfig) != HAL_OK)
   {
     Error_Handler();
@@ -94,13 +180,14 @@ void MX_ADC2_Init(void)
   hadc2.Instance = ADC2;
   hadc2.Init.ClockPrescaler = ADC_CLOCK_SYNC_PCLK_DIV4;
   hadc2.Init.Resolution = ADC_RESOLUTION_12B;
-  hadc2.Init.ScanConvMode = DISABLE;
+  hadc2.Init.ScanConvMode = ENABLE;
   hadc2.Init.ContinuousConvMode = DISABLE;
-  hadc2.Init.DiscontinuousConvMode = DISABLE;
+  hadc2.Init.DiscontinuousConvMode = ENABLE;
+  hadc2.Init.NbrOfDiscConversion = 1;
   hadc2.Init.ExternalTrigConvEdge = ADC_EXTERNALTRIGCONVEDGE_NONE;
   hadc2.Init.ExternalTrigConv = ADC_SOFTWARE_START;
   hadc2.Init.DataAlign = ADC_DATAALIGN_RIGHT;
-  hadc2.Init.NbrOfConversion = 1;
+  hadc2.Init.NbrOfConversion = 4;
   hadc2.Init.DMAContinuousRequests = DISABLE;
   hadc2.Init.EOCSelection = ADC_EOC_SINGLE_CONV;
   if (HAL_ADC_Init(&hadc2) != HAL_OK)
@@ -112,7 +199,34 @@ void MX_ADC2_Init(void)
   */
   sConfig.Channel = ADC_CHANNEL_0;
   sConfig.Rank = 1;
-  sConfig.SamplingTime = ADC_SAMPLETIME_3CYCLES;
+  sConfig.SamplingTime = ADC_SAMPLETIME_28CYCLES;
+  if (HAL_ADC_ConfigChannel(&hadc2, &sConfig) != HAL_OK)
+  {
+    Error_Handler();
+  }
+
+  /** Configure for the selected ADC regular channel its corresponding rank in the sequencer and its sample time.
+  */
+  sConfig.Channel = ADC_CHANNEL_1;
+  sConfig.Rank = 2;
+  if (HAL_ADC_ConfigChannel(&hadc2, &sConfig) != HAL_OK)
+  {
+    Error_Handler();
+  }
+
+  /** Configure for the selected ADC regular channel its corresponding rank in the sequencer and its sample time.
+  */
+  sConfig.Channel = ADC_CHANNEL_2;
+  sConfig.Rank = 3;
+  if (HAL_ADC_ConfigChannel(&hadc2, &sConfig) != HAL_OK)
+  {
+    Error_Handler();
+  }
+
+  /** Configure for the selected ADC regular channel its corresponding rank in the sequencer and its sample time.
+  */
+  sConfig.Channel = ADC_CHANNEL_3;
+  sConfig.Rank = 4;
   if (HAL_ADC_ConfigChannel(&hadc2, &sConfig) != HAL_OK)
   {
     Error_Handler();
@@ -141,13 +255,14 @@ void MX_ADC3_Init(void)
   hadc3.Instance = ADC3;
   hadc3.Init.ClockPrescaler = ADC_CLOCK_SYNC_PCLK_DIV4;
   hadc3.Init.Resolution = ADC_RESOLUTION_12B;
-  hadc3.Init.ScanConvMode = DISABLE;
+  hadc3.Init.ScanConvMode = ENABLE;
   hadc3.Init.ContinuousConvMode = DISABLE;
-  hadc3.Init.DiscontinuousConvMode = DISABLE;
+  hadc3.Init.DiscontinuousConvMode = ENABLE;
+  hadc3.Init.NbrOfDiscConversion = 1;
   hadc3.Init.ExternalTrigConvEdge = ADC_EXTERNALTRIGCONVEDGE_NONE;
   hadc3.Init.ExternalTrigConv = ADC_SOFTWARE_START;
   hadc3.Init.DataAlign = ADC_DATAALIGN_RIGHT;
-  hadc3.Init.NbrOfConversion = 1;
+  hadc3.Init.NbrOfConversion = 4;
   hadc3.Init.DMAContinuousRequests = DISABLE;
   hadc3.Init.EOCSelection = ADC_EOC_SINGLE_CONV;
   if (HAL_ADC_Init(&hadc3) != HAL_OK)
@@ -159,7 +274,34 @@ void MX_ADC3_Init(void)
   */
   sConfig.Channel = ADC_CHANNEL_10;
   sConfig.Rank = 1;
-  sConfig.SamplingTime = ADC_SAMPLETIME_3CYCLES;
+  sConfig.SamplingTime = ADC_SAMPLETIME_28CYCLES;
+  if (HAL_ADC_ConfigChannel(&hadc3, &sConfig) != HAL_OK)
+  {
+    Error_Handler();
+  }
+
+  /** Configure for the selected ADC regular channel its corresponding rank in the sequencer and its sample time.
+  */
+  sConfig.Channel = ADC_CHANNEL_11;
+  sConfig.Rank = 2;
+  if (HAL_ADC_ConfigChannel(&hadc3, &sConfig) != HAL_OK)
+  {
+    Error_Handler();
+  }
+
+  /** Configure for the selected ADC regular channel its corresponding rank in the sequencer and its sample time.
+  */
+  sConfig.Channel = ADC_CHANNEL_12;
+  sConfig.Rank = 3;
+  if (HAL_ADC_ConfigChannel(&hadc3, &sConfig) != HAL_OK)
+  {
+    Error_Handler();
+  }
+
+  /** Configure for the selected ADC regular channel its corresponding rank in the sequencer and its sample time.
+  */
+  sConfig.Channel = ADC_CHANNEL_13;
+  sConfig.Rank = 4;
   if (HAL_ADC_ConfigChannel(&hadc3, &sConfig) != HAL_OK)
   {
     Error_Handler();

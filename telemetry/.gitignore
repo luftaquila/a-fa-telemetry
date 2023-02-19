@@ -6,4 +6,7 @@
 **/Debug
 **/Release
 
+**/tags
+
 *.log
+*.swp

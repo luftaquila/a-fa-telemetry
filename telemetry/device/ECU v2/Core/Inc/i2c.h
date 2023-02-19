@@ -36,15 +36,21 @@ extern I2C_HandleTypeDef hi2c1;
 
 extern I2C_HandleTypeDef hi2c2;
 
-/* USER CODE BEGIN Private defines */
+extern I2C_HandleTypeDef hi2c3;
 
+/* USER CODE BEGIN Private defines */
+#define ESP_I2C_ADDR 0x00 << 1
+#define LCD_I2C_ADDR 0x27 << 1
+#define ACC_I2C_ADDR 0x53 << 1
 /* USER CODE END Private defines */
 
 void MX_I2C1_Init(void);
 void MX_I2C2_Init(void);
+void MX_I2C3_Init(void);
 
 /* USER CODE BEGIN Prototypes */
-
+int ESP_SETUP(void);
+int LCD_SETUP(void);
 /* USER CODE END Prototypes */
 
 #ifdef __cplusplus

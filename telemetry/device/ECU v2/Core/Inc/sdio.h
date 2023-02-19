@@ -29,13 +29,6 @@ extern "C" {
 #include "main.h"
 
 /* USER CODE BEGIN Includes */
-#include "ff.h"
-#include "diskio.h"
-
-#include "tim.h"
-
-#include "stdio.h"
-#include "string.h"
 /* USER CODE END Includes */
 
 extern SD_HandleTypeDef hsd;
@@ -47,9 +40,9 @@ extern SD_HandleTypeDef hsd;
 void MX_SDIO_SD_Init(void);
 
 /* USER CODE BEGIN Prototypes */
-int SD_SETUP(FIL *file, uint64_t boot);
-int SD_WRITE(FIL *file, char *data);
-int SD_SYNC(FIL *file);
+int SD_SETUP(uint64_t boot);
+int SD_WRITE();
+int SD_SYNC();
 /* USER CODE END Prototypes */
 
 #ifdef __cplusplus

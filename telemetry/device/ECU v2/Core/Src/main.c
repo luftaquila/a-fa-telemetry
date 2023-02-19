@@ -38,6 +38,9 @@
 
 /* Private define ------------------------------------------------------------*/
 /* USER CODE BEGIN PD */
+
+// ADC temperature sensor calibration values
+extern int SYS_LOG(LOG_LEVEL level, LOG_SOURCE source, int key);
 /* USER CODE END PD */
 
 /* Private macro -------------------------------------------------------------*/
@@ -50,8 +53,13 @@
 ERROR_CODE err;
 
 FIL logfile;
+LOG syslog;
 
-int timer_flag[8] = { 0, };
+int timer_flag = 0;
+int adc_flag = 0;
+uint32_t adc_value[ADC_COUNT] = { 0, };
+
+SYSTEM_STATE sys_state;
 /* USER CODE END PV */
 
 /* Private function prototypes -----------------------------------------------*/
@@ -63,8 +71,8 @@ int ECU_SETUP(void);
 /* Private user code ---------------------------------------------------------*/
 /* USER CODE BEGIN 0 */
 int _write(int file, uint8_t *ptr, int len) {
-   HAL_UART_Transmit(&huart1, (uint8_t *)ptr, (uint16_t)len, 100);
-   return (len);
+  HAL_UART_Transmit(&huart1, (uint8_t *)ptr, (uint16_t)len, 50);
+  return (len);
 }
 /* USER CODE END 0 */
 
@@ -108,40 +116,86 @@ int main(void)
   MX_ADC3_Init();
   MX_USART2_UART_Init();
   MX_TIM1_Init();
+  MX_I2C3_Init();
+  MX_TIM2_Init();
+  MX_TIM3_Init();
   /* USER CODE BEGIN 2 */
 
+  int ret;
   uint64_t boot = RTC_read();
 
-  int ret;
   ret = ECU_SETUP();
   if (ret != 0) {
     #ifdef DEBUG_MODE
-      printf("[%8lu] [ERR] ECU setup failed: %d\n", HAL_GetTick(), ret);
+      printf("[%8lu] [ERR] ECU setup failed: %d\r\n", HAL_GetTick(), ret);
     #endif
     err = ERR_ECU;
     Error_Handler();
   }
 
-  ret = SD_SETUP(&logfile, boot);
+  ret = SD_SETUP(boot);
   if (ret != 0) {
     #ifdef DEBUG_MODE
-      printf("[%8lu] [ERR] SD setup failed: %d\n", HAL_GetTick(), ret);
+      printf("[%8lu] [ERR] SD setup failed: %d\r\n", HAL_GetTick(), ret);
     #endif
+      err = ERR_SD;
+      Error_Handler();
   }
 
-  /*
+
+  // system boot log
+  syslog.value[0] = true;
+  SYS_LOG(LOG_INFO, ECU, ECU_BOOT);
+
+
   ret = ESP_SETUP();
   if (ret != 0) {
     #ifdef DEBUG_MODE
-      printf("[%8lu] [ERR] ESP setup failed: %d\n", HAL_GetTick(), ret);
+      printf("[%8lu] [ERR] ESP setup failed: %d\r\n", HAL_GetTick(), ret);
     #endif
+    syslog.value[0] = false;
+    SYS_LOG(LOG_ERROR, ESP, ESP_INIT);
   }
+  syslog.value[0] = true;
+  SYS_LOG(LOG_INFO, ESP, ESP_INIT);
 
-  LCD_SETUP();
+
+  ret = ANALOG_SETUP();
+  if (ret != 0) {
+    #ifdef DEBUG_MODE
+      printf("[%8lu] [ERR] ANALOG setup failed: %d\r\n", HAL_GetTick(), ret);
+    #endif
+    syslog.value[0] = false;
+    SYS_LOG(LOG_ERROR, ANALOG, ADC_INIT);
+  }
+  syslog.value[0] = true;
+  SYS_LOG(LOG_INFO, ANALOG, ADC_INIT);
+
+/*
   CAN_SETUP();
-  ANALOG_SETUP();
+
+
+  ACC_SETUP();
+
+
+  ret = LCD_SETUP();
+  if (ret != 0) {
+    #ifdef DEBUG_MODE
+      printf("[%8lu] [ERR] LCD setup failed: %d\r\n", HAL_GetTick(), ret);
+    #endif
+    syslog.value[0] = false;
+    SYS_LOG(LOG_ERROR, LCD, LCD_INIT);
+  }
+  syslog.value[0] = true;
+  SYS_LOG(LOG_INFO, LCD, LCD_INIT);
+
+
   GPS_SETUP();
  */
+
+  HAL_TIM_Base_Start_IT(&htim1);
+  HAL_TIM_Base_Start_IT(&htim2);
+  HAL_TIM_Base_Start_IT(&htim3);
 
   /* USER CODE END 2 */
 
@@ -150,15 +204,66 @@ int main(void)
 
   while (1) {
 
-    int ret = SD_WRITE(&logfile, "test");
+    // 1s timer set
+    if (timer_flag & 0x1 << TIMER_1s) {
+      timer_flag &= ~(1 << TIMER_1s);
 
-    if (timer_flag[TIMER_SD]) {
-      timer_flag[TIMER_SD] = false;
+      // SD sync
       ret = SD_SYNC(&logfile);
       #ifdef DEBUG_MODE
-        printf("[%8lu] [INF] SD SYNC: %d\n", HAL_GetTick(), ret);
+        printf("[%8lu] [INF] SD SYNC: %d\r\n", HAL_GetTick(), ret);
       #endif
     }
+
+    // 50ms timer set
+    if (timer_flag & 0x1 << TIMER_50ms) {
+      static uint32_t counter = 0;
+      timer_flag &= ~(1 << TIMER_50ms);
+
+      if (counter & 0x1) {
+        // start ADC conversion
+        HAL_ADC_Start_IT(&hadc1);
+        HAL_ADC_Start_IT(&hadc2);
+        HAL_ADC_Start_IT(&hadc3);
+
+        // read ACC
+        // !!!!!!!!!!!!!!!!!!!!!
+
+      }
+      else {
+        // update LCD
+        // !!!!!!!!!!!!!!!!!!!!!
+
+      }
+      counter++;
+    }
+
+    // 500ms timer set
+    if (timer_flag & 0x1 << TIMER_500ms) {
+      // update system state
+      sys_state.HV = HAL_GPIO_ReadPin(GPIOD, HV_ACTIVE_Pin);
+      sys_state.RTD = HAL_GPIO_ReadPin(GPIOD, RTD_ACTIVE_Pin);
+      sys_state.BMS = HAL_GPIO_ReadPin(GPIOD, BMS_FAULT_Pin);
+      sys_state.IMD = HAL_GPIO_ReadPin(GPIOD, IMD_FAULT_Pin);
+      sys_state.BSPD = HAL_GPIO_ReadPin(GPIOD, BSPD_FAULT_Pin);
+
+      *(SYSTEM_STATE *)syslog.value = sys_state;
+      SYS_LOG(LOG_INFO, ECU, ECU_STATE);
+    }
+
+    // all ADCs are ready
+    if ((adc_flag & 0x3) == 0x3) {
+      adc_flag = 0;
+
+      for (int i = 0; i < ADC_COUNT; i++) {
+        *(uint32_t *)syslog.value = adc_value[i];
+        SYS_LOG(LOG_INFO, ANALOG, i);
+      }
+    }
+
+    // CAN handling
+    // GPS handling
+    // !!!!!!!!!!!!!!!!!!!!!
 
     /* USER CODE END WHILE */
 
@@ -220,8 +325,23 @@ void SystemClock_Config(void)
 /* USER CODE BEGIN 4 */
 int ECU_SETUP(void) {
 
-  HAL_GPIO_WritePin(GPIOA, LED3_Pin, GPIO_PIN_RESET);
-  HAL_GPIO_WritePin(GPIOA, LED4_Pin, GPIO_PIN_SET);
+  // init LEDs
+  HAL_GPIO_WritePin(GPIOA, LED00_Pin, GPIO_PIN_RESET);
+  HAL_GPIO_WritePin(GPIOA, LED01_Pin, GPIO_PIN_SET);
+
+  HAL_GPIO_WritePin(GPIOE, LED0_Pin, GPIO_PIN_RESET);
+  HAL_GPIO_WritePin(GPIOE, LED1_Pin, GPIO_PIN_RESET);
+  HAL_GPIO_WritePin(GPIOE, LED2_Pin, GPIO_PIN_RESET);
+  HAL_GPIO_WritePin(GPIOE, LED3_Pin, GPIO_PIN_RESET);
+  HAL_GPIO_WritePin(GPIOE, LED4_Pin, GPIO_PIN_RESET);
+  HAL_GPIO_WritePin(GPIOE, LED5_Pin, GPIO_PIN_RESET);
+
+  // init system state
+  sys_state.SD = false;
+  sys_state.CAN = false;
+  sys_state.ACC = false;
+  sys_state.LCD = false;
+  sys_state.GPS = false;
 
   return 0;
 }
@@ -237,14 +357,14 @@ void Error_Handler(void)
   /* User can add his own implementation to report the HAL error return state */
   // __disable_irq();
 
-  printf("[%8lu] [ERR] Error Handler code: %d\n", HAL_GetTick(), err);
+  printf("[%8lu] [ERR] Error code: %d\n", HAL_GetTick(), err);
 
   while (1) {
-    HAL_GPIO_WritePin(GPIOA, LED3_Pin, GPIO_PIN_SET);
-    HAL_GPIO_WritePin(GPIOA, LED4_Pin, GPIO_PIN_RESET);
+    HAL_GPIO_WritePin(GPIOA, LED00_Pin, GPIO_PIN_SET);
+    HAL_GPIO_WritePin(GPIOA, LED01_Pin, GPIO_PIN_RESET);
     HAL_Delay(500);
-    HAL_GPIO_WritePin(GPIOA, LED3_Pin, GPIO_PIN_RESET);
-    HAL_GPIO_WritePin(GPIOA, LED4_Pin, GPIO_PIN_SET);
+    HAL_GPIO_WritePin(GPIOA, LED00_Pin, GPIO_PIN_RESET);
+    HAL_GPIO_WritePin(GPIOA, LED01_Pin, GPIO_PIN_SET);
     HAL_Delay(500);
   }
   /* USER CODE END Error_Handler_Debug */
