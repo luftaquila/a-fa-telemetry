@@ -115,10 +115,13 @@ typedef struct {
 
   /* connections */
   uint8_t SD :1;
+  uint8_t ESP :1;
   uint8_t CAN :1;
   uint8_t ACC :1;
   uint8_t LCD :1;
   uint8_t GPS :1;
+
+  uint8_t _reserved :21;
 } SYSTEM_STATE;
 
 /* Prototypes */

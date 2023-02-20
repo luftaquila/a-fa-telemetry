@@ -105,9 +105,6 @@ void HAL_ADC_ConvCpltCallback(ADC_HandleTypeDef* hadc) {
     }
   }
 }
-
-void HAL_ADVEx_InjectedConvCpltCallback(ADC_HandleTypeDef* hadc) {
-}
 /* USER CODE END 0 */
 
 ADC_HandleTypeDef hadc1;
