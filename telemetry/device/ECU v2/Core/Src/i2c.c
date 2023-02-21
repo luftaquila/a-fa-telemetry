@@ -34,13 +34,13 @@ int32_t ESP_SETUP(void) {
 }
 
 int32_t LCD_SETUP(void) {
-  // wait for lcd ready
+  // wait for LCD ready
   HAL_Delay(50);
   if (HAL_I2C_IsDeviceReady(&hi2c2, LCD_I2C_ADDR, 1, 3000) != HAL_OK) {
     return -1;
   }
 
-  // lcd init sequence
+  // LCD init sequence
   LCD_CMD(0x30); // set 4 bit mod
   HAL_Delay(5);
   LCD_CMD(0x30); // retry 4 bit mod
@@ -63,9 +63,9 @@ int32_t LCD_SETUP(void) {
 int32_t LCD_UPDATE(DISPLAY_DATA display_data) {
   // !!!!!!!!!!!!!!!!!
 
+  // push command to ring buffer
   return 0;
 }
-
 
 void LCD_SEND(uint8_t data, uint8_t flag) {
   const uint8_t hi = data & 0xF0;

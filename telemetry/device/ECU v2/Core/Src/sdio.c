@@ -34,11 +34,11 @@ extern LOG syslog;
 extern SYSTEM_STATE sys_state;
 char logname[30];
 
-int SD_SETUP(uint64_t boot) {
+int32_t SD_SETUP(uint64_t boot) {
   FATFS SD_FATFS;
 
   disk_initialize((BYTE) 0);
-  int ret = f_mount(&SD_FATFS, "", 0);
+  int32_t ret = f_mount(&SD_FATFS, "", 0);
   if (ret != FR_OK) {
     sys_state.SD = false;
     #ifdef DEBUG_MODE
@@ -64,9 +64,9 @@ int SD_SETUP(uint64_t boot) {
   return ret;
 }
 
-int SD_WRITE() {
-  uint32_t written_count;
-  int ret = f_write(&logfile, &syslog, 16 /* sizeof(LOG) */, (void *)&written_count);
+int32_t SD_WRITE() {
+  int32_t written_count;
+  int32_t ret = f_write(&logfile, &syslog, 16 /* sizeof(LOG) */, (void *)&written_count);
   if (ret != FR_OK) {
     sys_state.SD = false;
     #ifdef DEBUG_MODE
@@ -77,8 +77,8 @@ int SD_WRITE() {
   return ret;
 }
 
-int SD_SYNC() {
-  int ret = f_sync(&logfile);
+int32_t SD_SYNC() {
+  int32_t ret = f_sync(&logfile);
   if (ret != FR_OK) {
     sys_state.SD = false;
     #ifdef DEBUG_MODE

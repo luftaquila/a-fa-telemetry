@@ -40,9 +40,9 @@ extern SD_HandleTypeDef hsd;
 void MX_SDIO_SD_Init(void);
 
 /* USER CODE BEGIN Prototypes */
-int SD_SETUP(uint64_t boot);
-int SD_WRITE();
-int SD_SYNC();
+int32_t SD_SETUP(uint64_t boot);
+int32_t SD_WRITE();
+int32_t SD_SYNC();
 /* USER CODE END Prototypes */
 
 #ifdef __cplusplus

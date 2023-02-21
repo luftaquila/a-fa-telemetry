@@ -53,9 +53,13 @@ ERROR_CODE err;
 FIL logfile;
 LOG syslog;
 
-int32_t timer_flag = 0;
-int32_t adc_flag = 0;
+uint32_t timer_flag = 0;
+uint32_t adc_flag = 0;
 uint32_t adc_value[ADC_COUNT] = { 0, };
+
+uint32_t i2c_buffer_flag = 0;
+ring_buffer_t ESP_BUFFER;
+ring_buffer_t LCD_BUFFER;
 
 SYSTEM_STATE sys_state;
 
@@ -65,7 +69,7 @@ DISPLAY_DATA display_data;
 /* Private function prototypes -----------------------------------------------*/
 void SystemClock_Config(void);
 /* USER CODE BEGIN PFP */
-int ECU_SETUP(void);
+int32_t ECU_SETUP(void);
 /* USER CODE END PFP */
 
 /* Private user code ---------------------------------------------------------*/
@@ -121,7 +125,7 @@ int main(void)
   MX_TIM3_Init();
   /* USER CODE BEGIN 2 */
 
-  int ret;
+  int32_t ret;
   uint64_t boot = RTC_read();
 
   // init ECU gpio and system state
@@ -194,7 +198,6 @@ int main(void)
   }
   syslog.value[0] = true;
   SYS_LOG(LOG_INFO, LCD, LCD_INIT);
-
 
 /*
   // init NEO-6M GPS UART
@@ -269,7 +272,7 @@ int main(void)
 
 
     // on all ADC conversion complete
-    if ((adc_flag & 0x3) == 0x3) {
+    if (adc_flag == ((1 << ADC_CPU) | (1 << ADC_DIST) | (1 << ADC_SPD))) {
       adc_flag = 0; // clear all adc flags
 
       // record each channel
@@ -277,6 +280,20 @@ int main(void)
         *(uint32_t *)syslog.value = adc_value[i];
         SYS_LOG(LOG_INFO, ANALOG, i);
       }
+    }
+
+
+    // check I2C Tx buffer
+    if (i2c_buffer_flag) {
+      if (i2c_buffer_flag & (1 << I2C_BUFFER_ESP)) {
+        // pending??? !!!!!!!!
+
+      }
+
+      else if (i2c_buffer_flag) & (1 << I2C_BUFFER_LCD)) {
+
+      }
+
     }
 
     // CAN handling
@@ -341,7 +358,7 @@ void SystemClock_Config(void)
 }
 
 /* USER CODE BEGIN 4 */
-int ECU_SETUP(void) {
+int32_t ECU_SETUP(void) {
 
   // init LEDs
   HAL_GPIO_WritePin(GPIOA, LED00_Pin, GPIO_PIN_RESET);

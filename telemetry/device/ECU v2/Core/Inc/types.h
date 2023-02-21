@@ -31,6 +31,12 @@ typedef enum {
   ADC_SPD
 } ADC_ID;
 
+/* I2C buffer index */
+typedef enum {
+  I2C_BUFFER_ESP = 0;
+  I2C_BUFFER_LCD
+} I2C_BUFFER_ID;
+
 /* LCD update info */
 typedef struct display_data_t {
   uint16_t vehicle_speed;
