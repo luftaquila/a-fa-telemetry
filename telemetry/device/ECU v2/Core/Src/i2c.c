@@ -21,31 +21,34 @@
 #include "i2c.h"
 
 /* USER CODE BEGIN 0 */
-int ESP_SETUP(void) {
+// 32KB I2C Tx buffers
+ring_buffer_t ESP_BUFFER;
+ring_buffer_t LCD_BUFFER;
+
+int32_t ESP_SETUP(void) {
   // i2c init
   // RTC SYNC
-  return 0;
+  return 0
 }
 
-int LCD_SETUP(void) {
+int32_t LCD_SETUP(void) {
   // wait for lcd ready
+  HAL_Delay(50);
   if (HAL_I2C_IsDeviceReady(&hi2c2, LCD_I2C_ADDR, 1, 3000) != HAL_OK) {
     return -1;
   }
 
   // lcd init sequence
-  // !!!!!!!!!!!!!!!!!
-  LCD_CMD(0x30);
+  LCD_CMD(0x30); // set 4 bit mod
   HAL_Delay(5);
-  LCD_CMD(0x30);
+  LCD_CMD(0x30); // retry 4 bit mod
+  HAL_Delay(5);
+  LCD_CMD(0x30); // final try
   HAL_Delay(1);
-  LCD_CMD(0x30);
   LCD_CMD(0x20);
-  HAL_Delay(1);
 	LCD_CMD(0x28); // FUNCTION SET: DL=0, N=1, F=0
 	LCD_CMD(0x08); // DISPLAY SWITCH: D=0, C=0, B=0
 	LCD_CMD(0x01); // SCREEN CLEAR
-	HAL_Delay(2);
 	LCD_CMD(0x0C); // DISPLAY SWITCH: D=1, C=0, B=0
 
   sys_state.LCD = true;
@@ -55,12 +58,13 @@ int LCD_SETUP(void) {
   return 0;
 }
 
-int LCD_UPDATE(uint32_t value1, uint32_t value2) {
+int32_t LCD_UPDATE(DISPLAY_DATA display_data) {
+  // !!!!!!!!!!!!!!!!!
 
 }
 /* USER CODE END 0 */
 
-I2C_HandleTypeDef hi2c1;
+I1C_HandleTypeDef hi2c1;
 I2C_HandleTypeDef hi2c2;
 I2C_HandleTypeDef hi2c3;
 

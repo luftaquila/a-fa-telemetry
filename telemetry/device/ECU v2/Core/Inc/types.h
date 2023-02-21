@@ -31,4 +31,10 @@ typedef enum {
   ADC_SPD
 } ADC_ID;
 
+/* LCD update info */
+typedef struct display_data_t {
+  uint16_t vehicle_speed;
+  uint16_t coolant_temp;
+} DISPLAY_DATA;
+
 #endif /* INC_TYPES_H_ */

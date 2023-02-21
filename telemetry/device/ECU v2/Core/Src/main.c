@@ -9,7 +9,7 @@
   * E-Formula 2023 ECU Unit Firmware. A-FA, Ajou University, Korea.
   *
   * Oh Byung-Jun (mail@luftaquila.io)
-  * A-FA E-Formula Electric System Part Manager & Project Manager
+  * A-FA E-Formula Electric System Part Manager & Team Project Manager
   *
   ******************************************************************************
   */
@@ -38,8 +38,6 @@
 
 /* Private define ------------------------------------------------------------*/
 /* USER CODE BEGIN PD */
-
-// ADC temperature sensor calibration values
 extern int SYS_LOG(LOG_LEVEL level, LOG_SOURCE source, int key);
 /* USER CODE END PD */
 
@@ -55,11 +53,13 @@ ERROR_CODE err;
 FIL logfile;
 LOG syslog;
 
-int timer_flag = 0;
-int adc_flag = 0;
+int32_t timer_flag = 0;
+int32_t adc_flag = 0;
 uint32_t adc_value[ADC_COUNT] = { 0, };
 
 SYSTEM_STATE sys_state;
+
+DISPLAY_DATA display_data;
 /* USER CODE END PV */
 
 /* Private function prototypes -----------------------------------------------*/
@@ -124,6 +124,7 @@ int main(void)
   int ret;
   uint64_t boot = RTC_read();
 
+  // init ECU gpio and system state
   ret = ECU_SETUP();
   if (ret != 0) {
     #ifdef DEBUG_MODE
@@ -133,6 +134,7 @@ int main(void)
     Error_Handler();
   }
 
+  // init SD card
   ret = SD_SETUP(boot);
   if (ret != 0) {
     #ifdef DEBUG_MODE
@@ -142,12 +144,12 @@ int main(void)
       Error_Handler();
   }
 
-
-  // system boot log
+  // core system boot complete
   syslog.value[0] = true;
   SYS_LOG(LOG_INFO, ECU, ECU_BOOT);
 
 
+  // init ESP32 i2c for remote telemetry
   ret = ESP_SETUP();
   if (ret != 0) {
     #ifdef DEBUG_MODE
@@ -160,6 +162,7 @@ int main(void)
   SYS_LOG(LOG_INFO, ESP, ESP_INIT);
 
 
+  // init internal ADCs for sensors
   ret = ANALOG_SETUP();
   if (ret != 0) {
     #ifdef DEBUG_MODE
@@ -172,12 +175,15 @@ int main(void)
   SYS_LOG(LOG_INFO, ANALOG, ADC_INIT);
 
 /*
+  // init CAN for BMS and inverter
   CAN_SETUP();
 
 
+  // init ADXL345 3-axis accelerometer i2c
   ACC_SETUP();
+*/
 
-
+  // init 1602 LCD i2c
   ret = LCD_SETUP();
   if (ret != 0) {
     #ifdef DEBUG_MODE
@@ -190,12 +196,21 @@ int main(void)
   SYS_LOG(LOG_INFO, LCD, LCD_INIT);
 
 
+/*
+  // init NEO-6M GPS UART
   GPS_SETUP();
  */
 
+
+  // start hardware timers
   HAL_TIM_Base_Start_IT(&htim1);
   HAL_TIM_Base_Start_IT(&htim2);
   HAL_TIM_Base_Start_IT(&htim3);
+
+
+  // system setup sequence complete
+  syslog.value[0] = true;
+  SYS_LOG(LOG_INFO, ECU, ECU_READY);
 
   /* USER CODE END 2 */
 
@@ -204,9 +219,9 @@ int main(void)
 
   while (1) {
 
-    // 1s timer set
+    // 1s timer set - SD card sync
     if (timer_flag & 0x1 << TIMER_1s) {
-      timer_flag &= ~(1 << TIMER_1s);
+      timer_flag &= ~(1 << TIMER_1s); // clear 1s timer flag
 
       // SD sync
       ret = SD_SYNC(&logfile);
@@ -215,32 +230,10 @@ int main(void)
       #endif
     }
 
-    // 50ms timer set
-    if (timer_flag & 0x1 << TIMER_50ms) {
-      static uint32_t counter = 0;
-      timer_flag &= ~(1 << TIMER_50ms);
 
-      if (counter & 0x1) {
-        // start ADC conversion
-        HAL_ADC_Start_IT(&hadc1);
-        HAL_ADC_Start_IT(&hadc2);
-        HAL_ADC_Start_IT(&hadc3);
-
-        // read ACC
-        // !!!!!!!!!!!!!!!!!!!!!
-
-      }
-      else {
-        // update LCD
-        // !!!!!!!!!!!!!!!!!!!!!
-
-      }
-      counter++;
-    }
-
-    // 500ms timer set
-    if (timer_flag & 0x1 << TIMER_500ms) {
-      timer_flag &= ~(1 << TIMER_500ms);
+    // 300ms timer set - system state record, LCD update
+    if (timer_flag & 0x1 << TIMER_300ms) {
+      timer_flag &= ~(1 << TIMER_300ms); // clear 300ms timer flag
 
       // update system state
       sys_state.HV = HAL_GPIO_ReadPin(GPIOD, HV_ACTIVE_Pin);
@@ -251,12 +244,35 @@ int main(void)
 
       *(SYSTEM_STATE *)syslog.value = sys_state;
       SYS_LOG(LOG_INFO, ECU, ECU_STATE);
+
+
+      // update LCD
+      LCD_UPDATE(display_data);
+      syslog.value[0] = true;
+      SYS_LOG(LOG_INFO, LCD, LCD_UPDATE);
     }
 
-    // all ADCs are ready
-    if ((adc_flag & 0x3) == 0x3) {
-      adc_flag = 0;
 
+    // 100ms timer set - ADC conversion, accelerometer record
+    if (timer_flag & 0x1 << TIMER_100ms) {
+      timer_flag &= ~(1 << TIMER_100ms); // clear 100ms timer flag
+
+      // start ADC conversion
+      HAL_ADC_Start_IT(&hadc1);
+      HAL_ADC_Start_IT(&hadc2);
+      HAL_ADC_Start_IT(&hadc3);
+
+      // read ACC
+      // !!!!!!!!!!!!!!!!!!!!!
+
+    }
+
+
+    // on all ADC conversion complete
+    if ((adc_flag & 0x3) == 0x3) {
+      adc_flag = 0; // clear all adc flags
+
+      // record each channel
       for (int i = 0; i < ADC_COUNT; i++) {
         *(uint32_t *)syslog.value = adc_value[i];
         SYS_LOG(LOG_INFO, ANALOG, i);

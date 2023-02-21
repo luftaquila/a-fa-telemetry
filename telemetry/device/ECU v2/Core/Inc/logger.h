@@ -48,6 +48,7 @@ typedef enum {
 typedef enum {
   ECU_BOOT = 0,
   ECU_STATE,
+  ECU_READY,
 } LOG_KEY_ECU;
 
 typedef enum {
@@ -102,6 +103,7 @@ typedef enum {
 
 typedef enum {
   LCD_INIT = 0,
+  LCD_UPDATE
 } LOG_KEY_LCD;
 
 /* system state type */

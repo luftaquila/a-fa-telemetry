@@ -23,13 +23,14 @@
 /* USER CODE BEGIN 0 */
 #include "tim.h"
 
+// ADC temperature sensor calibration values
 #define TS_CAL1 *((uint16_t*)0x1FFF7A2C)
 #define TS_CAL2 *((uint16_t*)0x1FFF7A2E)
 
-extern int adc_flag;
-extern int adc_value[ADC_COUNT];
+extern int32_t adc_flag;
+extern int32_t adc_value[ADC_COUNT];
 
-int ANALOG_SETUP(void) {
+int32_t ANALOG_SETUP(void) {
   // ADC calibration - not suppoerted in STM32F4 series
   /* while(HAL_ADCEx_Calibration_Start(&hadc1) != HAL_OK); */
   /* while(HAL_ADCEx_Calibration_Start(&hadc2) != HAL_OK); */

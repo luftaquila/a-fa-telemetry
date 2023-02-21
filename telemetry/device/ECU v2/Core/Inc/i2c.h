@@ -53,9 +53,9 @@ void MX_I2C2_Init(void);
 void MX_I2C3_Init(void);
 
 /* USER CODE BEGIN Prototypes */
-int ESP_SETUP(void);
-int LCD_SETUP(void);
-int LCD_UPDATE(uint32_t value1, uint32_t value2);
+int32_t ESP_SETUP(void);
+int32_t LCD_SETUP(void);
+int32_t LCD_UPDATE(DISPLAY_DATA display_data);
 
 void LCD_SEND(uint8_t data, uint8_t flag) {
   const uint8_t hi = data & 0xF0;
