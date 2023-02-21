@@ -33,8 +33,8 @@ typedef enum {
 
 /* I2C buffer index */
 typedef enum {
-  I2C_BUFFER_ESP = 0;
-  I2C_BUFFER_LCD
+  I2C_BUFFER_ESP = 0,
+  I2C_BUFFER_LCD,
 } I2C_BUFFER_ID;
 
 /* LCD update info */

@@ -24,8 +24,9 @@
 extern SYSTEM_STATE sys_state;
 
 // 32KB I2C Tx buffers
-ring_buffer_t ESP_BUFFER;
-ring_buffer_t LCD_BUFFER;
+extern uint32_t i2c_buffer_flag;
+extern ring_buffer_t ESP_BUFFER;
+extern ring_buffer_t LCD_BUFFER;
 
 int32_t ESP_SETUP(void) {
   // i2c init

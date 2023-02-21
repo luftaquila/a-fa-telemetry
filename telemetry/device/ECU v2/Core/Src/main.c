@@ -290,7 +290,7 @@ int main(void)
 
       }
 
-      else if (i2c_buffer_flag) & (1 << I2C_BUFFER_LCD)) {
+      else if (i2c_buffer_flag & (1 << I2C_BUFFER_LCD)) {
 
       }
 
