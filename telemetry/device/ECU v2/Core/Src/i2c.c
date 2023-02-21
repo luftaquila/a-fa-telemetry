@@ -24,7 +24,7 @@
 extern SYSTEM_STATE sys_state;
 
 // 32KB I2C Tx buffers
-extern uint32_t i2c_buffer_flag;
+extern uint32_t i2c_flag;
 extern ring_buffer_t ESP_BUFFER;
 extern ring_buffer_t LCD_BUFFER;
 
@@ -61,7 +61,7 @@ int32_t LCD_SETUP(void) {
   return 0;
 }
 
-int32_t LCD_UPDATE(DISPLAY_DATA display_data) {
+int32_t LCD_UPDATE(void) {
   // !!!!!!!!!!!!!!!!!
 
   // push command to ring buffer

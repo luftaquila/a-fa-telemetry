@@ -21,24 +21,21 @@
 #include "rtc.h"
 
 /* USER CODE BEGIN 0 */
-uint64_t RTC_read() {
-	uint64_t result = 0;
-
+void RTC_READ(DATETIME *boot) {
 	RTC_DateTypeDef sDate;
 	RTC_TimeTypeDef sTime;
 
 	HAL_RTC_GetTime(&hrtc, &sTime, FORMAT_BIN);
 	HAL_RTC_GetDate(&hrtc, &sDate, FORMAT_BIN);
 
-	result |= (uint64_t)(sTime.SubSeconds);
-	result |= (uint64_t)(sTime.Seconds) << 8;
-	result |= (uint64_t)(sTime.Minutes) << 16;
-	result |= (uint64_t)(sTime.Hours) << 24;
-	result |= (uint64_t)(sDate.Date) << 32;
-	result |= (uint64_t)(sDate.Month) << 40;
-	result |= (uint64_t)(sDate.Year) << 48;
+  boot->second = sTime.Seconds;
+  boot->minute = sTime.Minutes;
+  boot->hour = sTime.Hours;
+  boot->date = sDate.Date;
+  boot->month = sDate.Month;
+  boot->year = sDate.Year;
 
-	return result;
+  return;
 }
 
 /* USER CODE END 0 */

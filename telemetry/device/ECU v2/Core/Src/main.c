@@ -57,7 +57,7 @@ uint32_t timer_flag = 0;
 uint32_t adc_flag = 0;
 uint32_t adc_value[ADC_COUNT] = { 0, };
 
-uint32_t i2c_buffer_flag = 0;
+uint32_t i2c_flag = 0;
 ring_buffer_t ESP_BUFFER;
 ring_buffer_t LCD_BUFFER;
 
@@ -126,7 +126,8 @@ int main(void)
   /* USER CODE BEGIN 2 */
 
   int32_t ret;
-  uint64_t boot = RTC_read();
+  DATETIME boot;
+  RTC_READ(&boot);
 
   // init ECU gpio and system state
   ret = ECU_SETUP();
@@ -139,7 +140,7 @@ int main(void)
   }
 
   // init SD card
-  ret = SD_SETUP(boot);
+  ret = SD_SETUP(&boot);
   if (ret != 0) {
     #ifdef DEBUG_MODE
       printf("[%8lu] [ERR] SD setup failed: %d\r\n", HAL_GetTick(), ret);
@@ -250,7 +251,7 @@ int main(void)
 
 
       // update LCD
-      LCD_UPDATE(display_data);
+      LCD_UPDATE();
       syslog.value[0] = true;
       SYS_LOG(LOG_INFO, LCD, LCD_UPDATED);
     }
@@ -283,16 +284,14 @@ int main(void)
     }
 
 
-    // check I2C Tx buffer
-    if (i2c_buffer_flag) {
-      if (i2c_buffer_flag & (1 << I2C_BUFFER_ESP)) {
-        // pending??? !!!!!!!!
+    // check I2C Tx buffer; start transmit if buffer is not empty and not transmitting
+    if (i2c_flag & (1 << I2C_BUFFER_ESP_REMAIN) && !(i2c_flag & (1 << I2C_BUFFER_ESP_TRANSMIT))) {
+      // !!!!!!!!
 
-      }
+    }
 
-      else if (i2c_buffer_flag & (1 << I2C_BUFFER_LCD)) {
-
-      }
+    if (i2c_flag & (1 << I2C_BUFFER_LCD_REMAIN) && !(i2c_flag & (1 << I2C_BUFFER_LCD_TRANSMIT))) {
+      // !!!!!!!!
 
     }
 

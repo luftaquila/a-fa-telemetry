@@ -57,7 +57,7 @@ void MX_I2C3_Init(void);
 /* USER CODE BEGIN Prototypes */
 int32_t ESP_SETUP(void);
 int32_t LCD_SETUP(void);
-int32_t LCD_UPDATE(DISPLAY_DATA display_data);
+int32_t LCD_UPDATE(void);
 void LCD_SEND(uint8_t data, uint8_t flag);
 void LCD_CMD(uint8_t cmd);
 void LCD_DATA(uint8_t data);
