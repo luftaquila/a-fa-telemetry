@@ -20,8 +20,8 @@ typedef enum {
 /* timer index */
 typedef enum {
   TIMER_1s = 0,
-  TIMER_500ms,
-  TIMER_50ms,
+  TIMER_300ms,
+  TIMER_100ms,
 } TIMER_ID;
 
 /* ADC index */

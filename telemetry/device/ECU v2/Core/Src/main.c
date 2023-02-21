@@ -38,7 +38,7 @@
 
 /* Private define ------------------------------------------------------------*/
 /* USER CODE BEGIN PD */
-extern int SYS_LOG(LOG_LEVEL level, LOG_SOURCE source, int key);
+extern int32_t SYS_LOG(LOG_LEVEL level, LOG_SOURCE source, int32_t key);
 /* USER CODE END PD */
 
 /* Private macro -------------------------------------------------------------*/
@@ -249,7 +249,7 @@ int main(void)
       // update LCD
       LCD_UPDATE(display_data);
       syslog.value[0] = true;
-      SYS_LOG(LOG_INFO, LCD, LCD_UPDATE);
+      SYS_LOG(LOG_INFO, LCD, LCD_UPDATED);
     }
 
 

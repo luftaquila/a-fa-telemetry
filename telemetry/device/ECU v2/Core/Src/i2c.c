@@ -21,6 +21,8 @@
 #include "i2c.h"
 
 /* USER CODE BEGIN 0 */
+extern SYSTEM_STATE sys_state;
+
 // 32KB I2C Tx buffers
 ring_buffer_t ESP_BUFFER;
 ring_buffer_t LCD_BUFFER;
@@ -28,7 +30,7 @@ ring_buffer_t LCD_BUFFER;
 int32_t ESP_SETUP(void) {
   // i2c init
   // RTC SYNC
-  return 0
+  return 0;
 }
 
 int32_t LCD_SETUP(void) {
@@ -61,10 +63,33 @@ int32_t LCD_SETUP(void) {
 int32_t LCD_UPDATE(DISPLAY_DATA display_data) {
   // !!!!!!!!!!!!!!!!!
 
+  return 0;
+}
+
+
+void LCD_SEND(uint8_t data, uint8_t flag) {
+  const uint8_t hi = data & 0xF0;
+  const uint8_t lo = (data << 4) & 0xF0;
+
+  uint8_t payload[4];
+  payload[0] = hi | flag | LCD_BACKLIGHT | LCD_PIN_EN;
+  payload[1] = hi | flag | LCD_BACKLIGHT;
+  payload[2] = lo | flag | LCD_BACKLIGHT | LCD_PIN_EN;
+  payload[3] = lo | flag | LCD_BACKLIGHT;
+
+  HAL_I2C_Master_Transmit(&hi2c2, LCD_I2C_ADDR, (uint8_t *)payload, 4, 50);
+}
+
+inline void LCD_CMD(uint8_t cmd) {
+  LCD_SEND(cmd, 0);
+}
+
+inline void LCD_DATA(uint8_t data) {
+  LCD_SEND(data, LCD_PIN_RS);
 }
 /* USER CODE END 0 */
 
-I1C_HandleTypeDef hi2c1;
+I2C_HandleTypeDef hi2c1;
 I2C_HandleTypeDef hi2c2;
 I2C_HandleTypeDef hi2c3;
 

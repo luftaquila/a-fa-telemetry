@@ -103,7 +103,7 @@ typedef enum {
 
 typedef enum {
   LCD_INIT = 0,
-  LCD_UPDATE
+  LCD_UPDATED
 } LOG_KEY_LCD;
 
 /* system state type */
@@ -123,12 +123,12 @@ typedef struct {
   uint8_t LCD :1;
   uint8_t GPS :1;
 
-  uint8_t _reserved :21;
+  uint32_t _reserved :21;
 } SYSTEM_STATE;
 
 /* Prototypes */
 extern LOG syslog;
-inline int SYS_LOG(LOG_LEVEL level, LOG_SOURCE source, int key) {
+inline int32_t SYS_LOG(LOG_LEVEL level, LOG_SOURCE source, int32_t key) {
   syslog.timestamp = HAL_GetTick();
   syslog.level = level;
   syslog.source = source;
