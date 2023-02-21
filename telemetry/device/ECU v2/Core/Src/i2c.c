@@ -28,8 +28,35 @@ int ESP_SETUP(void) {
 }
 
 int LCD_SETUP(void) {
-  // lcd init
+  // wait for lcd ready
+  if (HAL_I2C_IsDeviceReady(&hi2c2, LCD_I2C_ADDR, 1, 3000) != HAL_OK) {
+    return -1;
+  }
+
+  // lcd init sequence
+  // !!!!!!!!!!!!!!!!!
+  LCD_CMD(0x30);
+  HAL_Delay(5);
+  LCD_CMD(0x30);
+  HAL_Delay(1);
+  LCD_CMD(0x30);
+  LCD_CMD(0x20);
+  HAL_Delay(1);
+	LCD_CMD(0x28); // FUNCTION SET: DL=0, N=1, F=0
+	LCD_CMD(0x08); // DISPLAY SWITCH: D=0, C=0, B=0
+	LCD_CMD(0x01); // SCREEN CLEAR
+	HAL_Delay(2);
+	LCD_CMD(0x0C); // DISPLAY SWITCH: D=1, C=0, B=0
+
+  sys_state.LCD = true;
+  syslog.value[0] = true;
+  SYS_LOG(LOG_INFO, LCD, LCD_INIT);
+
   return 0;
+}
+
+int LCD_UPDATE(uint32_t value1, uint32_t value2) {
+
 }
 /* USER CODE END 0 */
 
