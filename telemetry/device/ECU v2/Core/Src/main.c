@@ -54,6 +54,7 @@ FIL logfile;
 LOG syslog;
 
 uint32_t timer_flag = 0;
+
 uint32_t adc_flag = 0;
 uint32_t adc_value[ADC_COUNT] = { 0, };
 
@@ -64,6 +65,8 @@ ring_buffer_t LCD_BUFFER;
 SYSTEM_STATE sys_state;
 
 DISPLAY_DATA display_data;
+
+uint8_t acc_value[6];
 /* USER CODE END PV */
 
 /* Private function prototypes -----------------------------------------------*/
@@ -179,14 +182,12 @@ int main(void)
   syslog.value[0] = true;
   SYS_LOG(LOG_INFO, ANALOG, ADC_INIT);
 
+
 /*
   // init CAN for BMS and inverter
   CAN_SETUP();
-
-
-  // init ADXL345 3-axis accelerometer i2c
-  ACC_SETUP();
 */
+
 
   // init 1602 LCD i2c
   ret = LCD_SETUP();
@@ -200,7 +201,21 @@ int main(void)
   syslog.value[0] = true;
   SYS_LOG(LOG_INFO, LCD, LCD_INIT);
 
-/*
+
+  // init ADXL345 3-axis accelerometer i2c
+  ret = ACC_SETUP();
+  if (ret != 0) {
+    #ifdef DEBUG_MODE
+      printf("[%8lu] [ERR] Accelerometer setup failed: %d\r\n", HAL_GetTick(), ret);
+    #endif
+    syslog.value[0] = false;
+    SYS_LOG(LOG_ERROR, ACC, ACC_INIT);
+  }
+  syslog.value[0] = true;
+  SYS_LOG(LOG_INFO, ACC, ACC_INIT);
+
+
+  /*
   // init NEO-6M GPS UART
   GPS_SETUP();
  */
@@ -266,9 +281,8 @@ int main(void)
       HAL_ADC_Start_IT(&hadc2);
       HAL_ADC_Start_IT(&hadc3);
 
-      // read ACC
-      // !!!!!!!!!!!!!!!!!!!!!
-
+      // trigger accelerometer read
+      HAL_I2C_Mem_Read_IT(&hi2c3, ACC_I2C_ADDR, 0x32, 1, acc_value, 6);
     }
 
 

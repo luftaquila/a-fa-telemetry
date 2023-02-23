@@ -28,6 +28,9 @@ extern uint32_t i2c_flag;
 extern ring_buffer_t ESP_BUFFER;
 extern ring_buffer_t LCD_BUFFER;
 
+// accelerometer data
+extern uint8_t acc_value[6];
+
 
 void HAL_I2C_MasterTxCpltCallback(I2C_HandleTypeDef *hi2c) {
   if (hi2c->Instance == I2C1) {
@@ -48,17 +51,25 @@ void HAL_I2C_MasterTxCpltCallback(I2C_HandleTypeDef *hi2c) {
   }
 }
 
-void HAL_I2C_MasterRxCpltCallback(I2C_HandleTypeDef *hi2c) {
+void HAL_I2C_MemRxCpltCallback(I2C_HandleTypeDef *hi2c) {
+  *(uint64_t *)syslog.value = *(uint64_t *)acc_value;
+  SYS_LOG(LOG_INFO, ACC, ACC_DATA);
 }
 
 
-
+/****************************
+ * ESP32 I2C interface
+ ***************************/
 int32_t ESP_SETUP(void) {
   // i2c init
   // RTC SYNC
   return 0;
 }
 
+
+/****************************
+ * 1602 LCD I2C interface
+ ***************************/
 int32_t LCD_SETUP(void) {
   // wait for LCD ready
   HAL_Delay(50);
@@ -97,7 +108,6 @@ int32_t LCD_SETUP(void) {
 int32_t LCD_UPDATE(void) {
   // !!!!!!!!!!!!!!!!!
 
-
   return 0;
 }
 
@@ -109,7 +119,7 @@ inline void LCD_WRITE(char *str, uint8_t col, uint8_t row) {
 }
 
 inline void LCD_SEND(uint8_t data, uint8_t flag) {
-  static uint8_t payload[4];
+  uint8_t payload[4];
   LCD_PACKET(data, flag, payload);
 
   HAL_I2C_Master_Transmit(&hi2c2, LCD_I2C_ADDR, (uint8_t *)payload, 4, 50);
@@ -131,6 +141,24 @@ inline void LCD_PACKET(uint8_t data, uint8_t flag, uint8_t *payload) {
   *(payload + 1) = hi | flag | LCD_BACKLIGHT;
   *(payload + 2) = lo | flag | LCD_BACKLIGHT | LCD_PIN_EN;
   *(payload + 3) = lo | flag | LCD_BACKLIGHT;
+}
+
+
+/****************************************
+ * ADXL345 accelerometer I2C interface
+ ***************************************/
+int32_t ACC_SETUP(void) {
+  // accelerometer init sequence
+  ACC_SEND(0x31, 0x01);  // DATA_FORMAT range +-4g
+  ACC_SEND(0x2D, 0x00);  // POWER_CTL bit reset
+  ACC_SEND(0x2D, 0x08);  // POWER_CTL set measure mode. 100hz default rate
+
+  return 0;
+}
+
+inline void ACC_SEND(uint8_t reg, uint8_t value) {
+  uint8_t payload[2] = { reg, value };
+  HAL_I2C_Master_Transmit(&hi2c3, ACC_I2C_ADDR, payload, 2, 50);
 }
 /* USER CODE END 0 */
 
@@ -208,7 +236,7 @@ void MX_I2C3_Init(void)
 
   /* USER CODE END I2C3_Init 1 */
   hi2c3.Instance = I2C3;
-  hi2c3.Init.ClockSpeed = 100000;
+  hi2c3.Init.ClockSpeed = 400000;
   hi2c3.Init.DutyCycle = I2C_DUTYCYCLE_2;
   hi2c3.Init.OwnAddress1 = 0;
   hi2c3.Init.AddressingMode = I2C_ADDRESSINGMODE_7BIT;
@@ -314,6 +342,10 @@ void HAL_I2C_MspInit(I2C_HandleTypeDef* i2cHandle)
 
     /* I2C3 clock enable */
     __HAL_RCC_I2C3_CLK_ENABLE();
+
+    /* I2C3 interrupt Init */
+    HAL_NVIC_SetPriority(I2C3_EV_IRQn, 0, 0);
+    HAL_NVIC_EnableIRQ(I2C3_EV_IRQn);
   /* USER CODE BEGIN I2C3_MspInit 1 */
 
   /* USER CODE END I2C3_MspInit 1 */
@@ -383,6 +415,8 @@ void HAL_I2C_MspDeInit(I2C_HandleTypeDef* i2cHandle)
 
     HAL_GPIO_DeInit(GPIOA, GPIO_PIN_8);
 
+    /* I2C3 interrupt Deinit */
+    HAL_NVIC_DisableIRQ(I2C3_EV_IRQn);
   /* USER CODE BEGIN I2C3_MspDeInit 1 */
 
   /* USER CODE END I2C3_MspDeInit 1 */

@@ -57,12 +57,16 @@ void MX_I2C3_Init(void);
 
 /* USER CODE BEGIN Prototypes */
 int32_t ESP_SETUP(void);
+
 int32_t LCD_SETUP(void);
 int32_t LCD_UPDATE(void);
 void LCD_WRITE(char *str, uint8_t col, uint8_t row);
 void LCD_SEND(uint8_t data, uint8_t flag);
 void LCD_SEND_IT(uint8_t data, uint8_t flag);
 void LCD_PACKET(uint8_t data, uint8_t flag, uint8_t *payload);
+
+int32_t ACC_SETUP(void);
+void ACC_SEND(uint8_t reg, uint8_t value);
 /* USER CODE END Prototypes */
 
 #ifdef __cplusplus
