@@ -9,9 +9,8 @@
 #define INC_LOGGER_H_
 
 #include "stdio.h"
-#include "sdio.h"
 
-//#define DEBUG_MODE
+// #define DEBUG_MODE
 
 /* system log data type */
 typedef struct {
@@ -48,6 +47,7 @@ typedef enum {
 typedef enum {
   ECU_BOOT = 0,
   ECU_STATE,
+  ECU_READY,
 } LOG_KEY_ECU;
 
 typedef enum {
@@ -102,6 +102,7 @@ typedef enum {
 
 typedef enum {
   LCD_INIT = 0,
+  LCD_UPDATED
 } LOG_KEY_LCD;
 
 /* system state type */
@@ -115,27 +116,18 @@ typedef struct {
 
   /* connections */
   uint8_t SD :1;
+  uint8_t ESP :1;
   uint8_t CAN :1;
   uint8_t ACC :1;
   uint8_t LCD :1;
   uint8_t GPS :1;
+
+  uint32_t _reserved :21;
 } SYSTEM_STATE;
 
 /* Prototypes */
 extern LOG syslog;
-inline int SYS_LOG(LOG_LEVEL level, LOG_SOURCE source, int key) {
-  syslog.timestamp = HAL_GetTick();
-  syslog.level = level;
-  syslog.source = source;
-  syslog.key = key;
 
-  SD_WRITE();
-  // HAL_I2C_Master_Transmit_IT(&hi2c1, ESP_I2C_ADDR, (uint8_t *)&syslog, 16 /* sizeof(LOG) */);
-
-  #ifdef DEBUG_MODE
-    printf("[%8lu] [LOG] level: %d  source: %d  key: %d  value: 0x %02x %02x %02x %02x %02x %02x %02x %02x\r\n", syslog.timestamp, syslog.level, syslog.source, syslog.key, syslog.value[7], syslog.value[6], syslog.value[5], syslog.value[4], syslog.value[3], syslog.value[2], syslog.value[1], syslog.value[0]);
-  #endif
-  return 0;
-}
+int32_t SYS_LOG(LOG_LEVEL level, LOG_SOURCE source, int32_t key);
 
 #endif /* INC_LOGGER_H_ */

@@ -19,7 +19,7 @@ extern "C"
  * can be contained in the buffer.
  * The buffer size must be a power of two.
 */
-#define RING_BUFFER_SIZE 65536
+#define RING_BUFFER_SIZE (1 << 15)
 
 #if (RING_BUFFER_SIZE & (RING_BUFFER_SIZE - 1)) != 0
 #error "RING_BUFFER_SIZE must be a power of two"
@@ -97,6 +97,7 @@ uint8_t ring_buffer_dequeue(ring_buffer_t *buffer, char *data);
  * @return The number of bytes returned.
  */
 ring_buffer_size_t ring_buffer_dequeue_arr(ring_buffer_t *buffer, char *data, ring_buffer_size_t len);
+
 /**
  * Peeks a ring buffer, i.e. returns an element without removing it.
  * @param buffer The buffer from which the data should be returned.

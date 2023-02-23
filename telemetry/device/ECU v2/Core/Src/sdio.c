@@ -32,13 +32,13 @@
 extern FIL logfile;
 extern LOG syslog;
 extern SYSTEM_STATE sys_state;
-char logname[30];
+char logname[40];
 
-int SD_SETUP(uint64_t boot) {
+int32_t SD_SETUP(DATETIME *boot) {
   FATFS SD_FATFS;
 
   disk_initialize((BYTE) 0);
-  int ret = f_mount(&SD_FATFS, "", 0);
+  int32_t ret = f_mount(&SD_FATFS, "", 0);
   if (ret != FR_OK) {
     sys_state.SD = false;
     #ifdef DEBUG_MODE
@@ -47,9 +47,8 @@ int SD_SETUP(uint64_t boot) {
     return -1;
   }
 
-  sprintf(logname, "A-FA 20%02lu-%02lu-%02lu %02lu-%02lu-%02lu.log",
-         (uint32_t)(boot >> 48), (uint32_t)(boot << 16 >> 56), (uint32_t)(boot << 24 >> 56),
-         (uint32_t)(boot << 32 >> 56), (uint32_t)(boot << 40 >> 56), (uint32_t)(boot << 48 >> 56));
+  sprintf(logname, "A-FA 20%02d-%02d-%02d %02d-%02d-%02d.log",
+      boot->year, boot->month, boot->date, boot->hour, boot->minute, boot->second);
 
   ret = f_open(&logfile, logname, FA_OPEN_APPEND | FA_WRITE);
   if (ret != FR_OK) {
@@ -64,9 +63,9 @@ int SD_SETUP(uint64_t boot) {
   return ret;
 }
 
-int SD_WRITE() {
-  uint32_t written_count;
-  int ret = f_write(&logfile, &syslog, 16 /* sizeof(LOG) */, (void *)&written_count);
+int32_t SD_WRITE() {
+  int32_t written_count;
+  int32_t ret = f_write(&logfile, &syslog, 16 /* sizeof(LOG) */, (void *)&written_count);
   if (ret != FR_OK) {
     sys_state.SD = false;
     #ifdef DEBUG_MODE
@@ -77,8 +76,8 @@ int SD_WRITE() {
   return ret;
 }
 
-int SD_SYNC() {
-  int ret = f_sync(&logfile);
+int32_t SD_SYNC() {
+  int32_t ret = f_sync(&logfile);
   if (ret != FR_OK) {
     sys_state.SD = false;
     #ifdef DEBUG_MODE

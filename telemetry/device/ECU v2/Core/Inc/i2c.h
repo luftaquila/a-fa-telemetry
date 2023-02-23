@@ -29,7 +29,9 @@ extern "C" {
 #include "main.h"
 
 /* USER CODE BEGIN Includes */
-
+#include "types.h"
+#include "ringbuffer.h"
+#include "stdbool.h"
 /* USER CODE END Includes */
 
 extern I2C_HandleTypeDef hi2c1;
@@ -39,9 +41,14 @@ extern I2C_HandleTypeDef hi2c2;
 extern I2C_HandleTypeDef hi2c3;
 
 /* USER CODE BEGIN Private defines */
-#define ESP_I2C_ADDR 0x00 << 1
-#define LCD_I2C_ADDR 0x27 << 1
-#define ACC_I2C_ADDR 0x53 << 1
+#define ESP_I2C_ADDR (0x71 << 1)
+#define LCD_I2C_ADDR (0x27 << 1)
+#define ACC_I2C_ADDR (0x53 << 1)
+
+#define LCD_MODE_CMD 0
+#define LCD_MODE_DATA (1 << 0)
+#define LCD_PIN_EN (1 << 2)
+#define LCD_BACKLIGHT (1 << 3)
 /* USER CODE END Private defines */
 
 void MX_I2C1_Init(void);
@@ -49,8 +56,13 @@ void MX_I2C2_Init(void);
 void MX_I2C3_Init(void);
 
 /* USER CODE BEGIN Prototypes */
-int ESP_SETUP(void);
-int LCD_SETUP(void);
+int32_t ESP_SETUP(void);
+int32_t LCD_SETUP(void);
+int32_t LCD_UPDATE(void);
+void LCD_WRITE(char *str, uint8_t col, uint8_t row);
+void LCD_SEND(uint8_t data, uint8_t flag);
+void LCD_SEND_IT(uint8_t data, uint8_t flag);
+void LCD_PACKET(uint8_t data, uint8_t flag, uint8_t *payload);
 /* USER CODE END Prototypes */
 
 #ifdef __cplusplus
