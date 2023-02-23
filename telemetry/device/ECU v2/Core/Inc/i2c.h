@@ -45,7 +45,8 @@ extern I2C_HandleTypeDef hi2c3;
 #define LCD_I2C_ADDR (0x27 << 1)
 #define ACC_I2C_ADDR (0x53 << 1)
 
-#define LCD_PIN_RS (1 << 0)
+#define LCD_MODE_CMD 0
+#define LCD_MODE_DATA (1 << 0)
 #define LCD_PIN_EN (1 << 2)
 #define LCD_BACKLIGHT (1 << 3)
 /* USER CODE END Private defines */
@@ -58,9 +59,10 @@ void MX_I2C3_Init(void);
 int32_t ESP_SETUP(void);
 int32_t LCD_SETUP(void);
 int32_t LCD_UPDATE(void);
+void LCD_WRITE(char *str, uint8_t col, uint8_t row);
 void LCD_SEND(uint8_t data, uint8_t flag);
-void LCD_CMD(uint8_t cmd);
-void LCD_DATA(uint8_t data);
+void LCD_SEND_IT(uint8_t data, uint8_t flag);
+void LCD_PACKET(uint8_t data, uint8_t flag, uint8_t *payload);
 /* USER CODE END Prototypes */
 
 #ifdef __cplusplus

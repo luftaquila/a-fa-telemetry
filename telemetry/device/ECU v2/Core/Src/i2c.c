@@ -28,6 +28,31 @@ extern uint32_t i2c_flag;
 extern ring_buffer_t ESP_BUFFER;
 extern ring_buffer_t LCD_BUFFER;
 
+
+void HAL_I2C_MasterTxCpltCallback(I2C_HandleTypeDef *hi2c) {
+  if (hi2c->Instance == I2C1) {
+
+  }
+
+  else if (hi2c->Instance == I2C2) {
+    if (ring_buffer_is_empty(&LCD_BUFFER)) {
+      // finish transmitting
+      i2c_flag &= ~(1 << I2C_BUFFER_LCD_REMAIN);
+      i2c_flag &= ~(1 << I2C_BUFFER_LCD_TRANSMIT);
+    }
+    else {
+      uint8_t payload[4];
+      ring_buffer_dequeue_arr(&LCD_BUFFER, (char *)payload, 4);
+      HAL_I2C_Master_Transmit_IT(&hi2c2, LCD_I2C_ADDR, payload, 4);
+    }
+  }
+}
+
+void HAL_I2C_MasterRxCpltCallback(I2C_HandleTypeDef *hi2c) {
+}
+
+
+
 int32_t ESP_SETUP(void) {
   // i2c init
   // RTC SYNC
@@ -42,17 +67,25 @@ int32_t LCD_SETUP(void) {
   }
 
   // LCD init sequence
-  LCD_CMD(0x30); // set 4 bit mod
+  LCD_SEND(0x30, LCD_MODE_CMD); // set-4 bit mod
   HAL_Delay(5);
-  LCD_CMD(0x30); // retry 4 bit mod
+  LCD_SEND(0x30, LCD_MODE_CMD); // retry 4-bit mod
   HAL_Delay(5);
-  LCD_CMD(0x30); // final try
+  LCD_SEND(0x30, LCD_MODE_CMD); // final try
   HAL_Delay(1);
-  LCD_CMD(0x20);
-	LCD_CMD(0x28); // FUNCTION SET: DL=0, N=1, F=0
-	LCD_CMD(0x08); // DISPLAY SWITCH: D=0, C=0, B=0
-	LCD_CMD(0x01); // SCREEN CLEAR
-	LCD_CMD(0x0C); // DISPLAY SWITCH: D=1, C=0, B=0
+  LCD_SEND(0x20, LCD_MODE_CMD); // set 4-bit interface
+  HAL_Delay(1);
+	LCD_SEND(0x28, LCD_MODE_CMD); // FUNCTION SET: DL=0, N=1, F=0
+  HAL_Delay(1);
+	LCD_SEND(0x08, LCD_MODE_CMD); // DISPLAY SWITCH: D=0, C=0, B=0
+  HAL_Delay(1);
+	LCD_SEND(0x01, LCD_MODE_CMD); // SCREEN CLEAR
+  HAL_Delay(1);
+	LCD_SEND(0x0C, LCD_MODE_CMD); // DISPLAY SWITCH: D=1, C=0, B=0
+  HAL_Delay(1);
+
+  LCD_WRITE("V:", 0, 0);
+  LCD_WRITE("T:", 0, 1);
 
   sys_state.LCD = true;
   syslog.value[0] = true;
@@ -64,29 +97,40 @@ int32_t LCD_SETUP(void) {
 int32_t LCD_UPDATE(void) {
   // !!!!!!!!!!!!!!!!!
 
-  // push command to ring buffer
+
   return 0;
 }
 
-void LCD_SEND(uint8_t data, uint8_t flag) {
-  const uint8_t hi = data & 0xF0;
-  const uint8_t lo = (data << 4) & 0xF0;
+inline void LCD_WRITE(char *str, uint8_t col, uint8_t row) {
+  col |= (row == 0 ? 0x80 : 0xC0);
 
-  uint8_t payload[4];
-  payload[0] = hi | flag | LCD_BACKLIGHT | LCD_PIN_EN;
-  payload[1] = hi | flag | LCD_BACKLIGHT;
-  payload[2] = lo | flag | LCD_BACKLIGHT | LCD_PIN_EN;
-  payload[3] = lo | flag | LCD_BACKLIGHT;
+  LCD_SEND_IT(col, LCD_MODE_CMD);
+  while (*str) LCD_SEND_IT(*str++, LCD_MODE_DATA);
+}
+
+inline void LCD_SEND(uint8_t data, uint8_t flag) {
+  static uint8_t payload[4];
+  LCD_PACKET(data, flag, payload);
 
   HAL_I2C_Master_Transmit(&hi2c2, LCD_I2C_ADDR, (uint8_t *)payload, 4, 50);
 }
 
-inline void LCD_CMD(uint8_t cmd) {
-  LCD_SEND(cmd, 0);
+inline void LCD_SEND_IT(uint8_t data, uint8_t flag) {
+  static uint8_t payload[4];
+  LCD_PACKET(data, flag, payload);
+
+  ring_buffer_queue_arr(&LCD_BUFFER,(char *)payload, 4);
+  i2c_flag |= 1 << I2C_BUFFER_LCD_REMAIN;
 }
 
-inline void LCD_DATA(uint8_t data) {
-  LCD_SEND(data, LCD_PIN_RS);
+inline void LCD_PACKET(uint8_t data, uint8_t flag, uint8_t *payload) {
+  const uint8_t hi = data & 0xF0;
+  const uint8_t lo = (data << 4) & 0xF0;
+
+  *(payload)     = hi | flag | LCD_BACKLIGHT | LCD_PIN_EN;
+  *(payload + 1) = hi | flag | LCD_BACKLIGHT;
+  *(payload + 2) = lo | flag | LCD_BACKLIGHT | LCD_PIN_EN;
+  *(payload + 3) = lo | flag | LCD_BACKLIGHT;
 }
 /* USER CODE END 0 */
 
