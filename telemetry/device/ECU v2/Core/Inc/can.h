@@ -35,13 +35,12 @@ extern "C" {
 extern CAN_HandleTypeDef hcan1;
 
 /* USER CODE BEGIN Private defines */
-
 /* USER CODE END Private defines */
 
 void MX_CAN1_Init(void);
 
 /* USER CODE BEGIN Prototypes */
-
+int32_t CAN_SETUP(void);
 /* USER CODE END Prototypes */
 
 #ifdef __cplusplus

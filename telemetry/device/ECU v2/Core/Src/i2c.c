@@ -74,6 +74,7 @@ int32_t LCD_SETUP(void) {
   // wait for LCD ready
   HAL_Delay(50);
   if (HAL_I2C_IsDeviceReady(&hi2c2, LCD_I2C_ADDR, 1, 3000) != HAL_OK) {
+    sys_state.LCD = false;
     return -1;
   }
 
@@ -99,9 +100,6 @@ int32_t LCD_SETUP(void) {
   LCD_WRITE("T:", 0, 1);
 
   sys_state.LCD = true;
-  syslog.value[0] = true;
-  SYS_LOG(LOG_INFO, LCD, LCD_INIT);
-
   return 0;
 }
 
@@ -152,6 +150,8 @@ int32_t ACC_SETUP(void) {
   ACC_SEND(0x31, 0x01);  // DATA_FORMAT range +-4g
   ACC_SEND(0x2D, 0x00);  // POWER_CTL bit reset
   ACC_SEND(0x2D, 0x08);  // POWER_CTL set measure mode. 100hz default rate
+
+  sys_state.ACC = true;
 
   return 0;
 }

@@ -21,7 +21,90 @@
 #include "can.h"
 
 /* USER CODE BEGIN 0 */
+extern SYSTEM_STATE sys_state;
 
+extern CAN_RxHeaderTypeDef can_rx_header;
+extern uint8_t can_rx_data[8];
+
+int32_t CAN_SETUP(void) {
+
+  printf("CAN SETUP\r\n");
+
+  CAN_FilterTypeDef CAN_FILTER;
+  CAN_FILTER.FilterBank = 0;
+  CAN_FILTER.FilterMode = CAN_FILTERMODE_IDMASK;
+  CAN_FILTER.FilterScale = CAN_FILTERSCALE_32BIT;
+  CAN_FILTER.FilterIdHigh = 0x0000;
+  CAN_FILTER.FilterIdLow = 0x0000;
+  CAN_FILTER.FilterMaskIdHigh = 0x0000;
+  CAN_FILTER.FilterMaskIdLow = 0x0000;
+  CAN_FILTER.FilterFIFOAssignment = CAN_RX_FIFO0;
+  CAN_FILTER.FilterActivation = ENABLE;
+  CAN_FILTER.SlaveStartFilterBank = 14;
+
+  int32_t ret = HAL_CAN_ConfigFilter(&hcan1, &CAN_FILTER);
+  if (ret != HAL_OK) {
+    sys_state.CAN = false;
+    #ifdef DEBUG_MODE
+      printf("[%8lu] [ERR] CAN filter config failed: %d\r\n", HAL_GetTick(), ret);
+    #endif
+    return -1;
+  }
+
+  ret = HAL_CAN_Start(&hcan1);
+  if (ret != HAL_OK) {
+    sys_state.CAN = false;
+    #ifdef DEBUG_MODE
+      printf("[%8lu] [ERR] CAN start failed: %d\r\n", HAL_GetTick(), ret);
+    #endif
+    return -3;
+  }
+
+  ret = HAL_CAN_ActivateNotification(&hcan1, CAN_IT_RX_FIFO0_MSG_PENDING);
+  if (ret != HAL_OK) {
+    sys_state.CAN = false;
+    #ifdef DEBUG_MODE
+      printf("[%8lu] [ERR] CAN RX notification activate failed: %d\r\n", HAL_GetTick(), ret);
+    #endif
+    return -2;
+  }
+
+
+  ret = HAL_CAN_ActivateNotification(&hcan1, CAN_IT_RX_FIFO0_FULL);
+  ret = HAL_CAN_ActivateNotification(&hcan1, CAN_IT_RX_FIFO0_OVERRUN);
+  ret = HAL_CAN_ActivateNotification(&hcan1, CAN_IT_ERROR_WARNING);
+  ret = HAL_CAN_ActivateNotification(&hcan1, CAN_IT_ERROR_PASSIVE);
+  ret = HAL_CAN_ActivateNotification(&hcan1, CAN_IT_BUSOFF);
+  ret = HAL_CAN_ActivateNotification(&hcan1, CAN_IT_LAST_ERROR_CODE);
+  ret = HAL_CAN_ActivateNotification(&hcan1, CAN_IT_ERROR);
+
+  sys_state.CAN = true;
+  return 0;
+}
+
+void HAL_CAN_RxFifo0MsgPendingCallback(CAN_HandleTypeDef *hcan) {
+  int32_t ret = HAL_CAN_GetRxMessage(hcan, CAN_RX_FIFO0, &can_rx_header, can_rx_data);
+  if (ret != HAL_OK) {
+    sys_state.CAN = false;
+    #ifdef DEBUG_MODE
+      printf("[%8lu] [ERR] CAN RX failed: %d\r\n", HAL_GetTick(), ret);
+    #endif
+  }
+
+  printf("can: %02x %02x %02x %02x %02x %02x %02x %02x\r\n", can_rx_data[0], can_rx_data[1], can_rx_data[2], can_rx_data[3], can_rx_data[4], can_rx_data[5], can_rx_data[6], can_rx_data[7]);
+
+  sys_state.CAN = true;
+  *(uint64_t *)syslog.value = *(uint64_t *)can_rx_data;
+  SYS_LOG(LOG_INFO, CAN, can_rx_header.StdId);
+}
+
+void HAL_CAN_ErrorCallback(CAN_HandleTypeDef *hcan) {
+  printf("CAN ERROR!!!\r\n");
+}
+
+void HAL_CAN_RxFifo0FullCallback(CAN_HandleTypeDef *hcan) {
+  printf("CAN FIFO FULL!\r\n");
+}
 /* USER CODE END 0 */
 
 CAN_HandleTypeDef hcan1;
@@ -39,13 +122,13 @@ void MX_CAN1_Init(void)
   /* USER CODE END CAN1_Init 1 */
   hcan1.Instance = CAN1;
   hcan1.Init.Prescaler = 12;
-  hcan1.Init.Mode = CAN_MODE_SILENT;
+  hcan1.Init.Mode = CAN_MODE_LOOPBACK;
   hcan1.Init.SyncJumpWidth = CAN_SJW_1TQ;
   hcan1.Init.TimeSeg1 = CAN_BS1_11TQ;
   hcan1.Init.TimeSeg2 = CAN_BS2_2TQ;
   hcan1.Init.TimeTriggeredMode = DISABLE;
-  hcan1.Init.AutoBusOff = ENABLE;
-  hcan1.Init.AutoWakeUp = ENABLE;
+  hcan1.Init.AutoBusOff = DISABLE;
+  hcan1.Init.AutoWakeUp = DISABLE;
   hcan1.Init.AutoRetransmission = DISABLE;
   hcan1.Init.ReceiveFifoLocked = DISABLE;
   hcan1.Init.TransmitFifoPriority = DISABLE;

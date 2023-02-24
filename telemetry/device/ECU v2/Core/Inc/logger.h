@@ -11,7 +11,7 @@
 #include "stdio.h"
 
 #define DEBUG_MODE
-#define DEBUG_LOG
+//#define DEBUG_LOG
 
 /* system log data type */
 typedef struct {
@@ -36,8 +36,7 @@ typedef enum {
 typedef enum {
   ECU = 0,
   ESP,
-  BMS,
-  INV,
+  CAN,
   ANALOG,
   GPIO,
   ACC,
@@ -58,24 +57,31 @@ typedef enum {
 } LOG_KEY_ESP;
 
 typedef enum {
-  BMS_CORE = 0,
-  BMS_TEMP,
-} LOG_KEY_BMS;
+  CAN_INIT = 0,
 
-typedef enum {
-  INV_TEMP_1 = 0,
-  INV_TEMP_3,
-  INV_ANALOG_IN,
-  INV_MOTOR_POS,
-  INV_CURRENT,
-  INV_VOLTAGE,
-  INV_FLUX,
-  INV_REF,
-  INV_STATE,
-  INV_FAULT,
-  INV_TORQUE,
-  INV_FLUX_WEAKING,
-} LOG_KEY_INV;
+  CAN_INV_TEMP_1 = 0xA0,
+  CAN_INV_TEMP_2 = 0xA1,
+  CAN_INV_TEMP_3 = 0xA2,
+  CAN_INV_ANALOG_IN = 0xA3,
+  CAN_INV_DIGITAL_IN = 0xA4,
+  CAN_INV_MOTOR_POS = 0xA5,
+  CAN_INV_CURRENT = 0xA6,
+  CAN_INV_VOLTAGE = 0xA7,
+  CAN_INV_FLUX = 0xA8,
+  CAN_INV_REF = 0xA9,
+  CAN_INV_STATE = 0xAA,
+  CAN_INV_FAULT = 0xAB,
+  CAN_INV_TORQUE = 0xAC,
+  CAN_INV_FLUX_WEAKING = 0xAD,
+
+  CAN_INV_FIRMWARE_VER = 0xAE,
+  CAN_INV_DIAGNOSTIC = 0xAF,
+
+  CAN_INV_HIGH_SPD_MSG = 0xB0,
+
+  CAN_BMS_CORE = 0x70,
+  CAN_BMS_TEMP = 0x71
+} LOG_KEY_CAN;
 
 typedef enum {
   ADC_TEMP = 0,

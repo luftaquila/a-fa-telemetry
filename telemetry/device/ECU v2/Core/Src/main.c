@@ -62,11 +62,14 @@ uint32_t i2c_flag = 0;
 ring_buffer_t ESP_BUFFER;
 ring_buffer_t LCD_BUFFER;
 
+uint8_t acc_value[6];
+
+CAN_RxHeaderTypeDef can_rx_header;
+uint8_t can_rx_data[8];
+
 SYSTEM_STATE sys_state;
 
 DISPLAY_DATA display_data;
-
-uint8_t acc_value[6];
 /* USER CODE END PV */
 
 /* Private function prototypes -----------------------------------------------*/
@@ -138,8 +141,6 @@ int main(void)
     #ifdef DEBUG_MODE
       printf("[%8lu] [ERR] ECU setup failed: %d\r\n", HAL_GetTick(), ret);
     #endif
-    err = ERR_ECU;
-    Error_Handler();
   }
 
   // init SD card
@@ -148,8 +149,6 @@ int main(void)
     #ifdef DEBUG_MODE
       printf("[%8lu] [ERR] SD setup failed: %d\r\n", HAL_GetTick(), ret);
     #endif
-      err = ERR_SD;
-      Error_Handler();
   }
 
   // core system boot complete
@@ -183,10 +182,17 @@ int main(void)
   SYS_LOG(LOG_INFO, ANALOG, ADC_INIT);
 
 
-/*
   // init CAN for BMS and inverter
-  CAN_SETUP();
-*/
+  ret = CAN_SETUP();
+  if (ret != 0) {
+    #ifdef DEBUG_MODE
+      printf("[%8lu] [ERR] CAN setup failed: %d\r\n", HAL_GetTick(), ret);
+    #endif
+    syslog.value[0] = false;
+    SYS_LOG(LOG_ERROR, CAN, CAN_INIT);
+  }
+  syslog.value[0] = true;
+  SYS_LOG(LOG_INFO, CAN, CAN_INIT);
 
 
   // init 1602 LCD i2c
@@ -269,6 +275,18 @@ int main(void)
       LCD_UPDATE();
       syslog.value[0] = true;
       SYS_LOG(LOG_INFO, LCD, LCD_UPDATED);
+
+
+      CAN_TxHeaderTypeDef txh;
+      uint8_t txd[8] = { 1, 2, 3, 4, 5, 6, 7, 8 };
+      uint32_t txm = HAL_CAN_GetTxMailboxesFreeLevel(&hcan1);
+
+      txh.StdId = 0x10;
+      txh.RTR = CAN_RTR_DATA;
+      txh.IDE = CAN_ID_STD;
+      txh.DLC = 8;
+
+      ret = HAL_CAN_AddTxMessage(&hcan1, &txh, txd, &txm);
     }
 
 
