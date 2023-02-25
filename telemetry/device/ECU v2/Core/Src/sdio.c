@@ -30,9 +30,11 @@
 #include "string.h"
 
 extern FIL logfile;
-extern LOG syslog;
 extern SYSTEM_STATE sys_state;
 char logname[40];
+
+LOG syslog_buffer;
+extern ring_buffer_t LOG_BUFFER;
 
 int32_t SD_SETUP(DATETIME *boot) {
   FATFS SD_FATFS;
@@ -41,8 +43,10 @@ int32_t SD_SETUP(DATETIME *boot) {
   int32_t ret = f_mount(&SD_FATFS, "", 0);
   if (ret != FR_OK) {
     sys_state.SD = false;
+    HAL_GPIO_WritePin(GPIOE, LED_SD_Pin, GPIO_PIN_RESET);
+
     #ifdef DEBUG_MODE
-      printf("[%8lu] [ERR] SD mount failed: %d\r\n", HAL_GetTick(), ret);
+      printf("[%8lu] [ERR] SD mount failed: %ld\r\n", HAL_GetTick(), ret);
     #endif
     return -1;
   }
@@ -53,23 +57,38 @@ int32_t SD_SETUP(DATETIME *boot) {
   ret = f_open(&logfile, logname, FA_OPEN_APPEND | FA_WRITE);
   if (ret != FR_OK) {
     sys_state.SD = false;
+    HAL_GPIO_WritePin(GPIOE, LED_SD_Pin, GPIO_PIN_RESET);
+
     #ifdef DEBUG_MODE
-      printf("[%8lu] [ERR] SD open failed: %d\r\n", HAL_GetTick(), ret);
+      printf("[%8lu] [ERR] SD open failed: %ld\r\n", HAL_GetTick(), ret);
     #endif
     return ret;
   }
 
   sys_state.SD = true;
+  HAL_GPIO_WritePin(GPIOE, LED_SD_Pin, GPIO_PIN_SET);
+
   return ret;
 }
 
-int32_t SD_WRITE() {
-  int32_t written_count;
-  int32_t ret = f_write(&logfile, &syslog, 16 /* sizeof(LOG) */, (void *)&written_count);
+int32_t SD_WRITE(ring_buffer_size_t length) {
+  int32_t ret;
+  static int32_t written_count;
+
+  HAL_NVIC_DisableIRQ(CAN1_RX0_IRQn);
+  while (!ring_buffer_is_empty(&LOG_BUFFER)) {
+    ring_buffer_dequeue_arr(&LOG_BUFFER, (char *)&syslog_buffer, sizeof(LOG));
+    ret = f_write(&logfile, &syslog_buffer, sizeof(LOG), (void *)&written_count);
+  }
+  HAL_NVIC_EnableIRQ(CAN1_RX0_IRQn);
+
+
   if (ret != FR_OK) {
     sys_state.SD = false;
+    HAL_GPIO_WritePin(GPIOE, LED_SD_Pin, GPIO_PIN_RESET);
+
     #ifdef DEBUG_MODE
-      printf("[%8lu] [ERR] SD write failed: %d\r\n", HAL_GetTick(), ret);
+      printf("[%8lu] [ERR] SD write failed: %ld\r\n", HAL_GetTick(), ret);
     #endif
   }
 
@@ -80,8 +99,10 @@ int32_t SD_SYNC() {
   int32_t ret = f_sync(&logfile);
   if (ret != FR_OK) {
     sys_state.SD = false;
+    HAL_GPIO_WritePin(GPIOE, LED_SD_Pin, GPIO_PIN_RESET);
+
     #ifdef DEBUG_MODE
-      printf("[%8lu] [ERR] SD sync failed: %d\r\n", HAL_GetTick(), ret);
+      printf("[%8lu] [ERR] SD sync failed: %ld\r\n", HAL_GetTick(), ret);
     #endif
   }
 

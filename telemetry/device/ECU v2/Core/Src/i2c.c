@@ -19,14 +19,20 @@
 /* USER CODE END Header */
 /* Includes ------------------------------------------------------------------*/
 #include "i2c.h"
+#include "ringbuffer.h"
 
 /* USER CODE BEGIN 0 */
+extern LOG syslog;
 extern SYSTEM_STATE sys_state;
 
-// 32KB I2C Tx buffers
+// I2C Tx buffers
 extern uint32_t i2c_flag;
+
 extern ring_buffer_t ESP_BUFFER;
+uint8_t ESP_BUFFER_ARR[1 << 15]; // 32KB
+
 extern ring_buffer_t LCD_BUFFER;
+uint8_t LCD_BUFFER_ARR[1 << 12]; // 4KB
 
 // accelerometer data
 extern uint8_t acc_value[6];
@@ -61,6 +67,9 @@ void HAL_I2C_MemRxCpltCallback(I2C_HandleTypeDef *hi2c) {
  * ESP32 I2C interface
  ***************************/
 int32_t ESP_SETUP(void) {
+  // init buffer
+  ring_buffer_init(&ESP_BUFFER, (char *)ESP_BUFFER_ARR, sizeof(ESP_BUFFER_ARR));
+
   // i2c init
   // RTC SYNC
   return 0;
@@ -71,9 +80,13 @@ int32_t ESP_SETUP(void) {
  * 1602 LCD I2C interface
  ***************************/
 int32_t LCD_SETUP(void) {
+  // init buffer
+  ring_buffer_init(&LCD_BUFFER, (char *)LCD_BUFFER_ARR, sizeof(LCD_BUFFER_ARR));
+
   // wait for LCD ready
   HAL_Delay(50);
   if (HAL_I2C_IsDeviceReady(&hi2c2, LCD_I2C_ADDR, 1, 3000) != HAL_OK) {
+    sys_state.LCD = false;
     return -1;
   }
 
@@ -99,9 +112,6 @@ int32_t LCD_SETUP(void) {
   LCD_WRITE("T:", 0, 1);
 
   sys_state.LCD = true;
-  syslog.value[0] = true;
-  SYS_LOG(LOG_INFO, LCD, LCD_INIT);
-
   return 0;
 }
 
@@ -152,6 +162,8 @@ int32_t ACC_SETUP(void) {
   ACC_SEND(0x31, 0x01);  // DATA_FORMAT range +-4g
   ACC_SEND(0x2D, 0x00);  // POWER_CTL bit reset
   ACC_SEND(0x2D, 0x08);  // POWER_CTL set measure mode. 100hz default rate
+
+  sys_state.ACC = true;
 
   return 0;
 }
