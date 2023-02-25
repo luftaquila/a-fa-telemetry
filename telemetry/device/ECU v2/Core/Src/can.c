@@ -29,17 +29,20 @@ extern uint8_t can_rx_data[8];
 
 int32_t CAN_SETUP(void) {
 
+  // accept only CAN STD ID 0x080 ~ 0x08F AND 0x0A0 ~ 0x0AF
+  const uint32_t CAN_filter_id   = 0b00010000000 << 5;
+  const uint32_t CAN_filter_mask = 0b11111010000 << 5;
+
   CAN_FilterTypeDef CAN_FILTER;
   CAN_FILTER.FilterBank = 0;
   CAN_FILTER.FilterMode = CAN_FILTERMODE_IDMASK;
   CAN_FILTER.FilterScale = CAN_FILTERSCALE_32BIT;
-  CAN_FILTER.FilterIdHigh = 0x0000;
-  CAN_FILTER.FilterIdLow = 0x0000;
-  CAN_FILTER.FilterMaskIdHigh = 0x0000;
-  CAN_FILTER.FilterMaskIdLow = 0x0000;
+  CAN_FILTER.FilterIdHigh = CAN_filter_id;
+  CAN_FILTER.FilterMaskIdHigh = CAN_filter_mask;
+  CAN_FILTER.FilterIdLow = 0x0;
+  CAN_FILTER.FilterMaskIdLow = 0x0;
   CAN_FILTER.FilterFIFOAssignment = CAN_RX_FIFO0;
   CAN_FILTER.FilterActivation = ENABLE;
-  CAN_FILTER.SlaveStartFilterBank = 14;
 
   int32_t ret = HAL_CAN_ConfigFilter(&hcan1, &CAN_FILTER);
   if (ret != HAL_OK) {
