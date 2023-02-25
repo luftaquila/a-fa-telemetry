@@ -30,6 +30,7 @@
 /* Private includes ----------------------------------------------------------*/
 /* USER CODE BEGIN Includes */
 #include "logger.h"
+#include "string.h"
 /* USER CODE END Includes */
 
 /* Private typedef -----------------------------------------------------------*/
@@ -82,6 +83,10 @@ uint8_t can_rx_data[8];
 
 // LCD update data
 DISPLAY_DATA display_data;
+
+// GPS receive flag and buffer
+uint32_t gps_flag = 0;
+uint8_t gps_data[1 << 7]; // 128B
 
 /* USER CODE END PV */
 
@@ -238,10 +243,17 @@ int main(void)
   SYS_LOG(LOG_INFO, ACC, ACC_INIT);
 
 
-  /*
-  // init NEO-6M GPS UART
-  GPS_SETUP();
- */
+  // init NEO-7M GPS UART
+  ret = GPS_SETUP();
+  if (ret != 0) {
+    #ifdef DEBUG_MODE
+      printf("[%8lu] [ERR] GPS setup failed: %ld\r\n", HAL_GetTick(), ret);
+    #endif
+    syslog.value[0] = false;
+    SYS_LOG(LOG_ERROR, GPS, GPS_INIT);
+  }
+  syslog.value[0] = true;
+  SYS_LOG(LOG_INFO, GPS, GPS_INIT);
 
 
   // start hardware timers
@@ -341,8 +353,14 @@ int main(void)
     }
 
 
-    // GPS handling
-    // !!!!!!!!!!!!!!!!!!!!!
+    // parse GPS NMEA GPRMC data
+    if (gps_flag) {
+      gps_flag = 0; // clear GPS flag
+
+      if (strstr((char *)gps_data, "$GPRMC")) {
+        printf("%s", gps_data);
+      }
+    }
 
     /* USER CODE END WHILE */
 
