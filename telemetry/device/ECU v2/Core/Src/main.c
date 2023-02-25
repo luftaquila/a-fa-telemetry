@@ -50,31 +50,39 @@ extern int32_t SYS_LOG(LOG_LEVEL level, LOG_SOURCE source, int32_t key);
 /* USER CODE BEGIN PV */
 ERROR_CODE err;
 
+// log data
 FIL logfile;
 LOG syslog;
 
+// SD write buffer
 ring_buffer_t LOG_BUFFER;
 uint8_t LOG_BUFFER_ARR[1 << 12]; // 4KB
 
+// system state log
+SYSTEM_STATE sys_state;
+
+// timer set flag
 uint32_t timer_flag = 0;
 
+// adc conversion flag and data
 uint32_t adc_flag = 0;
 uint32_t adc_value[ADC_COUNT] = { 0, };
 
-uint32_t i2c_flag = 0;
-
-ring_buffer_t ESP_BUFFER;
-
-ring_buffer_t LCD_BUFFER;
-
+// accelerometer data
 uint8_t acc_value[6];
 
+// I2C transmission flag and buffer
+uint32_t i2c_flag = 0;
+ring_buffer_t ESP_BUFFER;
+ring_buffer_t LCD_BUFFER;
+
+// CAN RX header and data
 CAN_RxHeaderTypeDef can_rx_header;
 uint8_t can_rx_data[8];
 
-SYSTEM_STATE sys_state;
-
+// LCD update data
 DISPLAY_DATA display_data;
+
 /* USER CODE END PV */
 
 /* Private function prototypes -----------------------------------------------*/
@@ -136,9 +144,11 @@ int main(void)
   MX_TIM3_Init();
   /* USER CODE BEGIN 2 */
 
+  // check boot time
   int32_t ret;
   DATETIME boot;
   RTC_READ(&boot);
+
 
   // init ECU gpio and system state
   ret = ECU_SETUP();
@@ -148,6 +158,7 @@ int main(void)
     #endif
   }
 
+
   // init SD card
   ret = SD_SETUP(&boot);
   if (ret != 0) {
@@ -155,6 +166,7 @@ int main(void)
       printf("[%8lu] [ERR] SD setup failed: %ld\r\n", HAL_GetTick(), ret);
     #endif
   }
+
 
   // core system boot complete
   syslog.value[0] = true;
@@ -249,7 +261,7 @@ int main(void)
 
   while (1) {
 
-    // 1s timer set - SD card sync
+    // 1s timer set: SD card sync
     if (timer_flag & 0x1 << TIMER_1s) {
       timer_flag &= ~(1 << TIMER_1s); // clear 1s timer flag
 
@@ -261,7 +273,7 @@ int main(void)
     }
 
 
-    // 300ms timer set - system state record, LCD update
+    // 300ms timer set: system state record, LCD update
     if (timer_flag & 0x1 << TIMER_300ms) {
       timer_flag &= ~(1 << TIMER_300ms); // clear 300ms timer flag
 
@@ -283,7 +295,7 @@ int main(void)
     }
 
 
-    // 100ms timer set - ADC conversion, accelerometer record
+    // 100ms timer set: ADC conversion, accelerometer record
     if (timer_flag & 0x1 << TIMER_100ms) {
       timer_flag &= ~(1 << TIMER_100ms); // clear 100ms timer flag
 
@@ -297,7 +309,7 @@ int main(void)
     }
 
 
-    // on all ADC conversion complete
+    // on all ADC conversions complete
     if (adc_flag == ((1 << ADC_CPU) | (1 << ADC_DIST) | (1 << ADC_SPD))) {
       adc_flag = 0; // clear all adc flags
 
@@ -309,7 +321,7 @@ int main(void)
     }
 
 
-    // check I2C Tx buffer; start transmit if buffer is not empty and not transmitting
+    /* check I2C Tx buffer; start transmit if buffer is not empty and not transmitting */
     if (i2c_flag & (1 << I2C_BUFFER_ESP_REMAIN) && !(i2c_flag & (1 << I2C_BUFFER_ESP_TRANSMIT))) {
 
     }
@@ -322,12 +334,13 @@ int main(void)
       HAL_I2C_Master_Transmit_IT(&hi2c2, LCD_I2C_ADDR, payload, 4);
     }
 
+
     // check log buffer and write to SD
     if (!ring_buffer_is_empty(&LOG_BUFFER)) {
       SD_WRITE(ring_buffer_num_items(&LOG_BUFFER));
     }
 
-    // CAN handling
+
     // GPS handling
     // !!!!!!!!!!!!!!!!!!!!!
 

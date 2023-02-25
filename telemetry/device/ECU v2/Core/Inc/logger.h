@@ -80,8 +80,8 @@ typedef enum {
 
   CAN_INV_HIGH_SPD_MSG = 0xB0,
 
-  CAN_BMS_CORE = 0x70,
-  CAN_BMS_TEMP = 0x71
+  CAN_BMS_CORE = 0x80,
+  CAN_BMS_TEMP = 0x81
 } LOG_KEY_CAN;
 
 typedef enum {
