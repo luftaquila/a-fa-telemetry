@@ -53,13 +53,18 @@ ERROR_CODE err;
 FIL logfile;
 LOG syslog;
 
+ring_buffer_t LOG_BUFFER;
+uint8_t LOG_BUFFER_ARR[1 << 12]; // 4KB
+
 uint32_t timer_flag = 0;
 
 uint32_t adc_flag = 0;
 uint32_t adc_value[ADC_COUNT] = { 0, };
 
 uint32_t i2c_flag = 0;
+
 ring_buffer_t ESP_BUFFER;
+
 ring_buffer_t LCD_BUFFER;
 
 uint8_t acc_value[6];
@@ -139,7 +144,7 @@ int main(void)
   ret = ECU_SETUP();
   if (ret != 0) {
     #ifdef DEBUG_MODE
-      printf("[%8lu] [ERR] ECU setup failed: %d\r\n", HAL_GetTick(), ret);
+      printf("[%8lu] [ERR] ECU setup failed: %ld\r\n", HAL_GetTick(), ret);
     #endif
   }
 
@@ -147,7 +152,7 @@ int main(void)
   ret = SD_SETUP(&boot);
   if (ret != 0) {
     #ifdef DEBUG_MODE
-      printf("[%8lu] [ERR] SD setup failed: %d\r\n", HAL_GetTick(), ret);
+      printf("[%8lu] [ERR] SD setup failed: %ld\r\n", HAL_GetTick(), ret);
     #endif
   }
 
@@ -160,7 +165,7 @@ int main(void)
   ret = ESP_SETUP();
   if (ret != 0) {
     #ifdef DEBUG_MODE
-      printf("[%8lu] [ERR] ESP setup failed: %d\r\n", HAL_GetTick(), ret);
+      printf("[%8lu] [ERR] ESP setup failed: %ld\r\n", HAL_GetTick(), ret);
     #endif
     syslog.value[0] = false;
     SYS_LOG(LOG_ERROR, ESP, ESP_INIT);
@@ -173,7 +178,7 @@ int main(void)
   ret = ANALOG_SETUP();
   if (ret != 0) {
     #ifdef DEBUG_MODE
-      printf("[%8lu] [ERR] ANALOG setup failed: %d\r\n", HAL_GetTick(), ret);
+      printf("[%8lu] [ERR] ANALOG setup failed: %ld\r\n", HAL_GetTick(), ret);
     #endif
     syslog.value[0] = false;
     SYS_LOG(LOG_ERROR, ANALOG, ADC_INIT);
@@ -186,7 +191,7 @@ int main(void)
   ret = CAN_SETUP();
   if (ret != 0) {
     #ifdef DEBUG_MODE
-      printf("[%8lu] [ERR] CAN setup failed: %d\r\n", HAL_GetTick(), ret);
+      printf("[%8lu] [ERR] CAN setup failed: %ld\r\n", HAL_GetTick(), ret);
     #endif
     syslog.value[0] = false;
     SYS_LOG(LOG_ERROR, CAN, CAN_INIT);
@@ -199,7 +204,7 @@ int main(void)
   ret = LCD_SETUP();
   if (ret != 0) {
     #ifdef DEBUG_MODE
-      printf("[%8lu] [ERR] LCD setup failed: %d\r\n", HAL_GetTick(), ret);
+      printf("[%8lu] [ERR] LCD setup failed: %ld\r\n", HAL_GetTick(), ret);
     #endif
     syslog.value[0] = false;
     SYS_LOG(LOG_ERROR, LCD, LCD_INIT);
@@ -212,7 +217,7 @@ int main(void)
   ret = ACC_SETUP();
   if (ret != 0) {
     #ifdef DEBUG_MODE
-      printf("[%8lu] [ERR] Accelerometer setup failed: %d\r\n", HAL_GetTick(), ret);
+      printf("[%8lu] [ERR] Accelerometer setup failed: %ld\r\n", HAL_GetTick(), ret);
     #endif
     syslog.value[0] = false;
     SYS_LOG(LOG_ERROR, ACC, ACC_INIT);
@@ -251,7 +256,7 @@ int main(void)
       // SD sync
       ret = SD_SYNC(&logfile);
       #ifdef DEBUG_MODE
-        printf("[%8lu] [INF] SD SYNC: %d\r\n", HAL_GetTick(), ret);
+        printf("[%8lu] [INF] SD SYNC: %ld\r\n", HAL_GetTick(), ret);
       #endif
     }
 
@@ -275,18 +280,6 @@ int main(void)
       LCD_UPDATE();
       syslog.value[0] = true;
       SYS_LOG(LOG_INFO, LCD, LCD_UPDATED);
-
-
-      CAN_TxHeaderTypeDef txh;
-      uint8_t txd[8] = { 1, 2, 3, 4, 5, 6, 7, 8 };
-      uint32_t txm = HAL_CAN_GetTxMailboxesFreeLevel(&hcan1);
-
-      txh.StdId = 0x10;
-      txh.RTR = CAN_RTR_DATA;
-      txh.IDE = CAN_ID_STD;
-      txh.DLC = 8;
-
-      ret = HAL_CAN_AddTxMessage(&hcan1, &txh, txd, &txm);
     }
 
 
@@ -318,6 +311,7 @@ int main(void)
 
     // check I2C Tx buffer; start transmit if buffer is not empty and not transmitting
     if (i2c_flag & (1 << I2C_BUFFER_ESP_REMAIN) && !(i2c_flag & (1 << I2C_BUFFER_ESP_TRANSMIT))) {
+
     }
 
     if (i2c_flag & (1 << I2C_BUFFER_LCD_REMAIN) && !(i2c_flag & (1 << I2C_BUFFER_LCD_TRANSMIT))) {
@@ -326,6 +320,11 @@ int main(void)
       uint8_t payload[4];
       ring_buffer_dequeue_arr(&LCD_BUFFER, (char *)payload, 4);
       HAL_I2C_Master_Transmit_IT(&hi2c2, LCD_I2C_ADDR, payload, 4);
+    }
+
+    // check log buffer and write to SD
+    if (!ring_buffer_is_empty(&LOG_BUFFER)) {
+      SD_WRITE(ring_buffer_num_items(&LOG_BUFFER));
     }
 
     // CAN handling
@@ -399,16 +398,23 @@ int32_t ECU_SETUP(void) {
   HAL_GPIO_WritePin(GPIOE, LED0_Pin, GPIO_PIN_RESET);
   HAL_GPIO_WritePin(GPIOE, LED1_Pin, GPIO_PIN_RESET);
   HAL_GPIO_WritePin(GPIOE, LED2_Pin, GPIO_PIN_RESET);
-  HAL_GPIO_WritePin(GPIOE, LED3_Pin, GPIO_PIN_RESET);
-  HAL_GPIO_WritePin(GPIOE, LED4_Pin, GPIO_PIN_RESET);
-  HAL_GPIO_WritePin(GPIOE, LED5_Pin, GPIO_PIN_RESET);
 
   // init system state
   sys_state.SD = false;
+  HAL_GPIO_WritePin(GPIOE, LED_SD_Pin, GPIO_PIN_RESET);
+
   sys_state.CAN = false;
+  HAL_GPIO_WritePin(GPIOE, LED_CAN_Pin, GPIO_PIN_RESET);
+
+  sys_state.ESP = false;
+  HAL_GPIO_WritePin(GPIOE, LED_ESP_Pin, GPIO_PIN_RESET);
+
   sys_state.ACC = false;
   sys_state.LCD = false;
   sys_state.GPS = false;
+
+  // init buffer
+  ring_buffer_init(&LOG_BUFFER, (char *)LOG_BUFFER_ARR, sizeof(LOG_BUFFER_ARR));
 
   return 0;
 }

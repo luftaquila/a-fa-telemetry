@@ -29,6 +29,7 @@ extern "C" {
 #include "main.h"
 
 /* USER CODE BEGIN Includes */
+#include "ringbuffer.h"
 /* USER CODE END Includes */
 
 extern SD_HandleTypeDef hsd;
@@ -41,7 +42,7 @@ void MX_SDIO_SD_Init(void);
 
 /* USER CODE BEGIN Prototypes */
 int32_t SD_SETUP(DATETIME *boot);
-int32_t SD_WRITE();
+int32_t SD_WRITE(ring_buffer_size_t length);
 int32_t SD_SYNC();
 /* USER CODE END Prototypes */
 

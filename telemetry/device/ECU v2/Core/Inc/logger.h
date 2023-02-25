@@ -10,7 +10,7 @@
 
 #include "stdio.h"
 
-#define DEBUG_MODE
+//#define DEBUG_MODE
 //#define DEBUG_LOG
 
 /* system log data type */
@@ -58,6 +58,7 @@ typedef enum {
 
 typedef enum {
   CAN_INIT = 0,
+  CAN_ERR,
 
   CAN_INV_TEMP_1 = 0xA0,
   CAN_INV_TEMP_2 = 0xA1,
@@ -123,8 +124,8 @@ typedef struct {
 
   /* connections */
   uint8_t SD :1;
-  uint8_t ESP :1;
   uint8_t CAN :1;
+  uint8_t ESP :1;
   uint8_t ACC :1;
   uint8_t LCD :1;
   uint8_t GPS :1;
@@ -133,8 +134,6 @@ typedef struct {
 } SYSTEM_STATE;
 
 /* Prototypes */
-extern LOG syslog;
-
 int32_t SYS_LOG(LOG_LEVEL level, LOG_SOURCE source, int32_t key);
 
 #endif /* INC_LOGGER_H_ */
