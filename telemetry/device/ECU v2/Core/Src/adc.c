@@ -28,7 +28,7 @@
 #define TS_CAL2 *((uint16_t*)0x1FFF7A2E)
 
 extern uint32_t adc_flag;
-extern uint32_t adc_value[ADC_COUNT];
+extern uint16_t adc_value[ADC_COUNT];
 
 int32_t ANALOG_SETUP(void) {
   // ADC calibration - not suppoerted in STM32F4 series
@@ -41,7 +41,7 @@ int32_t ANALOG_SETUP(void) {
 
 void HAL_ADC_ConvCpltCallback(ADC_HandleTypeDef* hadc) {
   if (hadc->Instance == ADC1) {
-      adc_value[ADC_TEMP] = (uint32_t)(((110.0 - 30) * (HAL_ADC_GetValue(hadc) - TS_CAL1) / (TS_CAL2 - TS_CAL1) + 30) * 10);
+      adc_value[ADC_TEMP] = (uint16_t)(((110.0 - 30) * (HAL_ADC_GetValue(hadc) - TS_CAL1) / (TS_CAL2 - TS_CAL1) + 30) * 10);
 
       adc_flag |= 1 << ADC_CPU;
   }

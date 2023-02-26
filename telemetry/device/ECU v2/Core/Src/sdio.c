@@ -72,7 +72,7 @@ int32_t SD_SETUP(DATETIME *boot) {
 }
 
 int32_t SD_WRITE(ring_buffer_size_t length) {
-  int32_t ret;
+  int32_t ret = 0;
   static int32_t written_count;
 
   HAL_NVIC_DisableIRQ(CAN1_RX0_IRQn);

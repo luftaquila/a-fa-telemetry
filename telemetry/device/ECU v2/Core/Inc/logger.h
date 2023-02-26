@@ -10,7 +10,7 @@
 
 #include "stdio.h"
 
-#define DEBUG_MODE
+//#define DEBUG_MODE
 //#define DEBUG_LOG
 
 /* system log data type */
@@ -85,17 +85,9 @@ typedef enum {
 } LOG_KEY_CAN;
 
 typedef enum {
-  ADC_TEMP = 0,
-  ADC_DIST_FL,
-  ADC_DIST_RL,
-  ADC_DIST_FR,
-  ADC_DIST_RR,
-  ADC_SPD_FL,
-  ADC_SPD_RL,
-  ADC_SPD_FR,
-  ADC_SPD_RR,
-  ADC_COUNT,
-  ADC_INIT
+  ADC_CPU = 0,
+  ADC_DIST,
+  ADC_SPD
 } LOG_KEY_ANALOG;
 
 typedef enum {
@@ -104,14 +96,15 @@ typedef enum {
 } LOG_KEY_ACC;
 
 typedef enum {
-  GPS_INIT = 0,
-  GPS_DATA,
-} LOG_KEY_GPS;
-
-typedef enum {
   LCD_INIT = 0,
   LCD_UPDATED
 } LOG_KEY_LCD;
+
+typedef enum {
+  GPS_INIT = 0,
+  GPS_POS,
+  GPS_SPD
+} LOG_KEY_GPS;
 
 /* system state type */
 typedef struct {

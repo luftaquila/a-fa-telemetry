@@ -55,6 +55,29 @@ void Error_Handler(void);
 
 /* USER CODE BEGIN EFP */
 
+
+/* macro to parse NMEA sentence */
+#define FIND_AND_NUL(s, p, c) ( \
+   (p) = (uint8_t *)strchr((char *)s, c), \
+   *(p) = '\0', \
+   ++(p), \
+   (p))
+
+inline uint32_t to_uint(uint8_t *str, char garbage) {
+  uint8_t *src, *dst;
+  for (src = dst = str; *src != '\0'; src++) {
+    *dst = *src;
+    if (*dst != garbage) dst++;
+  }
+  *dst = '\0';
+
+  return atoi((char *)str);
+}
+
+inline uint32_t drop_point(uint8_t *str) {
+  *(strchr((char *)str, '.')) = '\0';
+  return atoi((char *)str);
+}
 /* USER CODE END EFP */
 
 /* Private defines -----------------------------------------------------------*/

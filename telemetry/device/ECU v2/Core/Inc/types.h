@@ -9,6 +9,8 @@
 #define INC_TYPES_H_
 
 #include "logger.h"
+#include "string.h"
+#include "stdlib.h"
 
 /* RTC datetime */
 typedef struct {
@@ -35,11 +37,21 @@ typedef enum {
 } TIMER_ID;
 
 /* ADC index */
+typedef LOG_KEY_ANALOG ADC_ID;
+
 typedef enum {
-  ADC_CPU = 0,
-  ADC_DIST,
-  ADC_SPD
-} ADC_ID;
+  ADC_TEMP = 0,
+  ADC_DIST_FL,
+  ADC_DIST_RL,
+  ADC_DIST_FR,
+  ADC_DIST_RR,
+  ADC_SPD_FL,
+  ADC_SPD_RL,
+  ADC_SPD_FR,
+  ADC_SPD_RR,
+  ADC_COUNT,
+  ADC_INIT
+} ADC_COMPONENT;
 
 /* I2C buffer index */
 typedef enum {
@@ -54,5 +66,32 @@ typedef struct display_data_t {
   uint16_t vehicle_speed;
   uint16_t coolant_temp;
 } DISPLAY_DATA;
+
+/* NMEA GPRMC message */
+typedef struct nmea_gprmc_t {
+  uint8_t *id;
+  uint8_t *utc_time;
+  uint8_t *status;
+  uint8_t *lat;
+  uint8_t *north;
+  uint8_t *lon;
+  uint8_t *east;
+  uint8_t *speed;
+  uint8_t *course;
+  uint8_t *utc_date;
+  uint8_t *others;
+} NMEA_GPRMC;
+
+typedef struct {
+  uint32_t lat;
+  uint32_t lon;
+} GPS_COORD;
+
+typedef struct {
+  uint16_t speed;
+  uint8_t course;
+  uint32_t utc_date :20;
+  uint32_t utc_time :20;
+} GPS_INFO;
 
 #endif /* INC_TYPES_H_ */
