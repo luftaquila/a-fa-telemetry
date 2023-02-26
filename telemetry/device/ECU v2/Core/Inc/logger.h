@@ -85,7 +85,8 @@ typedef enum {
 } LOG_KEY_CAN;
 
 typedef enum {
-  ADC_CPU = 0,
+  ADC_INIT = 0,
+  ADC_CPU,
   ADC_DIST,
   ADC_SPD
 } LOG_KEY_ANALOG;

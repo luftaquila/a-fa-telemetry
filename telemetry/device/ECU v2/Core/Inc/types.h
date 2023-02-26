@@ -50,7 +50,6 @@ typedef enum {
   ADC_SPD_FR,
   ADC_SPD_RR,
   ADC_COUNT,
-  ADC_INIT
 } ADC_COMPONENT;
 
 /* I2C buffer index */
