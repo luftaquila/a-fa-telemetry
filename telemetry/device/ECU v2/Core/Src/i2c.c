@@ -38,10 +38,12 @@ extern uint8_t acc_value[6];
 
 
 void HAL_I2C_MasterTxCpltCallback(I2C_HandleTypeDef *hi2c) {
+  // ESP
   if (hi2c->Instance == I2C1) {
 
   }
 
+  // LCD
   else if (hi2c->Instance == I2C2) {
     if (ring_buffer_is_empty(&LCD_BUFFER)) {
       // finish transmitting
@@ -54,11 +56,15 @@ void HAL_I2C_MasterTxCpltCallback(I2C_HandleTypeDef *hi2c) {
       HAL_I2C_Master_Transmit_IT(&hi2c2, LCD_I2C_ADDR, payload, 4);
     }
   }
+  return;
 }
 
 void HAL_I2C_MemRxCpltCallback(I2C_HandleTypeDef *hi2c) {
   *(uint64_t *)syslog.value = *(uint64_t *)acc_value;
   SYS_LOG(LOG_INFO, ACC, ACC_DATA);
+
+  sys_state.ACC = true;
+  return;
 }
 
 
@@ -161,8 +167,6 @@ int32_t ACC_SETUP(void) {
   ACC_SEND(0x31, 0x01);  // DATA_FORMAT range +-4g
   ACC_SEND(0x2D, 0x00);  // POWER_CTL bit reset
   ACC_SEND(0x2D, 0x08);  // POWER_CTL set measure mode. 100hz default rate
-
-  sys_state.ACC = true;
 
   return 0;
 }

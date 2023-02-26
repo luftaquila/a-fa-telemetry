@@ -75,12 +75,12 @@ int32_t SD_WRITE(ring_buffer_size_t length) {
   int32_t ret = 0;
   static int32_t written_count;
 
-  HAL_NVIC_DisableIRQ(CAN1_RX0_IRQn);
+  // HAL_NVIC_DisableIRQ(CAN1_RX0_IRQn);
   while (!ring_buffer_is_empty(&LOG_BUFFER)) {
     ring_buffer_dequeue_arr(&LOG_BUFFER, (char *)&syslog_buffer, sizeof(LOG));
     ret = f_write(&logfile, &syslog_buffer, sizeof(LOG), (void *)&written_count);
   }
-  HAL_NVIC_EnableIRQ(CAN1_RX0_IRQn);
+  // HAL_NVIC_EnableIRQ(CAN1_RX0_IRQn);
 
 
   if (ret != FR_OK) {

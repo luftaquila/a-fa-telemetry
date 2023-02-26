@@ -387,7 +387,8 @@ int main(void)
 
       static NMEA_GPRMC gprmc;
       static GPS_COORD gps_coord;
-      static GPS_INFO gps_info;
+      static GPS_VECTOR gps_vector;
+      static GPS_DATETIME gps_datetime;
 
       if (!strncmp((char *)gps_data, "$GPRMC", 6)) {
 
@@ -411,17 +412,22 @@ int main(void)
           gps_coord.lat = to_uint(gprmc.lat, '.');
           gps_coord.lon = to_uint(gprmc.lon, '.');
 
-          // process GPS speed, course and datetime
-          gps_info.speed = (int)(atof((char *)gprmc.speed) * 100);
-          gps_info.course = drop_point(gprmc.course);
-          gps_info.utc_date = atoi((char *)gprmc.utc_date);
-          gps_info.utc_time = drop_point(gprmc.utc_time);
+          // process GPS speed and course
+          gps_vector.speed = (int)(atof((char *)gprmc.speed) * 100);
+          gps_vector.course = drop_point(gprmc.course);
+
+          // process GPS datetime
+          gps_datetime.utc_date = atoi((char *)gprmc.utc_date);
+          gps_datetime.utc_time = drop_point(gprmc.utc_time);
 
           *(uint64_t *)syslog.value = *(uint64_t *)&gps_coord;
           SYS_LOG(LOG_INFO, GPS, GPS_POS);
 
-          *(uint64_t *)syslog.value = *(uint64_t *)&gps_info;
-          SYS_LOG(LOG_INFO, GPS, GPS_SPD);
+          *(uint64_t *)syslog.value = *(uint64_t *)&gps_vector;
+          SYS_LOG(LOG_INFO, GPS, GPS_VEC);
+
+          *(uint64_t *)syslog.value = *(uint64_t *)&gps_datetime;
+          SYS_LOG(LOG_INFO, GPS, GPS_TIME);
 
           sys_state.GPS = true;
         }

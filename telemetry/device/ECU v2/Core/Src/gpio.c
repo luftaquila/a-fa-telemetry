@@ -85,7 +85,7 @@ void MX_GPIO_Init(void)
   GPIO_InitStruct.Pin = RTD_ACTIVE_Pin|HV_ACTIVE_Pin|BMS_FAULT_Pin|IMD_FAULT_Pin
                           |BSPD_FAULT_Pin;
   GPIO_InitStruct.Mode = GPIO_MODE_INPUT;
-  GPIO_InitStruct.Pull = GPIO_NOPULL;
+  GPIO_InitStruct.Pull = GPIO_PULLDOWN;
   HAL_GPIO_Init(GPIOD, &GPIO_InitStruct);
 
 }

@@ -87,10 +87,13 @@ typedef struct {
 } GPS_COORD;
 
 typedef struct {
-  uint16_t speed;
-  uint8_t course;
-  uint32_t utc_date :20;
-  uint32_t utc_time :20;
-} GPS_INFO;
+  uint32_t speed;
+  uint32_t course;
+} GPS_VECTOR;
+
+typedef struct {
+  uint32_t utc_date;
+  uint32_t utc_time;
+} GPS_DATETIME;
 
 #endif /* INC_TYPES_H_ */

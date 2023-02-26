@@ -38,22 +38,21 @@ typedef enum {
   ESP,
   CAN,
   ANALOG,
-  GPIO,
   ACC,
-  GPS,
   LCD,
+  GPS
 } LOG_SOURCE;
 
 typedef enum {
   ECU_BOOT = 0,
   ECU_STATE,
-  ECU_READY,
+  ECU_READY
 } LOG_KEY_ECU;
 
 typedef enum {
   ESP_INIT = 0,
   ESP_REMOTE_CONNECT,
-  ESP_RTC_SYNC,
+  ESP_RTC_FIX
 } LOG_KEY_ESP;
 
 typedef enum {
@@ -93,7 +92,7 @@ typedef enum {
 
 typedef enum {
   ACC_INIT = 0,
-  ACC_DATA,
+  ACC_DATA
 } LOG_KEY_ACC;
 
 typedef enum {
@@ -104,7 +103,8 @@ typedef enum {
 typedef enum {
   GPS_INIT = 0,
   GPS_POS,
-  GPS_SPD
+  GPS_VEC,
+  GPS_TIME
 } LOG_KEY_GPS;
 
 /* system state type */
