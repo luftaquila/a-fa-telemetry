@@ -19,7 +19,6 @@
 /* USER CODE END Header */
 /* Includes ------------------------------------------------------------------*/
 #include "i2c.h"
-#include "ringbuffer.h"
 
 /* USER CODE BEGIN 0 */
 extern LOG syslog;

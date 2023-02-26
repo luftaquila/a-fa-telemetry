@@ -30,6 +30,8 @@
 /* Private includes ----------------------------------------------------------*/
 /* USER CODE BEGIN Includes */
 #include "logger.h"
+#include "string.h"
+#include "stdlib.h"
 /* USER CODE END Includes */
 
 /* Private typedef -----------------------------------------------------------*/
@@ -39,6 +41,9 @@
 /* Private define ------------------------------------------------------------*/
 /* USER CODE BEGIN PD */
 extern int32_t SYS_LOG(LOG_LEVEL level, LOG_SOURCE source, int32_t key);
+
+extern inline uint32_t to_uint(uint8_t *str, char garbage);
+extern inline uint32_t drop_point(uint8_t *str);
 /* USER CODE END PD */
 
 /* Private macro -------------------------------------------------------------*/
@@ -66,7 +71,7 @@ uint32_t timer_flag = 0;
 
 // adc conversion flag and data
 uint32_t adc_flag = 0;
-uint32_t adc_value[ADC_COUNT] = { 0, };
+uint16_t adc_value[ADC_COUNT] = { 0, };
 
 // accelerometer data
 uint8_t acc_value[6];
@@ -82,6 +87,10 @@ uint8_t can_rx_data[8];
 
 // LCD update data
 DISPLAY_DATA display_data;
+
+// GPS receive flag and buffer
+uint32_t gps_flag = 0;
+uint8_t gps_data[1 << 7]; // 128B
 
 /* USER CODE END PV */
 
@@ -182,8 +191,10 @@ int main(void)
     syslog.value[0] = false;
     SYS_LOG(LOG_ERROR, ESP, ESP_INIT);
   }
-  syslog.value[0] = true;
-  SYS_LOG(LOG_INFO, ESP, ESP_INIT);
+  else {
+    syslog.value[0] = true;
+    SYS_LOG(LOG_INFO, ESP, ESP_INIT);
+  }
 
 
   // init internal ADCs for sensors
@@ -195,8 +206,10 @@ int main(void)
     syslog.value[0] = false;
     SYS_LOG(LOG_ERROR, ANALOG, ADC_INIT);
   }
-  syslog.value[0] = true;
-  SYS_LOG(LOG_INFO, ANALOG, ADC_INIT);
+  else {
+    syslog.value[0] = true;
+    SYS_LOG(LOG_INFO, ANALOG, ADC_INIT);
+  }
 
 
   // init CAN for BMS and inverter
@@ -208,8 +221,10 @@ int main(void)
     syslog.value[0] = false;
     SYS_LOG(LOG_ERROR, CAN, CAN_INIT);
   }
-  syslog.value[0] = true;
-  SYS_LOG(LOG_INFO, CAN, CAN_INIT);
+  else {
+    syslog.value[0] = true;
+    SYS_LOG(LOG_INFO, CAN, CAN_INIT);
+  }
 
 
   // init 1602 LCD i2c
@@ -221,8 +236,10 @@ int main(void)
     syslog.value[0] = false;
     SYS_LOG(LOG_ERROR, LCD, LCD_INIT);
   }
-  syslog.value[0] = true;
-  SYS_LOG(LOG_INFO, LCD, LCD_INIT);
+  else {
+    syslog.value[0] = true;
+    SYS_LOG(LOG_INFO, LCD, LCD_INIT);
+  }
 
 
   // init ADXL345 3-axis accelerometer i2c
@@ -234,14 +251,25 @@ int main(void)
     syslog.value[0] = false;
     SYS_LOG(LOG_ERROR, ACC, ACC_INIT);
   }
-  syslog.value[0] = true;
-  SYS_LOG(LOG_INFO, ACC, ACC_INIT);
+  else {
+    syslog.value[0] = true;
+    SYS_LOG(LOG_INFO, ACC, ACC_INIT);
+  }
 
 
-  /*
-  // init NEO-6M GPS UART
-  GPS_SETUP();
- */
+  // init NEO-7M GPS UART
+  ret = GPS_SETUP();
+  if (ret != 0) {
+    #ifdef DEBUG_MODE
+      printf("[%8lu] [ERR] GPS setup failed: %ld\r\n", HAL_GetTick(), ret);
+    #endif
+    syslog.value[0] = false;
+    SYS_LOG(LOG_ERROR, GPS, GPS_INIT);
+  }
+  else {
+    syslog.value[0] = true;
+    SYS_LOG(LOG_INFO, GPS, GPS_INIT);
+  }
 
 
   // start hardware timers
@@ -289,9 +317,11 @@ int main(void)
 
 
       // update LCD
-      LCD_UPDATE();
-      syslog.value[0] = true;
-      SYS_LOG(LOG_INFO, LCD, LCD_UPDATED);
+      if (sys_state.LCD) {
+        LCD_UPDATE();
+        syslog.value[0] = true;
+        SYS_LOG(LOG_INFO, LCD, LCD_UPDATED);
+      }
     }
 
 
@@ -314,10 +344,20 @@ int main(void)
       adc_flag = 0; // clear all adc flags
 
       // record each channel
-      for (int i = 0; i < ADC_COUNT; i++) {
-        *(uint32_t *)syslog.value = adc_value[i];
-        SYS_LOG(LOG_INFO, ANALOG, i);
-      }
+      *(uint16_t *)syslog.value = adc_value[ADC_TEMP];
+      SYS_LOG(LOG_INFO, ANALOG, ADC_CPU);
+
+      *(uint16_t *)(syslog.value + 0) = adc_value[ADC_DIST_FL];
+      *(uint16_t *)(syslog.value + 2) = adc_value[ADC_DIST_RL];
+      *(uint16_t *)(syslog.value + 4) = adc_value[ADC_DIST_FR];
+      *(uint16_t *)(syslog.value + 6) = adc_value[ADC_DIST_RR];
+      SYS_LOG(LOG_INFO, ANALOG, ADC_DIST);
+
+      *(uint16_t *)(syslog.value + 0) = adc_value[ADC_SPD_FL];
+      *(uint16_t *)(syslog.value + 2) = adc_value[ADC_SPD_RL];
+      *(uint16_t *)(syslog.value + 4) = adc_value[ADC_SPD_FR];
+      *(uint16_t *)(syslog.value + 6) = adc_value[ADC_SPD_RR];
+      SYS_LOG(LOG_INFO, ANALOG, ADC_SPD);
     }
 
 
@@ -341,8 +381,55 @@ int main(void)
     }
 
 
-    // GPS handling
-    // !!!!!!!!!!!!!!!!!!!!!
+    // parse GPS NMEA GPRMC data
+    if (gps_flag) {
+      gps_flag = 0; // clear GPS flag
+
+      static NMEA_GPRMC gprmc;
+      static GPS_COORD gps_coord;
+      static GPS_INFO gps_info;
+
+      if (!strncmp((char *)gps_data, "$GPRMC", 6)) {
+
+        // parse NMEA GPRMC sentence
+        gprmc.id= gps_data;
+        gprmc.utc_time = FIND_AND_NUL(gprmc.id, gprmc.utc_time, ',');
+        gprmc.status = FIND_AND_NUL(gprmc.utc_time, gprmc.status, ',');
+
+        // proceed only if GPS fix is valid
+        if (*gprmc.status == 'A') {
+          gprmc.lat = FIND_AND_NUL(gprmc.status, gprmc.lat, ',');
+          gprmc.north = FIND_AND_NUL(gprmc.lat, gprmc.north, ',');
+          gprmc.lon = FIND_AND_NUL(gprmc.north, gprmc.lon, ',');
+          gprmc.east = FIND_AND_NUL(gprmc.lon, gprmc.east, ',');
+          gprmc.speed = FIND_AND_NUL(gprmc.east, gprmc.speed, ',');
+          gprmc.course = FIND_AND_NUL(gprmc.speed, gprmc.course, ',');
+          gprmc.utc_date = FIND_AND_NUL(gprmc.course, gprmc.utc_date, ',');
+          gprmc.others = FIND_AND_NUL(gprmc.utc_date, gprmc.others, ',');
+
+          // process GPS coordinates
+          gps_coord.lat = to_uint(gprmc.lat, '.');
+          gps_coord.lon = to_uint(gprmc.lon, '.');
+
+          // process GPS speed, course and datetime
+          gps_info.speed = (int)(atof((char *)gprmc.speed) * 100);
+          gps_info.course = drop_point(gprmc.course);
+          gps_info.utc_date = atoi((char *)gprmc.utc_date);
+          gps_info.utc_time = drop_point(gprmc.utc_time);
+
+          *(uint64_t *)syslog.value = *(uint64_t *)&gps_coord;
+          SYS_LOG(LOG_INFO, GPS, GPS_POS);
+
+          *(uint64_t *)syslog.value = *(uint64_t *)&gps_info;
+          SYS_LOG(LOG_INFO, GPS, GPS_SPD);
+
+          sys_state.GPS = true;
+        }
+        else {
+          sys_state.GPS = false;
+        }
+      }
+    }
 
     /* USER CODE END WHILE */
 

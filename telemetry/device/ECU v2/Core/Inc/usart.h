@@ -44,7 +44,7 @@ void MX_USART1_UART_Init(void);
 void MX_USART2_UART_Init(void);
 
 /* USER CODE BEGIN Prototypes */
-
+int32_t GPS_SETUP(void);
 /* USER CODE END Prototypes */
 
 #ifdef __cplusplus

@@ -82,9 +82,6 @@ int32_t CAN_SETUP(void) {
   ret = HAL_CAN_ActivateNotification(&hcan1, CAN_IT_BUSOFF);
   ret = HAL_CAN_ActivateNotification(&hcan1, CAN_IT_ERROR);
 
-  sys_state.CAN = true;
-  HAL_GPIO_WritePin(GPIOE, LED_CAN_Pin, GPIO_PIN_SET);
-
   return 0;
 }
 
