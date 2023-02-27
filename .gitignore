@@ -1,0 +1,7 @@
+tags
+.env
+
+node_modules/
+
+Debug/
+Release/
