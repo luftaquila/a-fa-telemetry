@@ -22,18 +22,18 @@
 
 /* USER CODE BEGIN 0 */
 void RTC_READ(DATETIME *boot) {
-	RTC_DateTypeDef sDate;
-	RTC_TimeTypeDef sTime;
+  RTC_DateTypeDef RTC_DATE;
+  RTC_TimeTypeDef RTC_TIME;
 
-	HAL_RTC_GetTime(&hrtc, &sTime, FORMAT_BIN);
-	HAL_RTC_GetDate(&hrtc, &sDate, FORMAT_BIN);
+  HAL_RTC_GetTime(&hrtc, &RTC_TIME, FORMAT_BIN);
+  HAL_RTC_GetDate(&hrtc, &RTC_DATE, FORMAT_BIN);
 
-  boot->second = sTime.Seconds;
-  boot->minute = sTime.Minutes;
-  boot->hour = sTime.Hours;
-  boot->date = sDate.Date;
-  boot->month = sDate.Month;
-  boot->year = sDate.Year;
+  boot->second = RTC_TIME.Seconds;
+  boot->minute = RTC_TIME.Minutes;
+  boot->hour = RTC_TIME.Hours;
+  boot->date = RTC_DATE.Date;
+  boot->month = RTC_DATE.Month;
+  boot->year = RTC_DATE.Year;
 
   return;
 }

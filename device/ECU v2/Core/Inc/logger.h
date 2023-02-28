@@ -46,12 +46,13 @@ typedef enum {
 typedef enum {
   ECU_BOOT = 0,
   ECU_STATE,
-  ECU_READY
+  ECU_READY,
+  SD_INIT
 } LOG_KEY_ECU;
 
 typedef enum {
   ESP_INIT = 0,
-  ESP_REMOTE_CONNECT,
+  ESP_REMOTE,
   ESP_RTC_FIX
 } LOG_KEY_ESP;
 

@@ -3,8 +3,8 @@ const LOG_LEVEL = [ "FATAL", "ERROR", "WARN", "INFO", "DEBUG" ];
 const LOG_SOURCE = [ "ECU", "ESP", "CAN", "ADC", "ACC", "LCD", "GPS" ];
 
 const LOG_KEY = {
-  "ECU": [ "ECU_BOOT", "ECU_STATE", "ECU_READY" ],
-  "ESP": [ "ESP_INIT", "ESP_REMOTE_CONNECT", "ESP_RTC_FIX" ],
+  "ECU": [ "ECU_BOOT", "ECU_STATE", "ECU_READY", "SD_INIT" ],
+  "ESP": [ "ESP_INIT", "ESP_REMOTE", "ESP_RTC_FIX" ],
   "CAN": {
     0: "CAN_INIT",
     1: "CAN_ERR",

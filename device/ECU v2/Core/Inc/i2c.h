@@ -29,6 +29,7 @@ extern "C" {
 #include "main.h"
 
 /* USER CODE BEGIN Includes */
+#include "rtc.h"
 #include "types.h"
 #include "ringbuffer.h"
 #include "stdbool.h"

@@ -168,18 +168,24 @@ int main(void)
   }
 
 
+  // core system boot complete
+  syslog.value[0] = true;
+  SYS_LOG(LOG_INFO, ECU, ECU_BOOT);
+
+
   // init SD card
   ret = SD_SETUP(&boot);
   if (ret != 0) {
     #ifdef DEBUG_MODE
       printf("[%8lu] [ERR] SD setup failed: %ld\r\n", HAL_GetTick(), ret);
     #endif
+    syslog.value[0] = false;
+    SYS_LOG(LOG_ERROR, ECU, SD_INIT);
   }
-
-
-  // core system boot complete
-  syslog.value[0] = true;
-  SYS_LOG(LOG_INFO, ECU, ECU_BOOT);
+  else {
+    syslog.value[0] = true;
+    SYS_LOG(LOG_INFO, ECU, SD_INIT);
+  }
 
 
   // init ESP32 i2c for remote telemetry
