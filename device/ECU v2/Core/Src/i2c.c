@@ -40,6 +40,16 @@ extern uint8_t acc_value[6];
 void HAL_I2C_MasterTxCpltCallback(I2C_HandleTypeDef *hi2c) {
   // ESP
   if (hi2c->Instance == I2C1) {
+    if (ring_buffer_is_empty(&ESP_BUFFER)) {
+      // finish transmitting
+      i2c_flag &= ~(1 << I2C_BUFFER_ESP_REMAIN);
+      i2c_flag &= ~(1 << I2C_BUFFER_ESP_TRANSMIT);
+    }
+    else {
+      static uint8_t payload[sizeof(LOG)];
+      ring_buffer_dequeue_arr(&ESP_BUFFER, (char *)payload, sizeof(LOG));
+      HAL_I2C_Master_Transmit_IT(&hi2c1, ESP_I2C_ADDR, payload, sizeof(LOG));
+    }
 
   }
 
@@ -51,7 +61,7 @@ void HAL_I2C_MasterTxCpltCallback(I2C_HandleTypeDef *hi2c) {
       i2c_flag &= ~(1 << I2C_BUFFER_LCD_TRANSMIT);
     }
     else {
-      uint8_t payload[4];
+      static uint8_t payload[4];
       ring_buffer_dequeue_arr(&LCD_BUFFER, (char *)payload, 4);
       HAL_I2C_Master_Transmit_IT(&hi2c2, LCD_I2C_ADDR, payload, 4);
     }

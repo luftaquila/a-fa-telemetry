@@ -363,13 +363,17 @@ int main(void)
 
     /* check I2C Tx buffer; start transmit if buffer is not empty and not transmitting */
     if (i2c_flag & (1 << I2C_BUFFER_ESP_REMAIN) && !(i2c_flag & (1 << I2C_BUFFER_ESP_TRANSMIT))) {
+      i2c_flag |= 1 << I2C_BUFFER_ESP_TRANSMIT;
 
+      static uint8_t payload[sizeof(LOG)];
+      ring_buffer_dequeue_arr(&ESP_BUFFER, (char *)payload, sizeof(LOG));
+      HAL_I2C_Master_Transmit_IT(&hi2c1, ESP_I2C_ADDR, payload, sizeof(LOG));
     }
 
     if (i2c_flag & (1 << I2C_BUFFER_LCD_REMAIN) && !(i2c_flag & (1 << I2C_BUFFER_LCD_TRANSMIT))) {
       i2c_flag |= 1 << I2C_BUFFER_LCD_TRANSMIT;
 
-      uint8_t payload[4];
+      static uint8_t payload[4];
       ring_buffer_dequeue_arr(&LCD_BUFFER, (char *)payload, 4);
       HAL_I2C_Master_Transmit_IT(&hi2c2, LCD_I2C_ADDR, payload, 4);
     }
