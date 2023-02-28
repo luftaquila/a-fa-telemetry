@@ -13,7 +13,7 @@ extern LOG syslog;
 extern SYSTEM_STATE sys_state;
 extern ring_buffer_t LOG_BUFFER;
 
-extern uint32_t i2c_flag = 0;
+extern uint32_t i2c_flag;
 extern ring_buffer_t ESP_BUFFER;
 
 int32_t SYS_LOG(LOG_LEVEL level, LOG_SOURCE source, int32_t key) {
@@ -22,11 +22,11 @@ int32_t SYS_LOG(LOG_LEVEL level, LOG_SOURCE source, int32_t key) {
   syslog.source = source;
   syslog.key = key;
 
-  if (sys.state.SD) {
+  if (sys_state.SD) {
     ring_buffer_queue_arr(&LOG_BUFFER, (char *)&syslog, sizeof(LOG));
   }
 
-  if (sys.state.ESP) {
+  if (sys_state.ESP) {
     i2c_flag |= 1 << I2C_BUFFER_ESP_REMAIN;
     ring_buffer_queue_arr(&ESP_BUFFER, (char *)&syslog, sizeof(LOG));
   }

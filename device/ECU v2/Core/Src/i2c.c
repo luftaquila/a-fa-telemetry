@@ -99,7 +99,7 @@ void HAL_I2C_MasterRxCpltCallback(I2C_HandleTypeDef *hi2c) {
       HAL_RTC_SetTime(&hrtc, &RTC_TIME, FORMAT_BIN);
       HAL_RTC_SetDate(&hrtc, &RTC_DATE, FORMAT_BIN);
 
-      *(uint64_t *)syslog.value = (uint64_t *)(esp_payload + 1);
+      *(uint64_t *)syslog.value = *(uint64_t *)(esp_payload + 1);
       SYS_LOG(LOG_INFO, ESP, ESP_RTC_FIX);
 
       rtc_fix = true;
@@ -138,7 +138,7 @@ int32_t ESP_SETUP(void) {
 
   // ESP handshake
   HAL_Delay(100);
-  HAL_I2C_Master_Transmit(&hi2c1, ESP_I2C_ADDR, "READY", 5, 50);
+  HAL_I2C_Master_Transmit(&hi2c1, ESP_I2C_ADDR, (uint8_t *)"READY", 5, 50);
   HAL_I2C_Master_Receive_IT(&hi2c1, ESP_I2C_ADDR, esp_payload, 7);
 
   return 0;
