@@ -6,10 +6,10 @@
   ******************************************************************************
   * @attention
   *
-  * E-Formula 2023 ECU Unit Firmware. A-FA, Ajou University, Korea.
+  * E-Formula 2023 ECU Firmware. A-FA, Ajou University, Korea.
   *
-  * Oh Byung-Jun (mail@luftaquila.io)
-  * A-FA E-Formula Electric System Part Manager & Team Project Manager
+  * Oh ByungJun (mail@luftaquila.io)
+  * A-FA E-Formula Electric System Part Leader & Team Project Manager
   *
   ******************************************************************************
   */
