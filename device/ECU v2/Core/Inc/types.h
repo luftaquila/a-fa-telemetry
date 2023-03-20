@@ -31,9 +31,9 @@ typedef enum {
 
 /* timer index */
 typedef enum {
-  TIMER_1s = 0,
-  TIMER_300ms,
-  TIMER_100ms,
+  TIMER_100ms = 0,
+  TIMER_400ms,
+  TIMER_1s,
 } TIMER_ID;
 
 /* ADC index */
@@ -45,10 +45,6 @@ typedef enum {
   ADC_DIST_RL,
   ADC_DIST_FR,
   ADC_DIST_RR,
-  ADC_SPD_FL,
-  ADC_SPD_RL,
-  ADC_SPD_FR,
-  ADC_SPD_RR,
   ADC_COUNT,
 } ADC_COMPONENT;
 

@@ -145,12 +145,9 @@ int main(void)
   MX_I2C1_Init();
   MX_CAN1_Init();
   MX_ADC2_Init();
-  MX_ADC3_Init();
   MX_USART2_UART_Init();
   MX_TIM1_Init();
   MX_I2C3_Init();
-  MX_TIM2_Init();
-  MX_TIM3_Init();
   /* USER CODE BEGIN 2 */
 
   // check boot time
@@ -280,8 +277,6 @@ int main(void)
 
   // start hardware timers
   HAL_TIM_Base_Start_IT(&htim1);
-  HAL_TIM_Base_Start_IT(&htim2);
-  HAL_TIM_Base_Start_IT(&htim3);
 
 
   // system setup sequence complete
@@ -295,58 +290,8 @@ int main(void)
 
   while (1) {
 
-    // 1s timer set: SD card sync
-    if (timer_flag & 0x1 << TIMER_1s) {
-      timer_flag &= ~(1 << TIMER_1s); // clear 1s timer flag
-
-      // SD sync
-      ret = SD_SYNC(&logfile);
-      #ifdef DEBUG_MODE
-        printf("[%8lu] [INF] SD SYNC: %ld\r\n", HAL_GetTick(), ret);
-      #endif
-    }
-
-
-    // 300ms timer set: system state record, LCD update
-    if (timer_flag & 0x1 << TIMER_300ms) {
-      timer_flag &= ~(1 << TIMER_300ms); // clear 300ms timer flag
-
-      // update system state
-      sys_state.HV = HAL_GPIO_ReadPin(GPIOD, HV_ACTIVE_Pin);
-      sys_state.RTD = HAL_GPIO_ReadPin(GPIOD, RTD_ACTIVE_Pin);
-      sys_state.BMS = HAL_GPIO_ReadPin(GPIOD, BMS_FAULT_Pin);
-      sys_state.IMD = HAL_GPIO_ReadPin(GPIOD, IMD_FAULT_Pin);
-      sys_state.BSPD = HAL_GPIO_ReadPin(GPIOD, BSPD_FAULT_Pin);
-
-      *(SYSTEM_STATE *)syslog.value = sys_state;
-      SYS_LOG(LOG_INFO, ECU, ECU_STATE);
-
-
-      // update LCD
-      if (sys_state.LCD) {
-        LCD_UPDATE();
-        syslog.value[0] = true;
-        SYS_LOG(LOG_INFO, LCD, LCD_UPDATED);
-      }
-    }
-
-
-    // 100ms timer set: ADC conversion, accelerometer record
-    if (timer_flag & 0x1 << TIMER_100ms) {
-      timer_flag &= ~(1 << TIMER_100ms); // clear 100ms timer flag
-
-      // start ADC conversion
-      HAL_ADC_Start_IT(&hadc1);
-      HAL_ADC_Start_IT(&hadc2);
-      HAL_ADC_Start_IT(&hadc3);
-
-      // trigger accelerometer read
-      HAL_I2C_Mem_Read_IT(&hi2c3, ACC_I2C_ADDR, 0x32, 1, acc_value, 6);
-    }
-
-
     // on all ADC conversions complete
-    if (adc_flag == ((1 << ADC_CPU) | (1 << ADC_DIST) | (1 << ADC_SPD))) {
+    if (adc_flag == ((1 << ADC_CPU) | (1 << ADC_DIST))) {
       adc_flag = 0; // clear all adc flags
 
       // record each channel
@@ -358,12 +303,6 @@ int main(void)
       *(uint16_t *)(syslog.value + 4) = adc_value[ADC_DIST_FR];
       *(uint16_t *)(syslog.value + 6) = adc_value[ADC_DIST_RR];
       SYS_LOG(LOG_INFO, ANALOG, ADC_DIST);
-
-      *(uint16_t *)(syslog.value + 0) = adc_value[ADC_SPD_FL];
-      *(uint16_t *)(syslog.value + 2) = adc_value[ADC_SPD_RL];
-      *(uint16_t *)(syslog.value + 4) = adc_value[ADC_SPD_FR];
-      *(uint16_t *)(syslog.value + 6) = adc_value[ADC_SPD_RR];
-      SYS_LOG(LOG_INFO, ANALOG, ADC_SPD);
     }
 
 
@@ -448,6 +387,54 @@ int main(void)
       else {
         sys_state.GPS = false;
       }
+    }
+
+
+    // 100ms timer set: system state record, ADC conversion, accelerometer record
+    if (timer_flag & 0x1 << TIMER_100ms) {
+      timer_flag &= ~(1 << TIMER_100ms); // clear 100ms timer flag
+
+      // update system state
+      sys_state.HV = HAL_GPIO_ReadPin(GPIOD, HV_ACTIVE_Pin);
+      sys_state.RTD = HAL_GPIO_ReadPin(GPIOD, RTD_ACTIVE_Pin);
+      sys_state.BMS = HAL_GPIO_ReadPin(GPIOD, BMS_FAULT_Pin);
+      sys_state.IMD = HAL_GPIO_ReadPin(GPIOD, IMD_FAULT_Pin);
+      sys_state.BSPD = HAL_GPIO_ReadPin(GPIOD, BSPD_FAULT_Pin);
+
+      *(SYSTEM_STATE *)syslog.value = sys_state;
+      SYS_LOG(LOG_INFO, ECU, ECU_STATE);
+
+      // start ADC conversion
+      HAL_ADC_Start_IT(&hadc1);
+      HAL_ADC_Start_IT(&hadc2);
+
+      // trigger accelerometer read
+      HAL_I2C_Mem_Read_IT(&hi2c3, ACC_I2C_ADDR, 0x32, 1, acc_value, 6);
+    }
+
+
+    // 400ms timer set: LCD update
+    if (timer_flag & 0x1 << TIMER_400ms) {
+      timer_flag &= ~(1 << TIMER_400ms); // clear 400ms timer flag
+
+      // update LCD
+      if (sys_state.LCD) {
+        LCD_UPDATE();
+        syslog.value[0] = true;
+        SYS_LOG(LOG_INFO, LCD, LCD_UPDATED);
+      }
+    }
+
+
+    // 1s timer set: SD card sync
+    if (timer_flag & 0x1 << TIMER_1s) {
+      timer_flag &= ~(1 << TIMER_1s); // clear 1s timer flag
+
+      // SD sync
+      ret = SD_SYNC(&logfile);
+      #ifdef DEBUG_MODE
+        printf("[%8lu] [INF] SD SYNC: %ld\r\n", HAL_GetTick(), ret);
+      #endif
     }
 
     /* USER CODE END WHILE */
