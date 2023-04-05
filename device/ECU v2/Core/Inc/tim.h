@@ -42,7 +42,7 @@ void MX_TIM1_Init(void);
 void MX_TIM5_Init(void);
 
 /* USER CODE BEGIN Prototypes */
-
+int32_t DIGITAL_SETUP(void);
 /* USER CODE END Prototypes */
 
 #ifdef __cplusplus

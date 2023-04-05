@@ -48,6 +48,15 @@ typedef enum {
   ADC_COUNT,
 } ADC_COMPONENT;
 
+/* TIMER input capture channel index */
+typedef enum {
+  IC_WHEEL_FL = 0,
+  IC_WHEEL_RL,
+  IC_WHEEL_FR,
+  IC_WHEEL_RR,
+  IC_CH_COUNT
+} IC_COMPONENT;
+
 /* I2C buffer index */
 typedef enum {
   I2C_BUFFER_ESP_REMAIN = 0,

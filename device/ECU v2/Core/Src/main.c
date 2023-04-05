@@ -73,6 +73,9 @@ uint32_t timer_flag = 0;
 uint32_t adc_flag = 0;
 uint16_t adc_value[ADC_COUNT] = { 0, };
 
+// timer input capture data
+uint32_t ic_value[IC_CH_COUNT] = { 0, };
+
 // accelerometer data
 uint8_t acc_value[6];
 
@@ -213,6 +216,21 @@ int main(void)
   else {
     syslog.value[0] = true;
     SYS_LOG(LOG_INFO, ANALOG, ADC_INIT);
+  }
+
+
+  // init TIMER for input capture
+  ret = DIGITAL_SETUP();
+  if (ret != 0) {
+    #ifdef DEBUG_MODE
+      printf("[%8lu] [ERR] DIGITAL setup failed: %ld\r\n", HAL_GetTick(), ret);
+    #endif
+    syslog.value[0] = false;
+    SYS_LOG(LOG_ERROR, DIGITAL, TIMER_IC_INIT);
+  }
+  else {
+    syslog.value[0] = true;
+    SYS_LOG(LOG_INFO, DIGITAL, TIMER_IC_INIT);
   }
 
 

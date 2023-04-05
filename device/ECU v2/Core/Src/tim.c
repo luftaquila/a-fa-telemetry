@@ -41,6 +41,14 @@ void HAL_TIM_PeriodElapsedCallback(TIM_HandleTypeDef *htim) {
     }
   }
 }
+
+int32_t DIGITAL_SETUP(void) {
+  // start TIM5 input capture
+  HAL_TIM_IC_Start_DMA(&htim5, TIM_CHANNEL_1, &ic_value[IC_WHEEL_FL], 2);
+  HAL_TIM_IC_Start_DMA(&htim5, TIM_CHANNEL_2, &ic_value[IC_WHEEL_FR], 2);
+  HAL_TIM_IC_Start_DMA(&htim5, TIM_CHANNEL_3, &ic_value[IC_WHEEL_RL], 2);
+  HAL_TIM_IC_Start_DMA(&htim5, TIM_CHANNEL_4, &ic_value[IC_WHEEL_RR], 2);
+}
 /* USER CODE END 0 */
 
 TIM_HandleTypeDef htim1;

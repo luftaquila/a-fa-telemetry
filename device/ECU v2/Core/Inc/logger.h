@@ -38,6 +38,7 @@ typedef enum {
   ESP,
   CAN,
   ANALOG,
+  DIGITAL,
   ACC,
   LCD,
   GPS
@@ -89,6 +90,10 @@ typedef enum {
   ADC_CPU,
   ADC_DIST
 } LOG_KEY_ANALOG;
+
+typedef enum {
+  TIMER_IC_INIT = 0,
+} LOG_KEY_DIGITAL;
 
 typedef enum {
   ACC_INIT = 0,
