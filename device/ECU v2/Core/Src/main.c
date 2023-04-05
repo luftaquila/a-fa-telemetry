@@ -343,7 +343,7 @@ int main(void)
       if (!strncmp((char *)gps_data, "$GPRMC", 6)) {
 
         // parse NMEA GPRMC sentence
-        gprmc.id= gps_data;
+        gprmc.id = gps_data;
         gprmc.utc_time = FIND_AND_NUL(gprmc.id, gprmc.utc_time, ',');
         gprmc.status = FIND_AND_NUL(gprmc.utc_time, gprmc.status, ',');
 
