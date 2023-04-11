@@ -22,6 +22,8 @@
 
 /* USER CODE BEGIN 0 */
 extern uint32_t timer_flag;
+extern uint32_t ic_flag;
+extern uint32_t ic_value[IC_CH_COUNT];
 
 void HAL_TIM_PeriodElapsedCallback(TIM_HandleTypeDef *htim) {
   static uint32_t count = 0;
@@ -42,12 +44,43 @@ void HAL_TIM_PeriodElapsedCallback(TIM_HandleTypeDef *htim) {
   }
 }
 
+void HAL_TIM_IC_CaptureCallback(TIM_HandleTypeDef *htim) {
+  if(htim->Instance == TIM5) {
+    switch (htim->Channel) {
+      case HAL_TIM_ACTIVE_CHANNEL_1:
+        ic_flag |= 1 << IC_WHEEL_FL;
+        HAL_TIM_IC_Stop_DMA(&htim5, TIM_CHANNEL_1);
+        break;
+
+      case HAL_TIM_ACTIVE_CHANNEL_2:
+        ic_flag |= 1 << IC_WHEEL_RL;
+        HAL_TIM_IC_Stop_DMA(&htim5, TIM_CHANNEL_2);
+        break;
+
+      case HAL_TIM_ACTIVE_CHANNEL_3:
+        ic_flag |= 1 << IC_WHEEL_FR;
+        HAL_TIM_IC_Stop_DMA(&htim5, TIM_CHANNEL_3);
+        break;
+
+      case HAL_TIM_ACTIVE_CHANNEL_4:
+        ic_flag |= 1 << IC_WHEEL_RR;
+        HAL_TIM_IC_Stop_DMA(&htim5, TIM_CHANNEL_4);
+        break;
+
+      default:
+        break;
+    }
+  }
+}
+
 int32_t DIGITAL_SETUP(void) {
   // start TIM5 input capture
   HAL_TIM_IC_Start_DMA(&htim5, TIM_CHANNEL_1, &ic_value[IC_WHEEL_FL], 2);
   HAL_TIM_IC_Start_DMA(&htim5, TIM_CHANNEL_2, &ic_value[IC_WHEEL_FR], 2);
   HAL_TIM_IC_Start_DMA(&htim5, TIM_CHANNEL_3, &ic_value[IC_WHEEL_RL], 2);
   HAL_TIM_IC_Start_DMA(&htim5, TIM_CHANNEL_4, &ic_value[IC_WHEEL_RR], 2);
+
+  return 0;
 }
 /* USER CODE END 0 */
 

@@ -54,7 +54,8 @@ typedef enum {
   IC_WHEEL_RL,
   IC_WHEEL_FR,
   IC_WHEEL_RR,
-  IC_CH_COUNT
+  IC_CH_COUNT,
+  IC_READY = 0xFFFF
 } IC_COMPONENT;
 
 /* I2C buffer index */

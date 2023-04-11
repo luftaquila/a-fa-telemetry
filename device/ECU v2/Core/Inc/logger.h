@@ -93,6 +93,8 @@ typedef enum {
 
 typedef enum {
   TIMER_IC_INIT = 0,
+  TIMER_IC_LEFT,
+  TIMER_IC_RIGHT
 } LOG_KEY_DIGITAL;
 
 typedef enum {
