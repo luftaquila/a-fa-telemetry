@@ -73,6 +73,12 @@ uint32_t timer_flag = 0;
 uint32_t adc_flag = 0;
 uint16_t adc_value[ADC_COUNT] = { 0, };
 
+// timer input capture flag and data
+uint32_t ic_flag = 0;
+int32_t ic_value[IC_CH_COUNT] = { 0, };
+int32_t ic_buffer_0[IC_CH_COUNT] = { 0, };
+int32_t ic_buffer_1[IC_CH_COUNT] = { 0, };
+
 // accelerometer data
 uint8_t acc_value[6];
 
@@ -216,6 +222,21 @@ int main(void)
   }
 
 
+  // init TIMER for input capture
+  ret = DIGITAL_SETUP();
+  if (ret != 0) {
+    #ifdef DEBUG_MODE
+      printf("[%8lu] [ERR] DIGITAL setup failed: %ld\r\n", HAL_GetTick(), ret);
+    #endif
+    syslog.value[0] = false;
+    SYS_LOG(LOG_ERROR, DIGITAL, TIMER_IC_INIT);
+  }
+  else {
+    syslog.value[0] = true;
+    SYS_LOG(LOG_INFO, DIGITAL, TIMER_IC_INIT);
+  }
+
+
   // init CAN for BMS and inverter
   ret = CAN_SETUP();
   if (ret != 0) {
@@ -291,8 +312,8 @@ int main(void)
 
   while (1) {
 
-    // on all ADC conversions complete
-    if (adc_flag == ((1 << ADC_CPU) | (1 << ADC_DIST))) {
+    // all ADC conversions are done
+    if (adc_flag == ( (1 << ADC_CPU) | (1 << ADC_DIST) )) {
       adc_flag = 0; // clear all adc flags
 
       // record each channel
@@ -304,6 +325,21 @@ int main(void)
       *(uint16_t *)(syslog.value + 4) = adc_value[ADC_DIST_FR];
       *(uint16_t *)(syslog.value + 6) = adc_value[ADC_DIST_RR];
       SYS_LOG(LOG_INFO, ANALOG, ADC_DIST);
+    }
+
+
+    // all timer input capture DMA transfers are done
+    if (ic_flag == ( (1 << IC_WHEEL_FL) | (1 << IC_WHEEL_RL) | (1 << IC_WHEEL_FR) | (1 << IC_WHEEL_RR) )) {
+      // record each channel
+      *(uint32_t *)(syslog.value + 0) = ic_value[IC_WHEEL_FL];
+      *(uint32_t *)(syslog.value + 4) = ic_value[IC_WHEEL_RL];
+      SYS_LOG(LOG_INFO, DIGITAL, TIMER_IC_LEFT);
+
+      *(uint32_t *)(syslog.value + 0) = ic_value[IC_WHEEL_FR];
+      *(uint32_t *)(syslog.value + 4) = ic_value[IC_WHEEL_RR];
+      SYS_LOG(LOG_INFO, DIGITAL, TIMER_IC_RIGHT);
+
+      ic_flag = IC_READY; // mark ready to start next DMA transfer
     }
 
 
@@ -343,7 +379,7 @@ int main(void)
       if (!strncmp((char *)gps_data, "$GPRMC", 6)) {
 
         // parse NMEA GPRMC sentence
-        gprmc.id= gps_data;
+        gprmc.id = gps_data;
         gprmc.utc_time = FIND_AND_NUL(gprmc.id, gprmc.utc_time, ',');
         gprmc.status = FIND_AND_NUL(gprmc.utc_time, gprmc.status, ',');
 
@@ -409,8 +445,15 @@ int main(void)
       HAL_ADC_Start_IT(&hadc1);
       HAL_ADC_Start_IT(&hadc2);
 
+      // start timer input capture DMA transfer
+      if(ic_flag == IC_READY) {
+        ic_flag = 0;
+        DIGITAL_SETUP();
+      }
+
       // trigger accelerometer read
-      HAL_I2C_Mem_Read_IT(&hi2c3, ACC_I2C_ADDR, 0x32, 1, acc_value, 6);
+      /* THIS TAKES 30ms EVERY TIME!!!!!!!!!!!!!! */
+      //HAL_I2C_Mem_Read_IT(&hi2c3, ACC_I2C_ADDR, 0x32, 1, acc_value, 6);
     }
 
 
