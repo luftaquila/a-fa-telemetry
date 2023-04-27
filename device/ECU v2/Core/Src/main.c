@@ -75,7 +75,9 @@ uint16_t adc_value[ADC_COUNT] = { 0, };
 
 // timer input capture flag and data
 uint32_t ic_flag = 0;
-uint32_t ic_value[IC_CH_COUNT] = { 0, };
+int32_t ic_value[IC_CH_COUNT] = { 0, };
+int32_t ic_buffer_0[IC_CH_COUNT] = { 0, };
+int32_t ic_buffer_1[IC_CH_COUNT] = { 0, };
 
 // accelerometer data
 uint8_t acc_value[6];
@@ -450,7 +452,8 @@ int main(void)
       }
 
       // trigger accelerometer read
-      HAL_I2C_Mem_Read_IT(&hi2c3, ACC_I2C_ADDR, 0x32, 1, acc_value, 6);
+      /* THIS TAKES 30ms EVERY TIME!!!!!!!!!!!!!! */
+      //HAL_I2C_Mem_Read_IT(&hi2c3, ACC_I2C_ADDR, 0x32, 1, acc_value, 6);
     }
 
 
