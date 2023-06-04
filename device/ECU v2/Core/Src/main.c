@@ -161,6 +161,7 @@ int main(void)
   int32_t ret;
   DATETIME boot;
   RTC_READ(&boot);
+  printf("ECU STARTUP\r\n");
 
 
   // init ECU gpio and system state
@@ -221,7 +222,7 @@ int main(void)
     SYS_LOG(LOG_INFO, ANALOG, ADC_INIT);
   }
 
-
+/*
   // init TIMER for input capture
   ret = DIGITAL_SETUP();
   if (ret != 0) {
@@ -235,7 +236,7 @@ int main(void)
     syslog.value[0] = true;
     SYS_LOG(LOG_INFO, DIGITAL, TIMER_IC_INIT);
   }
-
+*/
 
   // init CAN for BMS and inverter
   ret = CAN_SETUP();
@@ -547,9 +548,9 @@ int32_t ECU_SETUP(void) {
   HAL_GPIO_WritePin(GPIOA, LED00_Pin, GPIO_PIN_RESET);
   HAL_GPIO_WritePin(GPIOA, LED01_Pin, GPIO_PIN_SET);
 
-  HAL_GPIO_WritePin(GPIOE, LED0_Pin, GPIO_PIN_RESET);
-  HAL_GPIO_WritePin(GPIOE, LED1_Pin, GPIO_PIN_RESET);
-  HAL_GPIO_WritePin(GPIOE, LED2_Pin, GPIO_PIN_RESET);
+  HAL_GPIO_WritePin(GPIOE, LED0_Pin, GPIO_PIN_SET);
+  HAL_GPIO_WritePin(GPIOE, LED1_Pin, GPIO_PIN_SET);
+  HAL_GPIO_WritePin(GPIOE, LED2_Pin, GPIO_PIN_SET);
 
   // init system state
   sys_state.SD = false;

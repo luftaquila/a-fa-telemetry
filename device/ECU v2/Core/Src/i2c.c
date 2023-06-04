@@ -37,7 +37,7 @@ uint8_t LCD_BUFFER_ARR[1 << 12]; // 4KB
 extern uint8_t acc_value[6];
 
 // ESP32 rx data
-uint8_t esp_payload[7];
+uint8_t esp_payload[7] = { 0, };
 
 void HAL_I2C_MasterTxCpltCallback(I2C_HandleTypeDef *hi2c) {
   // ESP
@@ -52,7 +52,6 @@ void HAL_I2C_MasterTxCpltCallback(I2C_HandleTypeDef *hi2c) {
       ring_buffer_dequeue_arr(&ESP_BUFFER, (char *)payload, sizeof(LOG));
       HAL_I2C_Master_Transmit_IT(&hi2c1, ESP_I2C_ADDR, payload, sizeof(LOG));
     }
-
   }
 
   // LCD
@@ -74,50 +73,54 @@ void HAL_I2C_MasterTxCpltCallback(I2C_HandleTypeDef *hi2c) {
 void HAL_I2C_MasterRxCpltCallback(I2C_HandleTypeDef *hi2c) {
   static uint32_t rtc_fix = false;
 
-  // on connect
-  if (esp_payload[0]) {
-    sys_state.ESP = true;
-    HAL_GPIO_WritePin(GPIOE, LED_ESP_Pin, GPIO_PIN_SET);
+  if (hi2c->Instance == I2C1) {
 
-    syslog.value[0] = true;
-    SYS_LOG(LOG_INFO, ESP, ESP_REMOTE);
-
-    if (!rtc_fix) {
-      RTC_DateTypeDef RTC_DATE = {
-        .WeekDay = 0,
-        .Month = esp_payload[2],
-        .Date = esp_payload[3],
-        .Year = esp_payload[1]
-      };
-
-      RTC_TimeTypeDef RTC_TIME = {
-        .Hours = esp_payload[4],
-        .Minutes = esp_payload[5],
-        .Seconds = esp_payload[6]
-      };
-
-      HAL_RTC_SetTime(&hrtc, &RTC_TIME, FORMAT_BIN);
-      HAL_RTC_SetDate(&hrtc, &RTC_DATE, FORMAT_BIN);
-
-      *(uint64_t *)syslog.value = *(uint64_t *)(esp_payload + 1);
-      SYS_LOG(LOG_INFO, ESP, ESP_RTC_FIX);
-
+    // on connect
+    if (esp_payload[0]) {
       rtc_fix = true;
+      sys_state.ESP = true;
+      HAL_GPIO_WritePin(GPIOE, LED_ESP_Pin, GPIO_PIN_SET);
+
+      syslog.value[0] = true;
+      SYS_LOG(LOG_INFO, ESP, ESP_REMOTE);
+
+      if (!rtc_fix) {
+        RTC_DateTypeDef RTC_DATE = {
+          .WeekDay = 0,
+          .Month = esp_payload[2],
+          .Date = esp_payload[3],
+          .Year = esp_payload[1]
+        };
+
+        RTC_TimeTypeDef RTC_TIME = {
+          .Hours = esp_payload[4],
+          .Minutes = esp_payload[5],
+          .Seconds = esp_payload[6]
+        };
+
+        HAL_RTC_SetTime(&hrtc, &RTC_TIME, FORMAT_BIN);
+        HAL_RTC_SetDate(&hrtc, &RTC_DATE, FORMAT_BIN);
+
+        *(uint64_t *)syslog.value = *(uint64_t *)(esp_payload + 1);
+        SYS_LOG(LOG_INFO, ESP, ESP_RTC_FIX);
+
+        rtc_fix = true;
+      }
     }
+
+    // on disconnect
+    else {
+      sys_state.ESP = false;
+      HAL_GPIO_WritePin(GPIOE, LED_ESP_Pin, GPIO_PIN_RESET);
+
+      syslog.value[0] = false;
+      SYS_LOG(LOG_WARN, ESP, ESP_REMOTE);
+    }
+
+    HAL_I2C_Master_Receive_IT(&hi2c1, ESP_I2C_ADDR, esp_payload, 7);
+
+    return;
   }
-
-  // on disconnect
-  else {
-    sys_state.ESP = false;
-    HAL_GPIO_WritePin(GPIOE, LED_ESP_Pin, GPIO_PIN_RESET);
-
-    syslog.value[0] = false;
-    SYS_LOG(LOG_WARN, ESP, ESP_REMOTE);
-  }
-
-  HAL_I2C_Master_Receive_IT(&hi2c1, ESP_I2C_ADDR, esp_payload, 7);
-
-  return;
 }
 
 void HAL_I2C_MemRxCpltCallback(I2C_HandleTypeDef *hi2c) {
@@ -139,9 +142,18 @@ int32_t ESP_SETUP(void) {
   // ESP handshake
   HAL_Delay(100);
   HAL_I2C_Master_Transmit(&hi2c1, ESP_I2C_ADDR, (uint8_t *)"READY", 5, 50);
-  HAL_I2C_Master_Receive_IT(&hi2c1, ESP_I2C_ADDR, esp_payload, 7);
 
-  return 0;
+  // receive 10 bytes from UART
+  uint8_t ack[10];
+  for (int32_t i = 0; i < 10; i++) {
+    HAL_UART_Receive(&huart1, (ack + i), 1, 10);
+  }
+  if (strstr((char *)ack, "ACK") != NULL) {
+    // waiting for time sync
+    HAL_UART_Receive(&huart1, (ack + i), 1, 10000);
+    return 0;
+  }
+  return -1;
 }
 
 
@@ -350,7 +362,7 @@ void HAL_I2C_MspInit(I2C_HandleTypeDef* i2cHandle)
     */
     GPIO_InitStruct.Pin = GPIO_PIN_6|GPIO_PIN_7;
     GPIO_InitStruct.Mode = GPIO_MODE_AF_OD;
-    GPIO_InitStruct.Pull = GPIO_NOPULL;
+    GPIO_InitStruct.Pull = GPIO_PULLUP;
     GPIO_InitStruct.Speed = GPIO_SPEED_FREQ_VERY_HIGH;
     GPIO_InitStruct.Alternate = GPIO_AF4_I2C1;
     HAL_GPIO_Init(GPIOB, &GPIO_InitStruct);
@@ -407,14 +419,14 @@ void HAL_I2C_MspInit(I2C_HandleTypeDef* i2cHandle)
     */
     GPIO_InitStruct.Pin = GPIO_PIN_9;
     GPIO_InitStruct.Mode = GPIO_MODE_AF_OD;
-    GPIO_InitStruct.Pull = GPIO_NOPULL;
+    GPIO_InitStruct.Pull = GPIO_PULLUP;
     GPIO_InitStruct.Speed = GPIO_SPEED_FREQ_VERY_HIGH;
     GPIO_InitStruct.Alternate = GPIO_AF4_I2C3;
     HAL_GPIO_Init(GPIOC, &GPIO_InitStruct);
 
     GPIO_InitStruct.Pin = GPIO_PIN_8;
     GPIO_InitStruct.Mode = GPIO_MODE_AF_OD;
-    GPIO_InitStruct.Pull = GPIO_NOPULL;
+    GPIO_InitStruct.Pull = GPIO_PULLUP;
     GPIO_InitStruct.Speed = GPIO_SPEED_FREQ_VERY_HIGH;
     GPIO_InitStruct.Alternate = GPIO_AF4_I2C3;
     HAL_GPIO_Init(GPIOA, &GPIO_InitStruct);

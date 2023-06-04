@@ -94,6 +94,7 @@ void HAL_TIM_IC_CaptureCallback(TIM_HandleTypeDef *htim) {
 
 int32_t DIGITAL_SETUP(void) {
   // start TIM5 input capture
+  /*
   update_buffer = !update_buffer;
   if (update_buffer == 0) {
     HAL_TIM_IC_Start_DMA(&htim5, TIM_CHANNEL_1, &ic_buffer_0[IC_WHEEL_FL], 2);
@@ -107,6 +108,7 @@ int32_t DIGITAL_SETUP(void) {
     HAL_TIM_IC_Start_DMA(&htim5, TIM_CHANNEL_3, &ic_buffer_1[IC_WHEEL_RL], 2);
     HAL_TIM_IC_Start_DMA(&htim5, TIM_CHANNEL_4, &ic_buffer_1[IC_WHEEL_RR], 2);
   }
+  */
 
   return 0;
 }
@@ -176,9 +178,9 @@ void MX_TIM5_Init(void)
 
   /* USER CODE END TIM5_Init 1 */
   htim5.Instance = TIM5;
-  htim5.Init.Prescaler = 840 - 1;
+  htim5.Init.Prescaler = 84 - 1;
   htim5.Init.CounterMode = TIM_COUNTERMODE_DOWN;
-  htim5.Init.Period = 1000 - 1;
+  htim5.Init.Period = 10000 - 1;
   htim5.Init.ClockDivision = TIM_CLOCKDIVISION_DIV1;
   htim5.Init.AutoReloadPreload = TIM_AUTORELOAD_PRELOAD_DISABLE;
   if (HAL_TIM_Base_Init(&htim5) != HAL_OK)
