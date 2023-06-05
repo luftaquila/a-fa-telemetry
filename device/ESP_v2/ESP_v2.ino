@@ -5,6 +5,11 @@
 
 SocketIOclient socketIO;
 
+String rtc;
+bool stm_acked = false;
+bool rtc_fixed = false;
+bool sync_done = false;
+
 const char ssid[] = "A-FA ECU";
 const char pwd[] = "55555555";
 
@@ -37,18 +42,15 @@ void setup() {
 
 void loop() {
   socketIO.loop();
+
+  if (!sync_done && stm_acked && rtc_fixed) {
+    Serial.printf("$ESP %.*s\n", 19, rtc.c_str());
+    sync_done = true;
+  }
 }
 
 void socketIOEvent(socketIOmessageType_t type, uint8_t* payload, size_t length) {
   switch (type) {
-    case sIOtype_DISCONNECT:
-      Serial.printf("$ESP SOCKET_DISCONNECTED\n");
-
-      if (WiFi.status() != WL_CONNECTED) {
-        WiFi.reconnect();
-      }
-      break;
-
     case sIOtype_CONNECT:
       // join default namespace (no auto join in Socket.IO V3)
       socketIO.send(sIOtype_CONNECT, "/");
@@ -57,31 +59,32 @@ void socketIOEvent(socketIOmessageType_t type, uint8_t* payload, size_t length) 
     case sIOtype_EVENT: {
       DynamicJsonDocument content(100);
       DeserializationError contentError = deserializeJson(content, payload, length);
-      if(contentError) return;
-      socketIO.loop();
+
+      if (contentError) {
+        return;
+      }
       
       String event = content[0];
       String data = content[1]["datetime"];
-      socketIO.loop();
+      rtc = data;
 
-      if(event == String("rtc_fix")) Serial.printf("$ESP RTC_FIX %s\n", data.c_str());
+      if (event == String("rtc_fix")) {
+        rtc_fixed = true;
+      }
       break;
     }
+    
+    case sIOtype_DISCONNECT:
+      if (WiFi.status() != WL_CONNECTED) {
+        WiFi.reconnect();
+      }
+      break;
 
     case sIOtype_ACK:
-      Serial.printf("$ESP SOCKET_ACT\n");
-      break;
-
     case sIOtype_ERROR:
-      Serial.printf("$ESP SOCKET_ERROR\n");
-      break;
-
     case sIOtype_BINARY_EVENT:
-      Serial.printf("$ESP SOCKET_BINARY\n");
-      break;
-
     case sIOtype_BINARY_ACK:
-      Serial.printf("$ESP SOCKET_BINARY_ACK\n");
+    default:
       break;
   }
 }
@@ -98,7 +101,13 @@ void rcv(int len) {
   }
   buffer[i] = '\0';
 
-  if (strncmp(buffer, "READY", 5) == 0) {
-    Serial.println("ACK");
+  // STM32 handshake
+  if (!stm_acked) {
+    if (strncmp(buffer, "READY", 5) == 0) {
+      stm_acked = true;
+      Serial.println("ACK");
+    }
+  } else { // log receive
+
   }
 }

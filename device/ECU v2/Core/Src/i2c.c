@@ -36,9 +36,6 @@ uint8_t LCD_BUFFER_ARR[1 << 12]; // 4KB
 // accelerometer data
 extern uint8_t acc_value[6];
 
-// ESP32 rx data
-uint8_t esp_payload[7] = { 0, };
-
 void HAL_I2C_MasterTxCpltCallback(I2C_HandleTypeDef *hi2c) {
   // ESP
   if (hi2c->Instance == I2C1) {
@@ -70,58 +67,6 @@ void HAL_I2C_MasterTxCpltCallback(I2C_HandleTypeDef *hi2c) {
   return;
 }
 
-void HAL_I2C_MasterRxCpltCallback(I2C_HandleTypeDef *hi2c) {
-  static uint32_t rtc_fix = false;
-
-  if (hi2c->Instance == I2C1) {
-
-    // on connect
-    if (esp_payload[0]) {
-      rtc_fix = true;
-      sys_state.ESP = true;
-      HAL_GPIO_WritePin(GPIOE, LED_ESP_Pin, GPIO_PIN_SET);
-
-      syslog.value[0] = true;
-      SYS_LOG(LOG_INFO, ESP, ESP_REMOTE);
-
-      if (!rtc_fix) {
-        RTC_DateTypeDef RTC_DATE = {
-          .WeekDay = 0,
-          .Month = esp_payload[2],
-          .Date = esp_payload[3],
-          .Year = esp_payload[1]
-        };
-
-        RTC_TimeTypeDef RTC_TIME = {
-          .Hours = esp_payload[4],
-          .Minutes = esp_payload[5],
-          .Seconds = esp_payload[6]
-        };
-
-        HAL_RTC_SetTime(&hrtc, &RTC_TIME, FORMAT_BIN);
-        HAL_RTC_SetDate(&hrtc, &RTC_DATE, FORMAT_BIN);
-
-        *(uint64_t *)syslog.value = *(uint64_t *)(esp_payload + 1);
-        SYS_LOG(LOG_INFO, ESP, ESP_RTC_FIX);
-
-        rtc_fix = true;
-      }
-    }
-
-    // on disconnect
-    else {
-      sys_state.ESP = false;
-      HAL_GPIO_WritePin(GPIOE, LED_ESP_Pin, GPIO_PIN_RESET);
-
-      syslog.value[0] = false;
-      SYS_LOG(LOG_WARN, ESP, ESP_REMOTE);
-    }
-
-    HAL_I2C_Master_Receive_IT(&hi2c1, ESP_I2C_ADDR, esp_payload, 7);
-
-    return;
-  }
-}
 
 void HAL_I2C_MemRxCpltCallback(I2C_HandleTypeDef *hi2c) {
   *(uint64_t *)syslog.value = *(uint64_t *)acc_value;
@@ -140,7 +85,7 @@ int32_t ESP_SETUP(void) {
   ring_buffer_init(&ESP_BUFFER, (char *)ESP_BUFFER_ARR, sizeof(ESP_BUFFER_ARR));
 
   // ESP handshake
-  HAL_Delay(100);
+  HAL_Delay(1000);
   HAL_I2C_Master_Transmit(&hi2c1, ESP_I2C_ADDR, (uint8_t *)"READY", 5, 50);
 
   // receive 10 bytes from UART
@@ -148,11 +93,77 @@ int32_t ESP_SETUP(void) {
   for (int32_t i = 0; i < 10; i++) {
     HAL_UART_Receive(&huart1, (ack + i), 1, 10);
   }
-  if (strstr((char *)ack, "ACK") != NULL) {
-    // waiting for time sync
-    HAL_UART_Receive(&huart1, (ack + i), 1, 10000);
+
+  if (strstr((char *)ack, "ACK") == NULL) {
+    goto esp_fail;
+  }
+
+  // waiting for time sync
+  uint8_t esp_rtc_fix[25];
+  if (HAL_UART_Receive(&huart1, esp_rtc_fix, 25, 20000) != HAL_OK) {
+    printf("time sync fail\r\n");
+    goto esp_fail;
+  }
+
+  printf("time sync: %.*s", 24, esp_rtc_fix);
+
+  // example: $ESP 2023-06-05-22-59-38
+  if (strncmp((char *)esp_rtc_fix, "$ESP ", 5) == 0) {
+    sys_state.ESP = true;
+    HAL_GPIO_WritePin(GPIOE, LED_ESP_Pin, GPIO_PIN_SET);
+
+    syslog.value[0] = true;
+    SYS_LOG(LOG_INFO, ESP, ESP_REMOTE);
+
+    // set RTC
+    uint8_t *ptr = esp_rtc_fix + 7;
+    uint8_t tmp[3];
+    int32_t cnt = 0;
+
+    RTC_DateTypeDef RTC_DATE;
+    RTC_TimeTypeDef RTC_TIME;
+
+    while (*ptr && cnt < 6) {
+      strncpy((char *)tmp, (char *)ptr, 3);
+      tmp[2] = '\0';
+
+      switch (cnt) {
+        case 0: RTC_DATE.Year    = (uint8_t)strtol((char *)tmp, NULL, 10); break;
+        case 1: RTC_DATE.Month   = (uint8_t)strtol((char *)tmp, NULL, 16); break;
+        case 2: RTC_DATE.Date    = (uint8_t)strtol((char *)tmp, NULL, 10); break;
+        case 3: RTC_TIME.Hours   = (uint8_t)strtol((char *)tmp, NULL, 10); break;
+        case 4: RTC_TIME.Minutes = (uint8_t)strtol((char *)tmp, NULL, 10); break;
+        case 5: RTC_TIME.Seconds = (uint8_t)strtol((char *)tmp, NULL, 10); break;
+      }
+
+      // move to next datetime
+      ptr += 3;
+      cnt++;
+    }
+
+    // set weekday; required for accurate year value
+    RTC_DATE.WeekDay = 0;
+
+    HAL_RTC_SetTime(&hrtc, &RTC_TIME, FORMAT_BIN);
+    HAL_RTC_SetDate(&hrtc, &RTC_DATE, FORMAT_BIN);
+
+    syslog.value[0] = RTC_DATE.Year;
+    syslog.value[1] = RTC_DATE.Month;
+    syslog.value[2] = RTC_DATE.Date;
+    syslog.value[3] = RTC_TIME.Hours;
+    syslog.value[4] = RTC_TIME.Minutes;
+    syslog.value[5] = RTC_TIME.Seconds;
+    SYS_LOG(LOG_INFO, ESP, ESP_RTC_FIX);
+
     return 0;
   }
+
+esp_fail:
+  sys_state.ESP = false;
+  HAL_GPIO_WritePin(GPIOE, LED_ESP_Pin, GPIO_PIN_RESET);
+
+  syslog.value[0] = false;
+  SYS_LOG(LOG_WARN, ESP, ESP_REMOTE);
   return -1;
 }
 
