@@ -1,6 +1,6 @@
 const LOG_LEVEL = [ "FATAL", "ERROR", "WARN", "INFO", "DEBUG" ];
 
-const LOG_SOURCE = [ "ECU", "ESP", "CAN", "ADC", "ACC", "LCD", "GPS" ];
+const LOG_SOURCE = [ "ECU", "ESP", "CAN", "ADC", "DGT", "ACC", "LCD", "GPS" ];
 
 const LOG_KEY = {
   "ECU": [ "ECU_BOOT", "ECU_STATE", "ECU_READY", "SD_INIT" ],
@@ -32,7 +32,8 @@ const LOG_KEY = {
     0x80: "CAN_BMS_CORE",
     0x81: "CAN_BMS_TEMP"
   },
-  "ADC": [ "ADC_INIT", "ADC_CPU", "ADC_DIST", "ADC_SPD" ],
+  "ADC": [ "ADC_INIT", "ADC_CPU", "ADC_DIST" ],
+  "DGT": [ "TIMER_IC_INIT", "TIMER_IC_LEFT", "TIMER_IC_RIGHT" ],
   "ACC": [ "ACC_INIT", "ACC_DATA" ],
   "LCD": [ "LCD_INIT", "LCD_UPDATED" ],
   "GPS": [ "GPS_INIT", "GPS_POS", "GPS_VEC", "GPS_TIME" ],
@@ -86,6 +87,11 @@ function parse(source, key, value, raw) {
           break;
         }
 
+        case "SD_INIT": {
+          parsed = value ? true : false;
+          break;
+        }
+
         default: {
           parsed = null;
           break;
@@ -93,7 +99,7 @@ function parse(source, key, value, raw) {
       }
       break;
     }
-    
+
     case "ESP": {
       switch (key) {
         case "ESP_INIT": {
@@ -101,13 +107,13 @@ function parse(source, key, value, raw) {
           break;
         }
 
-        case "ESP_REMOTE_CONNECT": {
-          // !!!!!!!!!!!
+        case "ESP_REMOTE": {
+          parsed = value ? true : false;
           break;
         }
 
         case "ESP_RTC_FIX": {
-          // !!!!!!!!!!!
+          parsed = value ? true : false;
           break;
         }
 
@@ -307,6 +313,11 @@ function parse(source, key, value, raw) {
           break;
         }
 
+        case "CAN_INV_HIGH_SPD_MSG": {
+          parsed = null;
+          break;
+        }
+
         case "CAN_BMS_CORE": {
           const failsafe = raw[5] + raw[6] * Math.pow(2, 8);
           parsed = {
@@ -350,7 +361,7 @@ function parse(source, key, value, raw) {
       }
       break;
     }
-    
+
     case "ADC": {
       switch (key) {
         case "ADC_INIT": {
@@ -373,21 +384,16 @@ function parse(source, key, value, raw) {
           break;
         }
 
-        case "ADC_SPD": {
-          parsed = {
-            SPD_FL: raw[0] + raw[1] * Math.pow(2, 8),
-            SPD_RL: raw[2] + raw[3] * Math.pow(2, 8),
-            SPD_FR: raw[4] + raw[5] * Math.pow(2, 8),
-            SPD_RR: raw[6] + raw[7] * Math.pow(2, 8),
-          };
-          break;
-        }
-
         default: {
           parsed = null;
           break;
         }
       }
+      break;
+    }
+
+    case "DGT": {
+      parsed = null;
       break;
     }
 
@@ -414,7 +420,7 @@ function parse(source, key, value, raw) {
       }
       break;
     }
-    
+
     case "LCD": {
       switch (key) {
         case "LCD_INIT": {
@@ -434,7 +440,7 @@ function parse(source, key, value, raw) {
       }
       break;
     }
-    
+
     case "GPS": {
       switch (key) {
         case "GPS_INIT": {
