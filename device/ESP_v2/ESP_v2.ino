@@ -5,7 +5,7 @@
 
 SocketIOclient socketIO;
 
-String rtc;
+char rtc[19];
 bool stm_acked = false;
 bool rtc_fixed = false;
 bool sync_done = false;
@@ -44,7 +44,7 @@ void loop() {
   socketIO.loop();
 
   if (!sync_done && stm_acked && rtc_fixed) {
-    Serial.printf("$ESP %.*s\n", 19, rtc.c_str());
+    Serial.printf("$ESP %.*s\n", 19, rtc);
     sync_done = true;
   }
 }
@@ -66,7 +66,7 @@ void socketIOEvent(socketIOmessageType_t type, uint8_t* payload, size_t length) 
       
       String event = content[0];
       String data = content[1]["datetime"];
-      rtc = data;
+      strncpy(rtc, data.c_str(), 19);
 
       if (event == String("rtc_fix")) {
         rtc_fixed = true;
@@ -91,12 +91,13 @@ void socketIOEvent(socketIOmessageType_t type, uint8_t* payload, size_t length) 
 
 void rcv(int len) {
   int i = 0;
-  char buffer[10];
+  char buffer[20];
 
   while (Wire.available()) {
-    buffer[i++] = Wire.read();
-    if (i > 16) {
-      return;
+    if (i < 16) {
+      buffer[i++] = Wire.read();
+    } else {
+      Wire.read(); // just flush buffers
     }
   }
   buffer[i] = '\0';
@@ -107,7 +108,7 @@ void rcv(int len) {
       stm_acked = true;
       Serial.println("ACK");
     }
-  } else { // log receive
+  } else { // log received
 
   }
 }
