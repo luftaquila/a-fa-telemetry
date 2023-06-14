@@ -101,14 +101,15 @@ int32_t ESP_SETUP(void) {
   // waiting for time sync
   uint8_t esp_rtc_fix[25];
   if (HAL_UART_Receive(&huart1, esp_rtc_fix, 25, 20000) != HAL_OK) {
-    printf("time sync fail\r\n");
     goto esp_fail;
   }
 
-  printf("time sync: %.*s", 24, esp_rtc_fix);
-
   // example: $ESP 2023-06-05-22-59-38
   if (strncmp((char *)esp_rtc_fix, "$ESP ", 5) == 0) {
+    #ifdef DEBUG_MODE
+      printf("[%8lu] [INF] ESP TIME SYNC: %.*s\r\n", HAL_GetTick(), 24, esp_rtc_fix);
+    #endif
+
     sys_state.ESP = true;
     HAL_GPIO_WritePin(GPIOE, LED_ESP_Pin, GPIO_PIN_SET);
 

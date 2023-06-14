@@ -161,8 +161,10 @@ int main(void)
   int32_t ret;
   DATETIME boot;
   RTC_READ(&boot);
-  printf("ECU STARTUP\r\n");
 
+  #ifdef DEBUG_MODE
+    printf("[%8lu] [INF] ECU STARTUP\r\n", HAL_GetTick());
+  #endif
 
   // init ECU gpio and system state
   ret = ECU_SETUP();
@@ -170,141 +172,136 @@ int main(void)
     #ifdef DEBUG_MODE
       printf("[%8lu] [ERR] ECU setup failed: %ld\r\n", HAL_GetTick(), ret);
     #endif
+  } else {
+    // core system boot complete
+    syslog.value[0] = true;
+    SYS_LOG(LOG_INFO, ECU, ECU_BOOT);
+    #ifdef DEBUG_MODE
+      printf("[%8lu] [ OK] ECU setup done\r\n", HAL_GetTick());
+    #endif
   }
-
-
-  // core system boot complete
-  syslog.value[0] = true;
-  SYS_LOG(LOG_INFO, ECU, ECU_BOOT);
-
 
   // init SD card
   ret = SD_SETUP(&boot);
   if (ret != 0) {
+    syslog.value[0] = false;
+    SYS_LOG(LOG_ERROR, ECU, SD_INIT);
     #ifdef DEBUG_MODE
       printf("[%8lu] [ERR] SD setup failed: %ld\r\n", HAL_GetTick(), ret);
     #endif
-    syslog.value[0] = false;
-    SYS_LOG(LOG_ERROR, ECU, SD_INIT);
-  }
-  else {
+  } else {
     syslog.value[0] = true;
     SYS_LOG(LOG_INFO, ECU, SD_INIT);
+    #ifdef DEBUG_MODE
+      printf("[%8lu] [ OK] SD setup done\r\n", HAL_GetTick());
+    #endif
   }
-
 
   // init ESP32 i2c for remote telemetry
   ret = ESP_SETUP();
   if (ret != 0) {
+    syslog.value[0] = false;
+    SYS_LOG(LOG_ERROR, ESP, ESP_INIT);
     #ifdef DEBUG_MODE
       printf("[%8lu] [ERR] ESP setup failed: %ld\r\n", HAL_GetTick(), ret);
     #endif
-    syslog.value[0] = false;
-    SYS_LOG(LOG_ERROR, ESP, ESP_INIT);
-  }
-  else {
+  } else {
     syslog.value[0] = true;
     SYS_LOG(LOG_INFO, ESP, ESP_INIT);
+    #ifdef DEBUG_MODE
+      printf("[%8lu] [ OK] ESP setup done\r\n", HAL_GetTick());
+    #endif
   }
-
 
   // init internal ADCs for sensors
   ret = ANALOG_SETUP();
   if (ret != 0) {
-    #ifdef DEBUG_MODE
-      printf("[%8lu] [ERR] ANALOG setup failed: %ld\r\n", HAL_GetTick(), ret);
-    #endif
     syslog.value[0] = false;
     SYS_LOG(LOG_ERROR, ANALOG, ADC_INIT);
-  }
-  else {
+    #ifdef DEBUG_MODE
+      printf("[%8lu] [ERR] ADC setup failed: %ld\r\n", HAL_GetTick(), ret);
+    #endif
+  } else {
     syslog.value[0] = true;
     SYS_LOG(LOG_INFO, ANALOG, ADC_INIT);
-  }
-
-/*
-  // init TIMER for input capture
-  ret = DIGITAL_SETUP();
-  if (ret != 0) {
     #ifdef DEBUG_MODE
-      printf("[%8lu] [ERR] DIGITAL setup failed: %ld\r\n", HAL_GetTick(), ret);
+      printf("[%8lu] [ OK] ADC setup done\r\n", HAL_GetTick());
     #endif
-    syslog.value[0] = false;
-    SYS_LOG(LOG_ERROR, DIGITAL, TIMER_IC_INIT);
   }
-  else {
-    syslog.value[0] = true;
-    SYS_LOG(LOG_INFO, DIGITAL, TIMER_IC_INIT);
-  }
-*/
 
   // init CAN for BMS and inverter
   ret = CAN_SETUP();
   if (ret != 0) {
+    syslog.value[0] = false;
+    SYS_LOG(LOG_ERROR, CAN, CAN_INIT);
     #ifdef DEBUG_MODE
       printf("[%8lu] [ERR] CAN setup failed: %ld\r\n", HAL_GetTick(), ret);
     #endif
-    syslog.value[0] = false;
-    SYS_LOG(LOG_ERROR, CAN, CAN_INIT);
-  }
-  else {
+  } else {
     syslog.value[0] = true;
     SYS_LOG(LOG_INFO, CAN, CAN_INIT);
+    #ifdef DEBUG_MODE
+      printf("[%8lu] [ OK] CAN setup done\r\n", HAL_GetTick());
+    #endif
   }
-
 
   // init 1602 LCD i2c
   ret = LCD_SETUP();
   if (ret != 0) {
+    syslog.value[0] = false;
+    SYS_LOG(LOG_ERROR, LCD, LCD_INIT);
     #ifdef DEBUG_MODE
       printf("[%8lu] [ERR] LCD setup failed: %ld\r\n", HAL_GetTick(), ret);
     #endif
-    syslog.value[0] = false;
-    SYS_LOG(LOG_ERROR, LCD, LCD_INIT);
-  }
-  else {
+  } else {
     syslog.value[0] = true;
     SYS_LOG(LOG_INFO, LCD, LCD_INIT);
+    #ifdef DEBUG_MODE
+      printf("[%8lu] [ OK] LCD setup done\r\n", HAL_GetTick());
+    #endif
   }
-
 
   // init ADXL345 3-axis accelerometer i2c
   ret = ACC_SETUP();
   if (ret != 0) {
-    #ifdef DEBUG_MODE
-      printf("[%8lu] [ERR] Accelerometer setup failed: %ld\r\n", HAL_GetTick(), ret);
-    #endif
     syslog.value[0] = false;
     SYS_LOG(LOG_ERROR, ACC, ACC_INIT);
-  }
-  else {
+    #ifdef DEBUG_MODE
+      printf("[%8lu] [ERR] ACC setup failed: %ld\r\n", HAL_GetTick(), ret);
+    #endif
+  } else {
     syslog.value[0] = true;
     SYS_LOG(LOG_INFO, ACC, ACC_INIT);
+    #ifdef DEBUG_MODE
+      printf("[%8lu] [ OK] ACC setup done\r\n", HAL_GetTick());
+    #endif
   }
-
 
   // init NEO-7M GPS UART
   ret = GPS_SETUP();
   if (ret != 0) {
+    syslog.value[0] = false;
+    SYS_LOG(LOG_ERROR, GPS, GPS_INIT);
     #ifdef DEBUG_MODE
       printf("[%8lu] [ERR] GPS setup failed: %ld\r\n", HAL_GetTick(), ret);
     #endif
-    syslog.value[0] = false;
-    SYS_LOG(LOG_ERROR, GPS, GPS_INIT);
-  }
-  else {
+  } else {
     syslog.value[0] = true;
     SYS_LOG(LOG_INFO, GPS, GPS_INIT);
+    #ifdef DEBUG_MODE
+      printf("[%8lu] [ OK] GPS setup done\r\n", HAL_GetTick());
+    #endif
   }
-
 
   // start hardware timers
   HAL_TIM_Base_Start_IT(&htim1);
 
-
   // system setup sequence complete
   syslog.value[0] = true;
   SYS_LOG(LOG_INFO, ECU, ECU_READY);
+  #ifdef DEBUG_MODE
+    printf("[%8lu] [INF] ECU READY\r\n", HAL_GetTick());
+  #endif
 
   /* USER CODE END 2 */
 

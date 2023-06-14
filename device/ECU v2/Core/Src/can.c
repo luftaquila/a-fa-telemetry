@@ -96,10 +96,6 @@ void HAL_CAN_RxFifo0MsgPendingCallback(CAN_HandleTypeDef *hcan) {
     #endif
   }
 
-  #ifdef DEBUG_MODE
-    printf("CAN: %02d %02d %02d %02d %02d %02d %02d %02d\r\n", can_rx_data[0], can_rx_data[1], can_rx_data[2], can_rx_data[3], can_rx_data[4], can_rx_data[5], can_rx_data[6], can_rx_data[7]);
-  #endif
-
   sys_state.CAN = true;
   HAL_GPIO_WritePin(GPIOE, LED_CAN_Pin, GPIO_PIN_SET);
 
