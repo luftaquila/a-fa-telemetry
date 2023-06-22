@@ -88,7 +88,7 @@ int32_t ESP_SETUP(void) {
   HAL_Delay(1000);
   HAL_I2C_Master_Transmit(&hi2c1, ESP_I2C_ADDR, (uint8_t *)"READY", 5, 50);
 
-  // receive 10 bytes from UART
+  // receive ACK from UART (10 bytes)
   uint8_t ack[10];
   for (int32_t i = 0; i < 10; i++) {
     HAL_UART_Receive(&huart1, (ack + i), 1, 10);
@@ -98,9 +98,9 @@ int32_t ESP_SETUP(void) {
     goto esp_fail;
   }
 
-  // waiting for time sync
+  // waiting for time sync (10 sec)
   uint8_t esp_rtc_fix[25];
-  if (HAL_UART_Receive(&huart1, esp_rtc_fix, 25, 20000) != HAL_OK) {
+  if (HAL_UART_Receive(&huart1, esp_rtc_fix, 25, 10000) != HAL_OK) {
     goto esp_fail;
   }
 

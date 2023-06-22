@@ -3,6 +3,8 @@
 #include <ArduinoJson.h>
 #include <SocketIOclient.h>
 
+#define ALWAYS_ACK false
+
 SocketIOclient socketIO;
 
 char rtc[19];
@@ -94,21 +96,20 @@ void rcv(int len) {
   char buffer[20];
 
   while (Wire.available()) {
-    if (i < 16) {
+    if (i < 20) {
       buffer[i++] = Wire.read();
     } else {
       Wire.read(); // just flush buffers
     }
   }
-  buffer[i] = '\0';
 
   // STM32 handshake
-  if (!stm_acked) {
+  if (ALWAYS_ACK || !stm_acked) {
     if (strncmp(buffer, "READY", 5) == 0) {
       stm_acked = true;
       Serial.println("ACK");
     }
-  } else { // log received
-
+  } else if (i == 16) { // log received
+    // !! transmit
   }
 }
