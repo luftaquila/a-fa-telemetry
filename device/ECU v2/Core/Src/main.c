@@ -430,8 +430,8 @@ int main(void)
       timer_flag &= ~(1 << TIMER_100ms); // clear 100ms timer flag
 
       // update system state
-      sys_state.HV = HAL_GPIO_ReadPin(GPIOD, HV_ACTIVE_Pin);
-      sys_state.RTD = HAL_GPIO_ReadPin(GPIOD, RTD_ACTIVE_Pin);
+      sys_state.HV = !HAL_GPIO_ReadPin(GPIOD, HV_ACTIVE_Pin); // inverted in circuit
+      sys_state.RTD = !HAL_GPIO_ReadPin(GPIOD, RTD_ACTIVE_Pin); // inverted in circuit
       sys_state.BMS = HAL_GPIO_ReadPin(GPIOD, BMS_FAULT_Pin);
       sys_state.IMD = HAL_GPIO_ReadPin(GPIOD, IMD_FAULT_Pin);
       sys_state.BSPD = HAL_GPIO_ReadPin(GPIOD, BSPD_FAULT_Pin);

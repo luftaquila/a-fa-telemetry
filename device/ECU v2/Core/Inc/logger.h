@@ -10,7 +10,7 @@
 
 #include "stdio.h"
 
-#define DEBUG_MODE
+// #define DEBUG_MODE
 // #define DEBUG_LOG
 
 /* system log data type */
