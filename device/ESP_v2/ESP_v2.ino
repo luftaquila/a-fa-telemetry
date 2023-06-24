@@ -1,5 +1,6 @@
 #include <Wire.h>
 #include <WiFi.h>
+#include <RingBuf.h>
 #include <ArduinoJson.h>
 #include <SocketIOclient.h>
 
@@ -14,6 +15,9 @@ bool sync_done = false;
 
 const char ssid[] = "A-FA ECU";
 const char pwd[] = "55555555";
+
+RingBuf<char, 1024> tx_buf;
+char log_payload[52] = "[\"tlog\",{\"log\":\"";
 
 void setup() {
   Serial.begin(115200);
@@ -48,6 +52,19 @@ void loop() {
   if (!sync_done && stm_acked && rtc_fixed) {
     Serial.printf("$ESP %.*s\n", 19, rtc);
     sync_done = true;
+  }
+
+  if (!tx_buf.isEmpty()) {
+    char buf[16];
+    
+    for (int x = 0; x < 16; x++) {
+      char pop;
+      tx_buf.lockedPop(pop);
+      buf[x] = pop;
+    }
+    sprintf((log_payload + 16), "%02x%02x%02x%02x%02x%02x%02x%02x%02x%02x%02x%02x%02x%02x%02x%02x\"}]", buf[0], buf[1], buf[2], buf[3], buf[4], buf[5], buf[6], buf[7], buf[8], buf[9], buf[10], buf[11], buf[12], buf[13], buf[14], buf[15]);
+    
+    socketIO.sendEVENT(log_payload, 51);
   }
 }
 
@@ -112,14 +129,8 @@ void rcv(int len) {
 
   // log received
   else if (i == 16) {
-    char payload[36];
-    const char *payload_prefix = "[\"tlog\",{\"log\":\"";
-    const char *payload_postfix = "\"}]";
-
-    strcat(payload, payload_prefix);
-    strncat(payload, buffer, 16);
-    strcat(payload, payload_postfix);
-
-    socketIO.sendEVENT(payload);
+    for (int x = 0; x < 16; x++) {
+      tx_buf.lockedPushOverwrite(buffer[x]);
+    }
   }
 }
