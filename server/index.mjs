@@ -5,7 +5,9 @@ import dateFormat from 'dateformat'
 import dotenv from 'dotenv'
 dotenv.config();
 
-// db config
+/*****************************************************************************
+ * logger configurations
+ ****************************************************************************/
 const pool = mariadb.createPool({
   host: process.env.db_host,
   user: process.env.db_user,
@@ -14,7 +16,6 @@ const pool = mariadb.createPool({
   idleTimeout: 0
 });
 
-// log function
 async function log(data) {
   const db = await pool.getConnection();
   const query = `INSERT INTO \`log\` (\`level\`, \`datetime\`, \`component\`, \`key\`, \`value\`)
@@ -25,7 +26,10 @@ async function log(data) {
   console.log(data);
 }
 
-// start socket server
+
+/*****************************************************************************
+ * socket server
+ ****************************************************************************/
 const io = new Server(process.env.port, {
   pingInterval: 5000,
   pingTimeout: 5000
@@ -38,10 +42,89 @@ log({
   key: "STARTUP",
   value: "SERVER STARTUP"
 });
-console.log('Server startup: ' + new Date());
 
-// initial system status
-let ECU = {
+
+/*****************************************************************************
+ * socket handler
+ ****************************************************************************/
+io.sockets.on('connection', socket => {
+  if(socket.handshake.query.device === "ECU") {
+    socket.join('device');
+
+    setTimeout(() => socket.emit('rtc_fix', { datetime: dateFormat(new Date(), 'yyyy-mm-dd-HH-MM-ss')}), 1000);
+
+    log({
+      level: "INFO",
+      datetime: new Date(),
+      component: "SERVER",
+      key: "SOCKET",
+      value: "SOCKET CONNECTED"
+    });
+
+    // on SOCKET_DISCONNECTED
+    socket.on('disconnect', reason => {
+      ECU.telemetry = false;
+
+      let data = {
+        level: "INFO",
+        datetime: new Date(),
+        component: "SERVER",
+        key: "SOCKET",
+        value: 'SOCKET LOST: ' + reason
+      }
+
+      log(data);
+      io.to('client').emit('telemetry-repeat', { data: data, status: ECU });
+    });
+
+    // on ECU TELEMETRY
+    socket.on('tlog', data => {
+      process_telemetry(data);
+    });
+  }
+
+  // on CLIENT connected
+  else if(socket.handshake.query.client) {
+    socket.join('client');
+    socket.emit('client_init', { data: null, status: ECU });
+    log({
+      level: "INFO",
+      datetime: new Date(),
+      component: "SERVER",
+      key: "SOCKET",
+      value: "CLIENT CONNECTED"
+    });
+
+    socket.on('reset-request', () => {
+      if (ECU.telemetry) socket.emit('reset-reply', { icon: 'error', title: '차량 상태 초기화 오류', html: `<code><i class="fa-duotone fa-fw fa-tower-broadcast" style="color: green"></i> 원격 계측</code> 활성화 상태에서는 차량 상태를 초기화할 수 없습니다.`, showCancelButton: true, showConfirmButton: false, cancelButtonText: '확인', cancelButtonColor: '#7066e0' });
+      else socket.emit('reset-reply', { icon: 'warning', title: '차량 상태 초기화', html: `<code><i class="fa-duotone fa-fw fa-tower-broadcast" style="color: red"></i> 원격 계측</code> 비활성화 상태에서 남아있는 이전 데이터를 초기화합니다.`, showCancelButton: true, cancelButtonText: '취소', confirmButtonText: '확인', confirmButtonColor: '#d33', customClass: { confirmButton: 'swal2-two-buttons' } });
+    });
+
+    socket.on('reset-confirm', () => {
+      ECU = JSON.parse(ECU_INIT);
+      io.to('client').emit('client_init', { data: null, status: ECU });
+    });
+  }
+});
+
+
+/*****************************************************************************
+ * telemetry handler
+ ****************************************************************************/
+function process_telemetry(data) {
+  data = convert(data.log.match(/.{2}/g).map(x => parseInt(x, 16)));
+
+  // !!!!! set ECU data
+
+  io.to('client').emit('telemetry-repeat', { data: data, status: ECU });
+  console.log(data);
+}
+
+
+/*****************************************************************************
+ * templates
+ ****************************************************************************/
+let ECU = {          // initial system status
   telemetry: false,
   session: null,
   system: {
@@ -128,278 +211,7 @@ let ECU = {
 }
 const ECU_INIT = JSON.stringify(ECU);
 
-// socket handler
-io.sockets.on('connection', socket => {
-  if(socket.handshake.query.device === "ECU") {
-    socket.join('device');
-
-    setTimeout(() => socket.emit('rtc_fix', { datetime: dateFormat(new Date(), 'yyyy-mm-dd-HH-MM-ss')}), 1000);
-
-    log({
-      level: "INFO",
-      datetime: new Date(),
-      component: "SERVER",
-      key: "SOCKET",
-      value: "SOCKET CONNECTED"
-    });
-
-    // on SOCKET_DISCONNECTED
-    socket.on('disconnect', reason => {
-      ECU.telemetry = false;
-
-      let data = {
-        level: "INFO",
-        datetime: new Date(),
-        component: "SERVER",
-        key: "SOCKET",
-        value: 'SOCKET LOST: ' + reason
-      }
-
-      log(data);
-      io.to('client').emit('telemetry-repeat', { data: data, status: ECU });
-    });
-
-    // on ECU TELEMETRY
-    socket.on('tlog', data => {
-      process_telemetry(data);
-    });
-  }
-
-  // on CLIENT connected
-  else if(socket.handshake.query.client) {
-    socket.join('client');
-    socket.emit('client_init', { data: null, status: ECU });
-    log({
-      level: "INFO",
-      datetime: new Date(),
-      component: "SERVER",
-      key: "SOCKET",
-      value: "CLIENT CONNECTED"
-    });
-
-    socket.on('reset-request', () => {
-      if (ECU.telemetry) socket.emit('reset-reply', { icon: 'error', title: '차량 상태 초기화 오류', html: `<code><i class="fa-duotone fa-fw fa-tower-broadcast" style="color: green"></i> 원격 계측</code> 활성화 상태에서는 차량 상태를 초기화할 수 없습니다.`, showCancelButton: true, showConfirmButton: false, cancelButtonText: '확인', cancelButtonColor: '#7066e0' });
-      else socket.emit('reset-reply', { icon: 'warning', title: '차량 상태 초기화', html: `<code><i class="fa-duotone fa-fw fa-tower-broadcast" style="color: red"></i> 원격 계측</code> 비활성화 상태에서 남아있는 이전 데이터를 초기화합니다.`, showCancelButton: true, cancelButtonText: '취소', confirmButtonText: '확인', confirmButtonColor: '#d33', customClass: { confirmButton: 'swal2-two-buttons' } });
-    });
-
-    socket.on('reset-confirm', () => {
-      ECU = JSON.parse(ECU_INIT);
-      io.to('client').emit('client_init', { data: null, status: ECU });
-    });
-  }
-});
-
-// telemetry handler
-function process_telemetry(data) {
-  try {
-    if(data.log[0] === '!') {
-      ECU.telemetry = true;
-      ECU.system.lv = true;
-      ECU.system.sd = true;
-
-      data = data.log.substring(1, data.log.length - 1).split('\t').filter(o => o).map(o => o.trim().replace(/\[|\]/g, ""));
-      if(data.length != 5) return;
-
-      data = {
-        level: data[0],
-        datetime: new Date(data[1]),
-        component: data[2],
-        key: data[3],
-        value: data[4]
-      };
-
-      log(data);
-
-      switch (data.component) {
-        case "ECU":
-          switch (data.key) {
-            case "STARTUP":
-              ECU = JSON.parse(ECU_INIT);
-              ECU.session = data.datetime;
-              ECU.system.rtd = false;
-              break;
-            
-            case "RTD":
-              if(Number(data.value)) ECU.system.rtd = true;
-              break;
-
-            case "GPIO":
-              data.data = data.value.split(' ');
-              ECU.system.gpio[data.data[0].toLowerCase()] = data.data[1] === '1' ? true : false;
-              break;
-
-            case "WIFI":
-              break;
-
-            case "TEMPERATURE":
-              ECU.system.temperature = data.value / 10;
-              break;
-
-            case "SD":
-              ECU.system.sd = data.level === "INFO" ? true : false;
-              break;
-
-            case "CAN":
-              ECU.system.can = data.level === "ERRR" ? false : true;
-              break;
-
-            case "ACC":
-              break;
-          }
-          break;
-
-        case "BMS":
-        case "INV":
-          ECU.system.can = true;
-          data.bytes = data.value.split(' ').map(x => x.replace('0x', ''));
-          
-          switch (data.key) {
-            case "CAN_BMS_CORE":
-              const failsafe = parseInt(data.bytes[5].concat(data.bytes[6]), 16);
-              data.data = {
-                soc: parseInt(data.bytes[0], 16) * 0.5,
-                voltage: parseInt(data.bytes[1].concat(data.bytes[2]), 16) * 0.1,
-                current: signedParseInt(data.bytes[3].concat(data.bytes[4]), 16, 16) * 0.1,
-                failsafe: {
-                  voltage: failsafe & 1 << 0 ? true : false,
-                  current: failsafe & 1 << 1 ? true : false,
-                  relay: failsafe & 1 << 2 ? true : false,
-                  balancing: failsafe & 1 << 3 ? true : false,
-                  interlock: failsafe & 1 << 4 ? true : false,
-                  thermistor: failsafe & 1 << 5 ? true : false,
-                  power: failsafe & 1 << 6 ? true : false,
-                }
-              };
-              
-              ECU.battery.percent = data.data.soc;
-              ECU.battery.voltage = data.data.voltage;
-              ECU.battery.current = data.data.current;
-              ECU.battery.failsafe = data.data.failsafe;
-              break;
-
-            case "CAN_BMS_TEMP":
-              data.data = {
-                temperature: {
-                  max: signedParseInt(data.bytes[0], 16, 8),
-                  max_id: parseInt(data.bytes[1], 16),
-                  min: signedParseInt(data.bytes[2], 16, 8),
-                  min_id: parseInt(data.bytes[3], 16),
-                  internal: signedParseInt(data.bytes[7], 16, 8),
-                },
-                adapdtive: {
-                  soc: parseInt(data.bytes[4], 16) * 0.5,
-                  capacity: parseInt(data.bytes[5].concat(data.bytes[6]), 16) * 0.1,
-                }
-              };
-              ECU.battery.temperature = data.data.temperature;
-              ECU.battery.adapdtive = data.data.adapdtive;
-              break;
-
-            case "CAN_INV_TEMP_1":
-              data.data = {
-                igbt: {
-                  a: signedParseInt(data.bytes[1].concat(data.bytes[0]), 16, 16) * 0.1,
-                  b: signedParseInt(data.bytes[3].concat(data.bytes[2]), 16, 16) * 0.1,
-                  c: signedParseInt(data.bytes[5].concat(data.bytes[4]), 16, 16) * 0.1,
-                },
-                gatedriver: signedParseInt(data.bytes[7].concat(data.bytes[6]), 16, 16) * 0.1,
-              };
-              data.data.igbt.max = data.data.igbt.a > data.data.igbt.b ? (data.data.igbt.a > data.data.igbt.c ? { temperature: data.data.igbt.a, id: "A" } : { temperature: data.data.igbt.c, id: "C" }) : (data.data.igbt.b > data.data.igbt.c ? { temperature: data.data.igbt.b, id: "B" } : { temperature: data.data.igbt.c, id: "C" });
-
-              ECU.motor.temperature.igbt = data.data.igbt.max;
-              ECU.motor.temperature.gatedriver = data.data.gatedriver;
-              break;
-
-            case "CAN_INV_TEMP_3":
-              data.data = {
-                motor: signedParseInt(data.bytes[5].concat(data.bytes[4]), 16, 16) * 0.1,
-              };
-
-              ECU.motor.temperature.motor = data.data.motor;
-              break;
-
-            case "CAN_INV_ANALOG_IN":
-              data.data = {
-                accelerator: signedParseInt(parseInt(data.bytes[1].concat(data.bytes[0]), 16).toString(2).padStart(16, 0).slice(6), 2, 10) * 0.01 / (ECU.reference.v5 ? ECU.reference.v5 : 5) * 100,
-                brake: signedParseInt(parseInt(data.bytes[3].concat(data.bytes[2]), 16).toString(2).padStart(16, 0).slice(2).slice(0, 11), 2, 10) * 0.01 / (ECU.reference.v5 ? ECU.reference.v5 : 5) * 100,
-              };
-              
-              ECU.car.accelerator = data.data.accelerator;
-              ECU.car.brake = data.data.brake;
-              break;
-
-            case "CAN_INV_MOTOR_POS":
-              data.data = {
-                rpm: signedParseInt(data.bytes[3].concat(data.bytes[2]), 16, 16),
-              };
-              data.data.speed = (data.data.rpm / 6) * (Math.PI * 0.2475) * 0.06;
-
-              ECU.motor.rpm = data.data.rpm;
-              ECU.car.speed = data.data.speed;
-              break;
-
-            case "CAN_INV_STATE":
-              const relay = parseInt(data.bytes[3], 16);
-              data.data = {
-                vsm: state.vsm[parseInt(data.bytes[0], 16)] ? state.vsm[parseInt(data.bytes[0], 16)] : "N/A",
-                inverter: state.inverter[parseInt(data.bytes[2], 16)] ? state.inverter[parseInt(data.bytes[2], 16)] : "N/A",
-                relay: {
-                  precharge: relay & 1 << 0 ? true : false,
-                  pump: relay & 1 << 4 ? true : false,
-                  fan: relay & 1 << 5 ? true : false,
-                },
-              };
-
-              ECU.motor.state = data.data;
-              break;
-
-            case "CAN_INV_FAULT":
-              const post = parseInt(data.bytes[3].concat(data.bytes[2]).concat(data.bytes[1]).concat(data.bytes[0]), 16);
-              const run = parseInt(data.bytes[7].concat(data.bytes[6]).concat(data.bytes[5]).concat(data.bytes[4]), 16);
-              data.data = { post: [], run: [] };
-              for (let i = 0; i < 32; i++) {
-                if(post & 1 << i) data.data.post.push(fault.post[i]);
-                if(run & 1 << i) data.data.run.push(fault.run[i + 32]);
-              }
-              ECU.motor.fault = data.data;
-              break;
-
-            case "CAN_INV_TORQUE":
-              data.data = {
-                feedback: signedParseInt(data.bytes[3].concat(data.bytes[2]), 16, 16) * 0.1,
-                commanded: signedParseInt(data.bytes[1].concat(data.bytes[0]), 16, 16) * 0.1,
-              }
-              break;
-
-            case "CAN_INV_REF":
-              data.data = {
-                v1p5: signedParseInt(data.bytes[1].concat(data.bytes[0]), 16, 16) * 0.01,
-                v2p5: signedParseInt(data.bytes[3].concat(data.bytes[2]), 16, 16) * 0.01,
-                v5: signedParseInt(data.bytes[5].concat(data.bytes[4]), 16, 16) * 0.01,
-                v12: signedParseInt(data.bytes[7].concat(data.bytes[6]), 16, 16) * 0.01
-              };
-              ECU.reference = data.data;
-              break;
-
-            case "CAN_INV_CURRENT":
-            case "CAN_INV_VOLTAGE":
-            case "CAN_INV_FLUX":
-            case "CAN_INV_FLUX_WEAKING":
-              break;
-          }
-          break;
-      }
-      io.to('client').emit('telemetry-repeat', { data: data, status: ECU });
-    }
-  } catch(e) { console.log(e); }
-}
-
-function signedParseInt(value, base, bit) {
-  value = parseInt(value, base);
-  return value > Math.pow(2, bit - 1) - 1 ? value - Math.pow(2, bit) : value;
-}
-
-const state = {
+const state = { // motor controller properties
   vsm: {
     0: "VSM 시작",
     1: "초기충전 준비",
@@ -429,7 +241,7 @@ const state = {
   }
 }
 
-const fault = {
+const fault = { // motor controller fault properties
   post: {
     0: "Hardware Gate/Desaturation Fault",
     1: "HW Over-current Fault",
@@ -500,23 +312,23 @@ const fault = {
   }
 }
 
-/* log reviewer file uploader */
+
+/*****************************************************************************
+ * log reviewer file uploader
+ ****************************************************************************/
 import http from 'http'
 import formidable from 'formidable'
 import fs from 'fs'
 
 http.createServer(function (req, res) {
-
   if (req.method == 'GET') {
     fs.readdir('../web/review/datalogs', function (err, files) {
       res.write(JSON.stringify(files));
       res.end()
     });
   }
-
   else if (req.method == 'POST') {
     let form = new formidable.IncomingForm();
-
     form.parse(req, function (error, fields, file) {
       fs.rename(file.file.filepath, '../web/review/datalogs/' + file.file.originalFilename, function () {
         res.write('OK');
@@ -524,5 +336,503 @@ http.createServer(function (req, res) {
       });
     });
   }
-
 }).listen(process.env.upload_port);
+
+
+/*****************************************************************************
+ * types.js
+ ****************************************************************************/
+const LOG_LEVEL = [ "FATAL", "ERROR", "WARN", "INFO", "DEBUG" ];
+
+const LOG_SOURCE = [ "ECU", "ESP", "CAN", "ADC", "DGT", "ACC", "LCD", "GPS" ];
+
+const LOG_KEY = {
+  "ECU": [ "ECU_BOOT", "ECU_STATE", "ECU_READY", "SD_INIT" ],
+  "ESP": [ "ESP_INIT", "ESP_REMOTE", "ESP_RTC_FIX" ],
+  "CAN": {
+    0: "CAN_INIT",
+    1: "CAN_ERR",
+
+    0xA0: "CAN_INV_TEMP_1",
+    0xA1: "CAN_INV_TEMP_2",
+    0xA2: "CAN_INV_TEMP_3",
+    0xA3: "CAN_INV_ANALOG_IN",
+    0xA4: "CAN_INV_DIGITAL_IN",
+    0xA5: "CAN_INV_MOTOR_POS",
+    0xA6: "CAN_INV_CURRENT",
+    0xA7: "CAN_INV_VOLTAGE",
+    0xA8: "CAN_INV_FLUX",
+    0xA9: "CAN_INV_REF",
+    0xAA: "CAN_INV_STATE",
+    0xAB: "CAN_INV_FAULT",
+    0xAC: "CAN_INV_TORQUE",
+    0xAD: "CAN_INV_FLUX_WEAKING",
+
+    0xAE: "CAN_INV_FIRMWARE_VER",
+    0xAF: "CAN_INV_DIAGNOSTIC",
+
+    0xB0: "CAN_INV_HIGH_SPD_MSG",
+
+    0x80: "CAN_BMS_CORE",
+    0x81: "CAN_BMS_TEMP"
+  },
+  "ADC": [ "ADC_INIT", "ADC_CPU", "ADC_DIST" ],
+  "DGT": [ "TIMER_IC_INIT", "TIMER_IC_LEFT", "TIMER_IC_RIGHT" ],
+  "ACC": [ "ACC_INIT", "ACC_DATA" ],
+  "LCD": [ "LCD_INIT", "LCD_UPDATED" ],
+  "GPS": [ "GPS_INIT", "GPS_POS", "GPS_VEC", "GPS_TIME" ],
+};
+
+function convert(raw) {
+  let log = {
+    timestamp: raw[0] + raw[1] * Math.pow(2, 8) + raw[2] * Math.pow(2, 16) + raw[3] * Math.pow(2, 24),
+    level: LOG_LEVEL[raw[4]],
+    source: LOG_SOURCE[raw[5]],
+    key: LOG_KEY[LOG_SOURCE[raw[5]]][raw[6]],
+    value: raw[8] + raw[9] * Math.pow(2, 8) + raw[10] * Math.pow(2, 16) + raw[11] * Math.pow(2, 24) + raw[12] * Math.pow(2, 32) + raw[13] * Math.pow(2, 40) + raw[14] * Math.pow(2, 48) + raw[15] * Math.pow(2, 56),
+    raw: raw.slice(8)
+  };
+  log.parsed = parse(log.source, log.key, log.value, log.raw);
+
+  return log;
+}
+
+function parse(source, key, value, raw) {
+  let parsed;
+
+  switch (source) {
+    case "ECU": {
+      switch (key) {
+        case "ECU_BOOT": {
+          parsed = value ? true : false;
+          break;
+        }
+
+        case "ECU_STATE": {
+          parsed = {
+            HV: value & 1 << 0 ? true : false,
+            RTD: value & 1 << 1 ? true : false,
+            BMS: value & 1 << 2 ? true : false,
+            IMD: value & 1 << 3 ? true : false,
+            BSPD: value & 1 << 4 ? true : false,
+
+            SD: value & 1 << 5 ? true : false,
+            CAN: value & 1 << 6 ? true : false,
+            ESP: value & 1 << 7 ? true : false,
+            ACC: value & 1 << 8 ? true : false,
+            LCD: value & 1 << 9 ? true : false,
+            GPS: value & 1 << 10 ? true : false
+          };
+          break;
+        }
+
+        case "ECU_READY": {
+          parsed = true;
+          break;
+        }
+
+        case "SD_INIT": {
+          parsed = value ? true : false;
+          break;
+        }
+
+        default: {
+          parsed = null;
+          break;
+        }
+      }
+      break;
+    }
+
+    case "ESP": {
+      switch (key) {
+        case "ESP_INIT": {
+          parsed = value ? true : false;
+          break;
+        }
+
+        case "ESP_REMOTE": {
+          parsed = value ? true : false;
+          break;
+        }
+
+        case "ESP_RTC_FIX": {
+          parsed = value ? true : false;
+          break;
+        }
+
+        default: {
+          parsed = null;
+          break;
+        }
+      }
+      break;
+    }
+
+    case "CAN": {
+      switch (key) {
+        case "CAN_INIT": {
+          parsed = value ? true : false;
+          break;
+        }
+
+        case "CAN_ERR": {
+          parsed = value;
+          break;
+        }
+
+        case "CAN_INV_TEMP_1": {
+          parsed = {
+            igbt: {
+              a: signed(value & 0xffff, 16) * 0.1,
+              b: signed((value / Math.pow(2, 16)) & 0xffff, 16) * 0.1,
+              c: signed((value / Math.pow(2, 32)) & 0xffff, 16) * 0.1,
+            },
+            gatedriver: signed((value / Math.pow(2, 48)) & 0xffff, 16) * 0.1,
+          };
+          parsed.igbt.max = parsed.igbt.a > parsed.igbt.b ? (parsed.igbt.a > parsed.igbt.c ? { temperature: parsed.igbt.a, id: "A" } : { temperature: parsed.igbt.c, id: "C" }) : (parsed.igbt.b > parsed.igbt.c ? { temperature: parsed.igbt.b, id: "B" } : { temperature: parsed.igbt.c, id: "C" });
+          break;
+        }
+
+        case "CAN_INV_TEMP_2": {
+          parsed = {
+            controlboard: signed(value & 0xffff, 16) * 0.1,
+            RTD1: signed((value / Math.pow(2, 16)) & 0xffff, 16) * 0.1,
+            RTD2: signed((value / Math.pow(2, 32)) & 0xffff, 16) * 0.1,
+            RTD3: signed((value / Math.pow(2, 48)) & 0xffff, 16) * 0.1,
+          };
+          break;
+        }
+
+        case "CAN_INV_TEMP_3": {
+          parsed = {
+            coolant: signed(value & 0xffff, 16) * 0.1,
+            hotspot: signed((value / Math.pow(2, 16)) & 0xffff, 16) * 0.1,
+            motor: signed((value / Math.pow(2, 32)) & 0xffff, 16) * 0.1,
+            torque_shudder: signed((value / Math.pow(2, 48)) & 0xffff, 16) * 0.1,
+          };
+          break;
+        }
+
+        case "CAN_INV_ANALOG_IN": {
+          parsed = {
+            AIN1: signed(value & 0x3ff, 10) * 0.01,
+            AIN2: signed((value / Math.pow(2, 10)) & 0x3ff, 10) * 0.01,
+            AIN3: signed((value / Math.pow(2, 20)) & 0x3ff, 10) * 0.01,
+            AIN4: signed((value / Math.pow(2, 30)) & 0x3ff, 10) * 0.01,
+            AIN5: signed((value / Math.pow(2, 40)) & 0x3ff, 10) * 0.01,
+            AIN6: signed((value / Math.pow(2, 50)) & 0x3ff, 10) * 0.01,
+          };
+          break;
+        }
+
+        case "CAN_INV_DIGITAL_IN": {
+          parsed = {
+            DIN1: (value & 0xff) ? true : false,
+            DIN2: ((value / Math.pow(2, 8)) & 0xff) ? true : false,
+            DIN3: ((value / Math.pow(2, 16)) & 0xff) ? true : false,
+            DIN4: ((value / Math.pow(2, 24)) & 0xff) ? true : false,
+            DIN5: ((value / Math.pow(2, 32)) & 0xff) ? true : false,
+            DIN6: ((value / Math.pow(2, 40)) & 0xff) ? true : false,
+            DIN7: ((value / Math.pow(2, 48)) & 0xff) ? true : false,
+            DIN8: ((value / Math.pow(2, 56)) & 0xff) ? true : false,
+          };
+          break;
+        }
+
+        case "CAN_INV_MOTOR_POS": {
+          parsed = {
+            motor_angle: signed(value & 0xffff, 16) * 0.1,
+            motor_speed: signed((value / Math.pow(2, 16)) & 0xffff, 16),
+            electrical_output_freq: signed((value / Math.pow(2, 32)) & 0xffff, 16) * 0.1,
+            delta_resolver_filtered: signed((value / Math.pow(2, 48)) & 0xffff, 16) * 0.1,
+          };
+          break;
+        }
+
+        case "CAN_INV_CURRENT": {
+          parsed = {
+            phaseA: signed(value & 0xffff, 16) * 0.1,
+            phaseB: signed((value / Math.pow(2, 16)) & 0xffff, 16) * 0.1,
+            phaseC: signed((value / Math.pow(2, 32)) & 0xffff, 16) * 0.1,
+            dc_bus_current: signed((value / Math.pow(2, 48)) & 0xffff, 16) * 0.1,
+          };
+          break;
+        }
+
+        case "CAN_INV_VOLTAGE": {
+          parsed = {
+            dc_bus_voltage: signed(value & 0xffff, 16) * 0.1,
+            output_voltage: signed((value / Math.pow(2, 16)) & 0xffff, 16) * 0.1,
+            VAB_Vd_voltage: signed((value / Math.pow(2, 32)) & 0xffff, 16) * 0.1,
+            VBC_Vq_voltage: signed((value / Math.pow(2, 48)) & 0xffff, 16) * 0.1,
+          };
+          break;
+        }
+
+        case "CAN_INV_FLUX": {
+          parsed = {
+            flux_command: signed(value & 0xffff, 16) * 0.001,
+            flux_feedback: signed((value / Math.pow(2, 16)) & 0xffff, 16) * 0.001,
+            Id_feedback: signed((value / Math.pow(2, 32)) & 0xffff, 16) * 0.1,
+            Iq_feedback: signed((value / Math.pow(2, 48)) & 0xffff, 16) * 0.1,
+          };
+          break;
+        }
+
+        case "CAN_INV_REF": {
+          parsed = {
+            ref_1v5: signed(value & 0xffff, 16) * 0.01,
+            ref_2v5: signed((value / Math.pow(2, 16)) & 0xffff, 16) * 0.01,
+            ref_5v: signed((value / Math.pow(2, 32)) & 0xffff, 16) * 0.01,
+            ref_12v: signed((value / Math.pow(2, 48)) & 0xffff, 16) * 0.01,
+          };
+          break;
+        }
+
+        case "CAN_INV_STATE": {
+          parsed = {
+            vsm_state: raw[0],
+            pwm_freq: raw[1],
+            inverter_state: raw[2],
+            relay_state:raw[3],
+            inverter_run_mode: raw[4] & 0x1,
+            inverter_active_discharge_state: (raw[4] / Math.pow(2, 5)) & 0b111,
+            inverter_command_mode: raw[5] & 0x1,
+            inverter_enable_state: raw[6] & 0x1,
+            inverter_start_mode_active: (raw[6] / Math.pow(2, 6)) & 0x1,
+            inverter_enable_lockout: (raw[6] / Math.pow(2, 7)) & 0x1,
+            direction_command: raw[7] & 0x1,
+            bms_active: (raw[7] / Math.pow(2, 1)) & 0x1,
+            bms_limiting_torque: (raw[7] / Math.pow(2, 2)) & 0x1,
+            limit_max_speed: (raw[7] / Math.pow(2, 3)) & 0x1,
+            limit_hot_spot: (raw[7] / Math.pow(2, 4)) & 0x1,
+            low_speed_limiting: (raw[7] / Math.pow(2, 5)) & 0x1,
+            coolant_temperature_limiting: (raw[7] / Math.pow(2, 6)) & 0x1,
+          };
+          break;
+        }
+
+        case "CAN_INV_FAULT": {
+          parsed = {
+            POST_FAULT_LO: value & 0xffff,
+            POST_FAULT_HI: (value / Math.pow(2, 16)) & 0xffff,
+            RUN_FAULT_LO: (value / Math.pow(2, 32)) & 0xffff,
+            RUN_FAULT_HI: (value / Math.pow(2, 48)) & 0xffff,
+          };
+          break;
+        }
+
+        case "CAN_INV_TORQUE": {
+          parsed = {
+            commanded_torque: signed(value & 0xffff, 16) * 0.1,
+            torque_feedback: signed((value / Math.pow(2, 16)) & 0xffff, 16) * 0.1,
+            power_on_timer: value / Math.pow(2, 32)
+          };
+          break;
+        }
+
+        case "CAN_INV_FLUX_WEAKING": {
+          parsed = {
+            modulation_index: (value & 0xffff) * 0.01,
+            flux_weakening_output: signed((value / Math.pow(2, 16)) & 0xffff, 16) * 0.1,
+            Id_command: signed((value / Math.pow(2, 32)) & 0xffff, 16) * 0.1,
+            Iq_command: signed((value / Math.pow(2, 48)) & 0xffff, 16) * 0.1,
+          };
+          break;
+        }
+
+        case "CAN_INV_FIRMWARE_VER": {
+          parsed = {
+            EEPROM_version: value & 0xffff,
+            software_version: (value / Math.pow(2, 16)) & 0xfff,
+            date_code: (value / Math.pow(2, 32)) & 0xffff,
+            date_code_year: (value / Math.pow(2, 48)) & 0xffff,
+          };
+          break;
+        }
+
+        case "CAN_INV_DIAGNOSTIC": {
+          parsed = null;
+          break;
+        }
+
+        case "CAN_INV_HIGH_SPD_MSG": {
+          parsed = null;
+          break;
+        }
+
+        case "CAN_BMS_CORE": {
+          const failsafe = raw[5] + raw[6] * Math.pow(2, 8);
+          parsed = {
+            soc: raw[0] * 0.5,
+            voltage: (raw[1] + raw[2] * Math.pow(2, 8)) * 0.1,
+            current: signed(raw[3] + raw[4] * Math.pow(2, 8), 16) * 0.1,
+            failsafe: {
+              voltage: failsafe & 1 << 0 ? true : false,
+              current: failsafe & 1 << 1 ? true : false,
+              relay: failsafe & 1 << 2 ? true : false,
+              balancing: failsafe & 1 << 3 ? true : false,
+              interlock: failsafe & 1 << 4 ? true : false,
+              thermistor: failsafe & 1 << 5 ? true : false,
+              power: failsafe & 1 << 6 ? true : false,
+            }
+          };
+          break;
+        }
+
+        case "CAN_BMS_TEMP": {
+          parsed = {
+            temperature: {
+              max: signed(raw[0], 8),
+              max_id: raw[1],
+              min: signed(raw[2], 8),
+              min_id: raw[3],
+              internal: signed(raw[7], 8),
+            },
+            adapdtive: {
+              soc: raw[4] * 0.5,
+              capacity: (raw[5] + raw[6] * Math.pow(2, 8)) * 0.1,
+            }
+          };
+          break;
+        }
+
+        default: {
+          parsed = null;
+          break;
+        }
+      }
+      break;
+    }
+
+    case "ADC": {
+      switch (key) {
+        case "ADC_INIT": {
+          parsed = value ? true : false;
+          break;
+        }
+
+        case "ADC_CPU": {
+          parsed = value;
+          break;
+        }
+
+        case "ADC_DIST": {
+          parsed = {
+            DIST_FL: raw[0] + raw[1] * Math.pow(2, 8),
+            DIST_RL: raw[2] + raw[3] * Math.pow(2, 8),
+            DIST_FR: raw[4] + raw[5] * Math.pow(2, 8),
+            DIST_RR: raw[6] + raw[7] * Math.pow(2, 8),
+          };
+          break;
+        }
+
+        default: {
+          parsed = null;
+          break;
+        }
+      }
+      break;
+    }
+
+    case "DGT": {
+      parsed = null;
+      break;
+    }
+
+    case "ACC": {
+      switch (key) {
+        case "ACC_INIT": {
+          parsed = value ? true : false;
+          break;
+        }
+
+        case "ACC_DATA": {
+          parsed = {
+            x: signed(raw[0] + raw[1] * Math.pow(2, 8), 16),
+            y: signed(raw[2] + raw[3] * Math.pow(2, 8), 16),
+            z: signed(raw[4] + raw[5] * Math.pow(2, 8), 16),
+          }
+          break;
+        }
+
+        default: {
+          parsed = null;
+          break;
+        }
+      }
+      break;
+    }
+
+    case "LCD": {
+      switch (key) {
+        case "LCD_INIT": {
+          parsed = value ? true : false;
+          break;
+        }
+
+        case "LCD_UPDATED": {
+          parsed = null;
+          break;
+        }
+
+        default: {
+          parsed = null;
+          break;
+        }
+      }
+      break;
+    }
+
+    case "GPS": {
+      switch (key) {
+        case "GPS_INIT": {
+          parsed = value ? true : false;
+          break;
+        }
+
+        case "GPS_POS": {
+          parsed = {
+            lat: (raw[0] + raw[1] * Math.pow(2, 8) + raw[2] * Math.pow(2, 16) + raw[3] * Math.pow(2, 24)) * 0.0000001,
+            lon: (raw[4] + raw[5] * Math.pow(2, 8) + raw[6] * Math.pow(2, 16) + raw[7] * Math.pow(2, 24)) * 0.0000001
+          }
+          break;
+        }
+
+        case "GPS_VEC": {
+          parsed = {
+            speed: (raw[0] + raw[1] * Math.pow(2, 8) + raw[2] * Math.pow(2, 16) + raw[3] * Math.pow(2, 24)) * 0.01,
+            course: (raw[4] + raw[5] * Math.pow(2, 8) + raw[6] * Math.pow(2, 16) + raw[7] * Math.pow(2, 24))
+          }
+          break;
+        }
+
+        case "GPS_TIME": {
+          parsed = {
+            utc_date: (raw[0] + raw[1] * Math.pow(2, 8) + raw[2] * Math.pow(2, 16) + raw[3] * Math.pow(2, 24)),
+            utc_time: (raw[4] + raw[5] * Math.pow(2, 8) + raw[6] * Math.pow(2, 16) + raw[7] * Math.pow(2, 24))
+          }
+          break;
+        }
+
+        default: {
+          parsed = null;
+          break;
+        }
+      }
+      break;
+    }
+
+    default: {
+      parsed = null;
+      break;
+    }
+  }
+
+  return parsed;
+}
+
+function signed(value, bit) {
+  return value > Math.pow(2, bit - 1) - 1 ? value - Math.pow(2, bit) : value;
+}
