@@ -59,23 +59,22 @@ void socketIOEvent(socketIOmessageType_t type, uint8_t* payload, size_t length) 
       break;
 
     case sIOtype_EVENT: {
-      DynamicJsonDocument content(100);
-      DeserializationError contentError = deserializeJson(content, payload, length);
+      StaticJsonDocument<64> json;
+      DeserializationError jsonError = deserializeJson(json, payload, length);
 
-      if (contentError) {
+      if (jsonError) {
         return;
       }
-      
-      String event = content[0];
-      String data = content[1]["datetime"];
-      strncpy(rtc, data.c_str(), 19);
 
-      if (event == String("rtc_fix")) {
+      const char *event = json[0];
+      strncpy(rtc, json[1]["datetime"], 19);
+
+      if (strcmp(event, "rtc_fix") == 0) {
         rtc_fixed = true;
       }
       break;
     }
-    
+
     case sIOtype_DISCONNECT:
       if (WiFi.status() != WL_CONNECTED) {
         WiFi.reconnect();
@@ -109,7 +108,18 @@ void rcv(int len) {
       stm_acked = true;
       Serial.println("ACK");
     }
-  } else if (i == 16) { // log received
-    // !! transmit
+  }
+
+  // log received
+  else if (i == 16) {
+    char payload[36];
+    const char *payload_prefix = "[\"tlog\",{\"log\":\"";
+    const char *payload_postfix = "\"}]";
+
+    strcat(payload, payload_prefix);
+    strncat(payload, buffer, 16);
+    strcat(payload, payload_postfix);
+
+    socketIO.sendEVENT(payload);
   }
 }
