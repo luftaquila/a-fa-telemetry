@@ -160,7 +160,7 @@ io.sockets.on('connection', socket => {
     });
 
     // on ECU TELEMETRY
-    socket.on('telemetry', data => {
+    socket.on('tlog', data => {
       process_telemetry(data);
     });
   }
