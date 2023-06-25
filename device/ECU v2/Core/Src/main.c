@@ -451,7 +451,7 @@ int main(void)
 
       // trigger accelerometer read
       /* THIS TAKES 30ms EVERY TIME!!!!!!!!!!!!!! */
-      //HAL_I2C_Mem_Read_IT(&hi2c3, ACC_I2C_ADDR, 0x32, 1, acc_value, 6);
+      HAL_I2C_Mem_Read_IT(&hi2c3, ACC_I2C_ADDR, 0x32, 1, acc_value, 6);
     }
 
 
