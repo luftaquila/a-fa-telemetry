@@ -988,9 +988,9 @@ function parse(source, key, value, raw) {
 
         case "ACC_DATA": {
           parsed = {
-            x: signed(raw[0] + raw[1] * Math.pow(2, 8), 16),
-            y: signed(raw[2] + raw[3] * Math.pow(2, 8), 16),
-            z: signed(raw[4] + raw[5] * Math.pow(2, 8), 16),
+            x: 4 / 512 * signed(raw[0] + raw[1] * Math.pow(2, 8), 16),
+            y: 4 / 512 * signed(raw[2] + raw[3] * Math.pow(2, 8), 16),
+            z: 4 / 512 * signed(raw[4] + raw[5] * Math.pow(2, 8), 16),
           }
           break;
         }
