@@ -122,7 +122,6 @@ function process_status(status) {
   $("#battery-temperature-max-id").text(status.bms.temperature.max.id);
   $("#battery-temperature-min").text(parseFloat(status.bms.temperature.min.value).toFixed(0));
   $("#battery-temperature-min-id").text(status.bms.temperature.min.id);
-  $("#battery-temperature-internal").text(parseFloat(status.bms.temperature.internal).toFixed(0));
   $("#battery-adaptive-capacity").text(parseFloat(status.bms.adaptive.capacity).toFixed(1));
 
   $("#inverter-status-indicator").css('color', status.inverter.fault.post.length + status.inverter.fault.run.length ? "red" : "green");
@@ -130,6 +129,7 @@ function process_status(status) {
   $("#rpm").text(status.inverter.motor.speed);
   $("#motor-torque").text(status.inverter.torque.feedback);
   $("#motor-temperature").text(status.inverter.temperature.motor.toFixed(0));
+  $("#motor-coolant").text(status.inverter.temperature.rtd.rtd1.toFixed(0));
   $("#motor-igbt-temperature").text(status.inverter.temperature.igbt.max.value.toFixed(0));
   $("#motor-igbt-temperature-id").text(status.inverter.temperature.igbt.max.id);
   $("#inverter-temperature").text(status.inverter.temperature.gatedriver.toFixed(1));
@@ -153,11 +153,11 @@ const graph_config = {
   'graph-battery-current': { delay: 0, grace: 5, color: 'rgb(54, 162, 235)' },
   'graph-battery-temperature-max': { delay: 0, grace: 5, color: 'rgb(54, 162, 235)' },
   'graph-battery-temperature-min': { delay: 0, grace: 5, color: 'rgb(54, 162, 235)' },
-  'graph-battery-temperature-internal': { delay: 0, grace: 5, color: 'rgb(54, 162, 235)' },
 
   'graph-rpm': { delay: 0, grace: 5, color: 'rgb(54, 162, 235)' },
   'graph-motor-torque': { delay: 0, grace: 5, color: 'rgb(54, 162, 235)' },
   'graph-motor-temperature': { delay: 0, grace: 5, color: 'rgb(54, 162, 235)' },
+  'graph-motor-coolant': { delay: 0, grace: 5, color: 'rgb(54, 162, 235)' },
   'graph-motor-igbt-temperature': { delay: 0, grace: 5, color: 'rgb(54, 162, 235)' },
   'graph-inverter-temperature': { delay: 0, grace: 5, color: 'rgb(54, 162, 235)' },
 }
@@ -175,6 +175,13 @@ function process_data(data) {
           graph_data['graph-inverter-temperature'].push({
             x: data.datetime,
             y: data.parsed.gatedriver
+          });
+          break;
+
+        case "CAN_INV_TEMP_2":
+          graph_data['graph-motor-coolant'].push({
+            x: data.datetime,
+            y: data.parsed.RTD1
           });
           break;
 
@@ -242,10 +249,6 @@ function process_data(data) {
           graph_data['graph-battery-temperature-min'].push({
             x: data.datetime,
             y: data.parsed.temperature.min.value
-          });
-          graph_data['graph-battery-temperature-internal'].push({
-            x: data.datetime,
-            y: data.parsed.temperature.internal
           });
           break;
       }
@@ -345,9 +348,31 @@ $('input.tooltips').on('change', e => {
 
     if (target == "inverter-status") {
       return Swal.fire({
-        icon: 'info',
-        title: '시스템 세부 정보',
-        html: `<div class="failsafe-desc" style="line-height: 2rem; font-weight: bold; font-size: 1.2rem;"><span style="font-size: 1.1rem; font-weight: initial">VSM 상태:</span> <span style="color: blue">${telemetry.motor.state.vsm}</span><br><span style="font-size: 1.1rem; font-weight: initial">인버터 상태:</span> <span style="color: blue">${telemetry.motor.state.inverter}</span><br><span style="font-size: 1.1rem; font-weight: initial">릴레이:</span><br><ul><li>초기충전: <span style="color: ${telemetry.motor.state.relay.precharge ? "green" : "red" }">${telemetry.motor.state.relay.precharge ? "ON" : "OFF" }</span></li><li>워터펌프: <span style="color: ${telemetry.motor.state.relay.pump ? "green" : "red" }">${telemetry.motor.state.relay.pump ? "ON" : "OFF" }</span></li><li>라디에이터 팬: <span style="color: ${telemetry.motor.state.relay.fan ? "green" : "red" }">${telemetry.motor.state.relay.fan ? "ON" : "OFF" }</span></li></ul><span style="font-size: 1.1rem; font-weight: initial">POST FAULT</span><br>${fault_toHTML(telemetry.motor.fault.post)}<span style="font-size: 1.1rem; font-weight: initial">RUN FAULT</span><br>${fault_toHTML(telemetry.motor.fault.run)}</div>`,
+        html: `
+        <div class="failsafe-desc" style="line-height: 2rem; font-weight: bold; font-size: 1.2rem;">
+          <span style="font-size: 1.1rem; font-weight: initial">VSM 상태:</span> <span style="color: blue">${telemetry.inverter.state.vsm_state}</span><br>
+          <span style="font-size: 1.1rem; font-weight: initial">인버터 상태:</span> <span style="color: blue">${telemetry.inverter.state.inverter_state}</span><br>
+          <span style="font-size: 1.1rem; font-weight: initial">인버터 모드:</span> <span style="color: blue">${telemetry.inverter.state.mode}</span><br>
+          <span style="font-size: 1.1rem; font-weight: initial">방전 모드:</span> <span style="color: blue">${telemetry.inverter.state.discharge}</span><br>
+          <span style="font-size: 1.1rem; font-weight: initial">BMS 통신:</span> <span style="color: ${telemetry.inverter.state.bms_comm ? "green" : "red" }">${telemetry.inverter.state.bms_comm ? "ON" : "OFF" }</span><br>
+          <span style="font-size: 1.1rem; font-weight: initial">릴레이:</span><br>
+          <ul>
+            <li>초기충전: <span style="color: ${telemetry.inverter.state.relay.precharge ? "green" : "red" }">${telemetry.inverter.state.relay.precharge ? "ON" : "OFF" }</span></li>
+            <li>AIR: <span style="color: ${telemetry.inverter.state.relay.main ? "green" : "red" }">${telemetry.inverter.state.relay.main ? "ON" : "OFF" }</span></li>
+            <li>워터펌프: <span style="color: ${telemetry.inverter.state.relay.pump ? "green" : "red" }">${telemetry.inverter.state.relay.pump ? "ON" : "OFF" }</span></li>
+            <li>라디에이터 팬: <span style="color: ${telemetry.inverter.state.relay.fan ? "green" : "red" }">${telemetry.inverter.state.relay.fan ? "ON" : "OFF" }</span></li>
+          </ul>
+          <span style="font-size: 1.1rem; font-weight: initial">출력 제한:</span><br>
+          <ul>
+            <li>BMS: <span style="color: ${telemetry.inverter.state.limit.bms ? "red" : "green" }">${telemetry.inverter.state.limit.bms ? "ON" : "OFF" }</span></li>
+            <li>HIGH SPEED: <span style="color: ${telemetry.inverter.state.limit.speed ? "red" : "green" }">${telemetry.inverter.state.limit.speed ? "ON" : "OFF" }</span></li>
+            <li>LOW SPEED: <span style="color: ${telemetry.inverter.state.limit.lowspeed ? "red" : "green" }">${telemetry.inverter.state.limit.lowspeed ? "ON" : "OFF" }</span></li>
+          </ul>
+          <span style="font-size: 1.1rem; font-weight: initial">POST FAULT</span><br>
+            ${fault_toHTML(telemetry.inverter.fault.post)}
+          <span style="font-size: 1.1rem; font-weight: initial">RUN FAULT</span><br>
+            ${fault_toHTML(telemetry.inverter.fault.run)}
+        </div>`,
         willClose: () => e.target.click(),
       });
     }
@@ -372,12 +397,12 @@ let tooltips = {
   'battery-current': { title: 'HV 배터리 전류', desc: 'HV BUS의 전류입니다.' },
   'battery-temperature-max': { title: 'HV 배터리 최고 온도', desc: 'HV 배터리에서 최고 온도를 보고하는 온도 센서의 ID와 그 온도입니다.' },
   'battery-temperature-min': { title: 'HV 배터리 최저 온도', desc: 'HV 배터리에서 최저 온도를 보고하는 온도 센서의 ID와 그 온도입니다.' },
-  'battery-temperature-internal': { title: 'BMS 온도', desc: 'BMS 히트싱크의 온도입니다.' },
   'battery-adaptive-capacity': { title: 'HV Adaptive Capacity', desc: 'BMS가 충방전을 반복하며 학습한 HV 배터리 팩의 실제 용량입니다.' },
 
   'rpm': { title: 'RPM', desc: '모터 컨트롤러가 측정한 모터의 분당 회전수입니다.' },
   'motor-torque': { title: '모터 토크', desc: '컨트롤러가 모터 설정값에 기반해 추측한 모터의 실제 토크입니다.<br><br>그래프에서는 모터 컨트롤러가 의도한 토크(commanded torque)를 주황색으로 함께 표시합니다.' },
   'motor-temperature': { title: '모터 온도', desc: '모터 온도 센서가 측정한 온도입니다.' },
+  'motor-coolant': { title: '냉각수 온도', desc: '인버터의 RTD1 냉각수 온도 센서가 측정한 온도입니다.' },
   'motor-igbt-temperature': { title: 'IGBT 온도', desc: '인버터의 3상 스위칭 IGBT 중 가장 높은 온도를 보고하는 IGBT의 온도와, 해당 IGBT가 담당하는 상(A/B/C)입니다.' },
   'inverter-temperature': { title: 'Gate Driver 온도', desc: '인버터 게이트 드라이버 보드의 온도입니다.' },
 

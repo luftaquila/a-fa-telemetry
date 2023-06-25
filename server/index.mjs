@@ -140,6 +140,8 @@ function process_telemetry(data) {
           }
           case "CAN_INV_TEMP_2": {
             ECU.inverter.temperature.controlboard = data.parsed.controlboard;
+            ECU.inverter.temperature.rtd.rtd1 = data.parsed.RTD1;
+            ECU.inverter.temperature.rtd.rtd2 = data.parsed.RTD2;
             break;
           }
           case "CAN_INV_TEMP_3": {
@@ -340,6 +342,10 @@ let ECU = {          // initial system status
           value: 0,
           id: "X",
         }
+      },
+      rtd: {
+        rtd1: 0,
+        rtd2: 0,
       },
       gatedriver: 0,
       controlboard: 0,

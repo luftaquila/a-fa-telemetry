@@ -352,27 +352,6 @@
             
             <tr>
               <th class="param-label">
-                <h2><i class="fa-solid fa-fw fa-temperature-three-quarters"></i>&ensp;BMS</h2>
-                <div class="toggle_graph">
-                  <input class="tgl tooltips tgl-skewed" id="tooltip-battery-temperature-internal" type="checkbox"/>
-                  <label class="tgl-btn" data-tg-off="도움말" data-tg-on="도움말" for="tooltip-battery-temperature-internal"></label>
-                  <input class="tgl toggle-graph tgl-skewed" id="toggle-graph-battery-temperature-internal" type="checkbox"/>
-                  <label class="tgl-btn" data-tg-off="그래프" data-tg-on="그래프" for="toggle-graph-battery-temperature-internal"></label>
-                </div>
-              </th>
-              <th class="param-data">
-                <h2><span id="battery-temperature-internal" class="param-value">0</span><span class="param-unit">&ensp;℃</span></h2>
-              </th>
-            </tr>
-            <tr>
-              <td colspan="2" class="param-graph">
-                <canvas id="graph-battery-temperature-internal" class="graph" width="100%" height="60vh"></canvas>
-              </td>
-            </tr>
-            <tr><td>&ensp;</td></tr>
-            
-            <tr>
-              <th class="param-label">
                 <h2><i class="fa-solid fa-fw fa-flux-capacitor"></i>&ensp;용량</h2>
                 <div class="toggle_graph">
                   <input class="tgl tooltips tgl-skewed" id="tooltip-battery-adaptive-capacity" type="checkbox"/>
@@ -471,6 +450,29 @@
             <tr>
               <td colspan="2" class="param-graph">
                 <canvas id="graph-motor-temperature" class="graph" width="100%" height="60vh"></canvas>
+              </td>
+            </tr>
+            <tr><td>&ensp;</td></tr>
+
+            <tr>
+              <th class="param-label">
+                <h2><i class="fa-solid fa-fw fa-water"></i>&ensp;냉각</h2>
+                <div class="toggle_graph">
+                  <input class="tgl tooltips tgl-skewed" id="tooltip-motor-coolant" type="checkbox"/>
+                  <label class="tgl-btn" data-tg-off="도움말" data-tg-on="도움말" for="tooltip-motor-coolant"></label>
+                  <input class="tgl toggle-graph tgl-skewed" id="toggle-graph-motor-coolant" type="checkbox"/>
+                  <label class="tgl-btn" data-tg-off="그래프" data-tg-on="그래프" for="toggle-graph-motor-coolant"></label>
+                </div>
+              </th>
+              <th class="param-data">
+                <h2>
+                  <span id="motor-coolant" class="param-value">0</span><span class="param-unit">&ensp;℃</span>
+                </h2>
+              </th>
+            </tr>
+            <tr>
+              <td colspan="2" class="param-graph">
+                <canvas id="graph-motor-coolant" class="graph" width="100%" height="60vh"></canvas>
               </td>
             </tr>
             <tr><td>&ensp;</td></tr>
