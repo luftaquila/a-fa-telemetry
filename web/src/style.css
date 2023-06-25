@@ -85,12 +85,16 @@ div.status.right {
 div.fault-indicator {
   width: 100%;
   text-align: center;
-  margin-top: 1.5rem;
-  margin-bottom: 1.5rem;
+  margin-top: 2rem;
+  margin-bottom: 2rem;
 }
 
 div.status.middle {
   width: 23%;
+}
+
+div.status.middle.narrow {
+  width: 18%;
 }
 
 div.status.middle i {

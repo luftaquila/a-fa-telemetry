@@ -149,8 +149,8 @@ function process_telemetry(data) {
             break;
           }
           case "CAN_INV_ANALOG_IN": {
-            ECU.inverter.acceleration = data.parsed.AIN1;
-            ECU.inverter.brake = data.parsed.AIN3;
+            ECU.car.accel = data.parsed.AIN1;
+            ECU.car.brake = data.parsed.AIN3;
             break;
           }
           case "CAN_INV_MOTOR_POS": {
@@ -328,7 +328,10 @@ let ECU = {          // initial system status
       lon: 0,
       speed: 0,
       course: 0,
-    }
+    },
+    speed: 0,
+    accel: 0,
+    brake: 0,
   },
   inverter: {
     temperature: {
@@ -384,8 +387,6 @@ let ECU = {          // initial system status
       feedback: 0,
       commanded: 0,
     },
-    acceleration: 0,
-    brake: 0,
   },
   bms: {
     charge: 0,

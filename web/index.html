@@ -53,15 +53,23 @@
         <h1><i class="fa-duotone fa-fw fa-car-bolt"></i>&ensp;차량</h1>
         
         <div class="fault-indicator">
-          <div id="sd" class="status middle">
+          <div id="sd" class="status middle narrow">
             <i class="fa-solid fa-fw fa-sd-card" style="color: red;"></i>
             <div class="text" style="letter-spacing: 1.5px;">SD</div>
           </div>
-          <div id="can" class="status middle">
+          <div id="can" class="status middle narrow">
             <i class="fa-solid fa-fw fa-ethernet" style="color: red;"></i>
             <div class="text" style="letter-spacing: 1.5px;">CAN</div>
           </div>
-          <div id="gps" class="status middle">
+          <div id="acc" class="status middle narrow">
+            <i class="fa-solid fa-fw fa-compass" style="color: red"></i>
+            <div class="text" style="letter-spacing: 1.5px;">ACC</div>
+          </div>
+          <div id="lcd" class="status middle narrow">
+            <i class="fa-solid fa-fw fa-display" style="color: red"></i>
+            <div class="text" style="letter-spacing: 1.5px;">LCD</div>
+          </div>
+          <div id="gps" class="status middle narrow">
             <i class="fa-duotone fa-fw fa-satellite" style="color: red"></i>
             <div class="text" style="letter-spacing: 1.5px;">GPS</div>
           </div>
@@ -113,19 +121,19 @@
               <th class="param-label" style="padding-top: .4rem;">
                 <h2><i class="fa-solid fa-fw fa-rocket-launch"></i>&ensp;가속</h2>
                 <div class="toggle_graph">
-                  <input class="tgl tooltips tgl-skewed" id="tooltip-acceleration" type="checkbox"/>
-                  <label class="tgl-btn" data-tg-off="도움말" data-tg-on="도움말" for="tooltip-acceleration"></label>
-                  <input class="tgl toggle-graph tgl-skewed" id="toggle-graph-acceleration" type="checkbox"/>
-                  <label class="tgl-btn" data-tg-off="그래프" data-tg-on="그래프" for="toggle-graph-acceleration"></label>
+                  <input class="tgl tooltips tgl-skewed" id="tooltip-accel" type="checkbox"/>
+                  <label class="tgl-btn" data-tg-off="도움말" data-tg-on="도움말" for="tooltip-accel"></label>
+                  <input class="tgl toggle-graph tgl-skewed" id="toggle-graph-accel" type="checkbox"/>
+                  <label class="tgl-btn" data-tg-off="그래프" data-tg-on="그래프" for="toggle-graph-accel"></label>
                 </div>
               </th>
               <th class="param-data">
-                <h2><span id="acceleration" class="param-value">0</span><span class="param-unit">&ensp;%</span></h2>
+                <h2><span id="accel" class="param-value">0</span><span class="param-unit">&ensp;%</span></h2>
               </th>
             </tr>
             <tr>
               <td colspan="2" class="param-graph">
-                <canvas id="graph-acceleration" class="graph" width="100%" height="60vh"></canvas>
+                <canvas id="graph-accel" class="graph" width="100%" height="60vh"></canvas>
               </td>
             </tr>
             <tr><td>&ensp;</td></tr>
@@ -515,7 +523,7 @@
         </div>
       </article>
 
-      <article id="gps">
+      <article id="gpsbox">
         <h1><i class="fa-solid fa-fw fa-earth-asia"></i>&ensp;GPS</h1>
         <div class="content" style="padding-left: 0; padding-top: 1rem;">
           <div id="map" style="width: 100%; height: 40vh;"></div>

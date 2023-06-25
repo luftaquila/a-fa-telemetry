@@ -22,6 +22,7 @@ else {
 
   // on data report update
   socket.on('telemetry-repeat', data => {
+    data.data.datetime = new Date();
     process_data(data.data);
     process_status(data.status);
 
@@ -40,7 +41,7 @@ else {
         item.index = item.index;
         item.interval = new Date(data.data.datetime) - new Date(item.timestamp);
         item.timestamp = data.data.datetime;
-        
+
         $('#can_table').DataTable().row(item.index).data(item);
       }
 
@@ -68,7 +69,7 @@ else {
     // update telemetry
     telemetry = data.status;
   });
-  
+
   // button handlers
   $("#reset").on("click", e => {
     socket.emit('reset-request');
@@ -86,50 +87,52 @@ let telemetry = { };
 // realtime status updater
 function process_status(status) {
   $("#telemetry i").css("color", status.telemetry ? "green" : "red");
-  $("#lv i").css("color", status.system.lv ? "green" : "red");
-  $("#hv i").css("color", status.system.gpio.hv ? "green" : "red");
-  $("#rtd i").css("color", status.system.rtd ? "green" : "red");
-  $("#imd i").css("color", status.system.gpio.imd ? "green" : "red");
-  $("#bms i").css("color", status.system.gpio.bms ? "green" : "red");
-  $("#bspd i").css("color", status.system.gpio.bspd ? "green" : "red");
-  $("#hvd i").css("color", status.system.gpio.hvd ? "green" : "red");
-  $("#sd i").css("color", status.system.sd ? "green" : "red");
-  $("#can i").css("color", status.system.can ? "green" : "red");
+  $("#lv i").css("color", status.car.system.ESP ? "green" : "red");
+  $("#hv i").css("color", status.car.system.HV ? "green" : "red");
+  $("#rtd i").css("color", status.car.system.RTD ? "green" : "red");
+
+  $("#sd i").css("color", status.car.system.SD ? "green" : "red");
+  $("#can i").css("color", status.car.system.CAN ? "green" : "red");
+  $("#acc i").css("color", status.car.system.ACC ? "green" : "red");
+  $("#lcd i").css("color", status.car.system.LCD ? "green" : "red");
+  $("#gps i").css("color", status.car.system.GPS ? "green" : "red");
+
+  $("#imd i").css("color", status.car.system.IMD ? "green" : "red");
+  $("#bms i").css("color", status.car.system.BMS ? "green" : "red");
+  $("#bspd i").css("color", status.car.system.BSPD ? "green" : "red");
+  $("#hvd i").css("color", status.car.system.HVD ? "green" : "red");
 
   $("#speed").text(status.car.speed.toFixed(0));
-  $("#acceleration").text(status.car.accelerator.toFixed(0));
+  $("#accel").text(status.car.accel.toFixed(0));
   $("#brake").text(status.car.brake.toFixed(0));
+  $("#core-temperature").text((parseFloat(status.temperature) / 10).toFixed(1));
 
-  $("#voltage-failsafe i").css("color", status.battery.failsafe.voltage ? "red" : "green");
-  $("#current-failsafe i").css("color", status.battery.failsafe.current ? "red" : "green");
-  $("#relay-failsafe i").css("color", status.battery.failsafe.relay ? "red" : "green");
-  $("#balancing-active i").css("color", status.battery.failsafe.balancing ? "green" : "red");
-  $("#interlock-failsafe i").css("color", status.battery.failsafe.interlock ? "red" : "green");
-  $("#thermistor-failsafe i").css("color", status.battery.failsafe.thermistor ? "red" : "green");
-  $("#input-power-failsafe i").css("color", status.battery.failsafe.power ? "red" : "green");
+  $("#voltage-failsafe i").css("color", status.bms.failsafe.voltage ? "red" : "green");
+  $("#current-failsafe i").css("color", status.bms.failsafe.current ? "red" : "green");
+  $("#relay-failsafe i").css("color", status.bms.failsafe.relay ? "red" : "green");
+  $("#balancing-active i").css("color", status.bms.failsafe.balancing ? "green" : "red");
+  $("#interlock-failsafe i").css("color", status.bms.failsafe.interlock ? "red" : "green");
+  $("#thermistor-failsafe i").css("color", status.bms.failsafe.thermistor ? "red" : "green");
+  $("#input-power-failsafe i").css("color", status.bms.failsafe.power ? "red" : "green");
 
-  $("#core-temperature").text(parseFloat(status.system.temperature).toFixed(1));
+  $("#battery-percent").text(parseFloat(status.bms.charge).toFixed(1));
+  $("#battery-voltage").text(parseFloat(status.bms.voltage).toFixed(0));
+  $("#battery-current").text(parseFloat(status.bms.current).toFixed(1));
+  $("#battery-temperature-max").text(parseFloat(status.bms.temperature.max.value).toFixed(0));
+  $("#battery-temperature-max-id").text(status.bms.temperature.max.id);
+  $("#battery-temperature-min").text(parseFloat(status.bms.temperature.min.value).toFixed(0));
+  $("#battery-temperature-min-id").text(status.bms.temperature.min.id);
+  $("#battery-temperature-internal").text(parseFloat(status.bms.temperature.internal).toFixed(0));
+  $("#battery-adaptive-capacity").text(parseFloat(status.bms.adaptive.capacity).toFixed(1));
 
-  $("#battery-percent").text(parseFloat(status.battery.percent).toFixed(1));
-  $("#battery-voltage").text(parseFloat(status.battery.voltage).toFixed(0));
-  $("#battery-current").text(Math.abs(parseFloat(status.battery.current)) >= 100 ? parseFloat(status.battery.current).toFixed(0) : parseFloat(status.battery.current).toFixed(1));
-
-  $("#battery-temperature-max").text(parseFloat(status.battery.temperature.max).toFixed(0));
-  $("#battery-temperature-max-id").text(status.battery.temperature.max_id);
-  $("#battery-temperature-min").text(parseFloat(status.battery.temperature.min).toFixed(0));
-  $("#battery-temperature-min-id").text(status.battery.temperature.min_id);
-  $("#battery-temperature-internal").text(parseFloat(status.battery.temperature.internal).toFixed(0));
-  $("#battery-adaptive-capacity").text(parseFloat(status.battery.adaptive.capacity).toFixed(1));
-
-  $("#inverter-status-indicator").css('color', status.motor.fault.post.length + status.motor.fault.run.length ? "red" : "green");
-  $("#inverter-status").text(status.motor.state.vsm);
-  $("#rpm").text(status.motor.rpm);
-  $("#motor-torque").text(status.motor.torque.feedback);
-  $("#motor-torque-percent").text((status.motor.torque.feedback / status.motor.torque.commanded * 100).toFixed(0));
-  $("#motor-temperature").text(status.motor.temperature.motor.toFixed(0));
-  $("#motor-igbt-temperature").text(status.motor.temperature.igbt.temperature.toFixed(0));
-  $("#motor-igbt-temperature-id").text(status.motor.temperature.igbt.id);
-  $("#inverter-temperature").text(status.motor.temperature.gatedriver.toFixed(1));
+  $("#inverter-status-indicator").css('color', status.inverter.fault.post.length + status.inverter.fault.run.length ? "red" : "green");
+  $("#inverter-status").text(status.inverter.state.vsm_state);
+  $("#rpm").text(status.inverter.motor.speed);
+  $("#motor-torque").text(status.inverter.torque.feedback);
+  $("#motor-temperature").text(status.inverter.temperature.motor.toFixed(0));
+  $("#motor-igbt-temperature").text(status.inverter.temperature.igbt.max.value.toFixed(0));
+  $("#motor-igbt-temperature-id").text(status.inverter.temperature.igbt.max.id);
+  $("#inverter-temperature").text(status.inverter.temperature.gatedriver.toFixed(1));
 }
 
 
@@ -140,125 +143,124 @@ for (const canvas of document.getElementsByTagName('canvas')) graph_data[canvas.
 graph_data["graph-motor-torque-commanded"] = [];
 
 const graph_config = {
-  'graph-speed': { delay: 1000, grace: 5, color: 'rgb(54, 162, 235)' },
-  'graph-acceleration': { delay: 1000, grace: 5, color: 'rgb(54, 162, 235)' },
-  'graph-braking': { delay: 1000, grace: 5, color: 'rgb(54, 162, 235)' },
-  'graph-core-temperature': { delay: 5000, grace: 5, color: 'rgb(54, 162, 235)' },
+  'graph-speed': { delay: 0, grace: 5, color: 'rgb(54, 162, 235)' },
+  'graph-accel': { delay: 0, grace: 5, color: 'rgb(54, 162, 235)' },
+  'graph-braking': { delay: 0, grace: 5, color: 'rgb(54, 162, 235)' },
+  'graph-core-temperature': { delay: 0, grace: 5, color: 'rgb(54, 162, 235)' },
 
-  'graph-battery-percent': { delay: 1000, grace: 5, color: 'rgb(54, 162, 235)' },
-  'graph-battery-voltage': { delay: 1000, grace: 5, color: 'rgb(54, 162, 235)' },
-  'graph-battery-current': { delay: 1000, grace: 5, color: 'rgb(54, 162, 235)' },
-  'graph-battery-temperature-max': { delay: 1000, grace: 5, color: 'rgb(54, 162, 235)' },
-  'graph-battery-temperature-min': { delay: 1000, grace: 5, color: 'rgb(54, 162, 235)' },
-  'graph-battery-temperature-internal': { delay: 1000, grace: 5, color: 'rgb(54, 162, 235)' },
+  'graph-battery-percent': { delay: 0, grace: 5, color: 'rgb(54, 162, 235)' },
+  'graph-battery-voltage': { delay: 0, grace: 5, color: 'rgb(54, 162, 235)' },
+  'graph-battery-current': { delay: 0, grace: 5, color: 'rgb(54, 162, 235)' },
+  'graph-battery-temperature-max': { delay: 0, grace: 5, color: 'rgb(54, 162, 235)' },
+  'graph-battery-temperature-min': { delay: 0, grace: 5, color: 'rgb(54, 162, 235)' },
+  'graph-battery-temperature-internal': { delay: 0, grace: 5, color: 'rgb(54, 162, 235)' },
 
-  'graph-rpm': { delay: 1000, grace: 5, color: 'rgb(54, 162, 235)' },
-  'graph-motor-torque': { delay: 1000, grace: 5, color: 'rgb(54, 162, 235)' },
-  'graph-motor-temperature': { delay: 1000, grace: 5, color: 'rgb(54, 162, 235)' },
-  'graph-motor-igbt-temperature': { delay: 1000, grace: 5, color: 'rgb(54, 162, 235)' },
-  'graph-inverter-temperature': { delay: 1000, grace: 5, color: 'rgb(54, 162, 235)' },
+  'graph-rpm': { delay: 0, grace: 5, color: 'rgb(54, 162, 235)' },
+  'graph-motor-torque': { delay: 0, grace: 5, color: 'rgb(54, 162, 235)' },
+  'graph-motor-temperature': { delay: 0, grace: 5, color: 'rgb(54, 162, 235)' },
+  'graph-motor-igbt-temperature': { delay: 0, grace: 5, color: 'rgb(54, 162, 235)' },
+  'graph-inverter-temperature': { delay: 0, grace: 5, color: 'rgb(54, 162, 235)' },
 }
 
 // realtime graph updater
 function process_data(data) {
-  switch (data.component) {
-    case "ECU": {
+  switch (data.source) {
+    case "CAN": {
       switch (data.key) {
-        case "TEMPERATURE":
-          graph_data['graph-core-temperature'].push({
-            x: data.datetime,
-            y: data.value / 10
-          });
-          break;
-      }
-    }
-    case "BMS": {
-      switch (data.key) {
-        case "CAN_BMS_CORE":
-          graph_data['graph-battery-percent'].push({
-            x: data.datetime,
-            y: data.data.soc
-          });
-          graph_data['graph-battery-voltage'].push({
-            x: data.datetime,
-            y: data.data.voltage
-          });
-          graph_data['graph-battery-current'].push({
-            x: data.datetime,
-            y: data.data.current
-          });
-          break;
-
-        case "CAN_BMS_TEMP":
-          graph_data['graph-battery-temperature-max'].push({
-            x: data.datetime,
-            y: data.data.temperature.max
-          });
-          graph_data['graph-battery-temperature-min'].push({
-            x: data.datetime,
-            y: data.data.temperature.min
-          });
-          graph_data['graph-battery-temperature-internal'].push({
-            x: data.datetime,
-            y: data.data.temperature.internal
-          });
-          break;
-      }
-    }
-    case "INV": {
-      switch (data.key) {
-        case "CAN_INV_ANALOG_IN":
-          graph_data['graph-acceleration'].push({
-            x: data.datetime,
-            y: data.data.accelerator
-          });
-          graph_data['graph-braking'].push({
-            x: data.datetime,
-            y: data.data.brake
-          });
-          break;
-
-        case "CAN_INV_MOTOR_POS":
-          graph_data['graph-rpm'].push({
-            x: data.datetime,
-            y: data.data.rpm
-          });
-          graph_data['graph-speed'].push({
-            x: data.datetime,
-            y: data.data.speed
-          });
-          break;
-
-        case "CAN_INV_TORQUE":
-          graph_data['graph-motor-torque'].push({
-            x: data.datetime,
-            y: data.data.feedback
-          });
-          graph_data["graph-motor-torque-commanded"].push({
-            x: data.datetime,
-            y: data.data.commanded
-          });
-          break;
-
         case "CAN_INV_TEMP_1":
           graph_data['graph-motor-igbt-temperature'].push({
             x: data.datetime,
-            y: data.data.igbt.max.temperature
+            y: data.parsed.igbt.max.temperature
           });
           graph_data['graph-inverter-temperature'].push({
             x: data.datetime,
-            y: data.data.gatedriver
+            y: data.parsed.gatedriver
           });
           break;
 
         case "CAN_INV_TEMP_3":
           graph_data['graph-motor-temperature'].push({
             x: data.datetime,
-            y: data.data.motor
+            y: data.parsed.motor
+          });
+          break;
+
+        case "CAN_INV_ANALOG_IN":
+          graph_data['graph-accel'].push({
+            x: data.datetime,
+            y: data.parsed.AIN1
+          });
+          graph_data['graph-braking'].push({
+            x: data.datetime,
+            y: data.parsed.AIN3
+          });
+          break;
+
+        case "CAN_INV_MOTOR_POS":
+          graph_data['graph-rpm'].push({
+            x: data.datetime,
+            y: data.parsed.motor_speed
+          });
+          graph_data['graph-speed'].push({
+            x: data.datetime,
+            y: data.parsed.motor_speed // !!!! calc needed
+          });
+          break;
+
+        case "CAN_INV_TORQUE":
+          graph_data['graph-motor-torque'].push({
+            x: data.datetime,
+            y: data.parsed.torque_feedback
+          });
+          graph_data["graph-motor-torque-commanded"].push({
+            x: data.datetime,
+            y: data.parsed.commanded_torque
+          });
+          break;
+
+
+        case "CAN_BMS_CORE":
+          graph_data['graph-battery-percent'].push({
+            x: data.datetime,
+            y: data.parsed.soc
+          });
+          graph_data['graph-battery-voltage'].push({
+            x: data.datetime,
+            y: data.parsed.voltage
+          });
+          graph_data['graph-battery-current'].push({
+            x: data.datetime,
+            y: data.parsed.current
+          });
+          break;
+
+        case "CAN_BMS_TEMP":
+          graph_data['graph-battery-temperature-max'].push({
+            x: data.datetime,
+            y: data.parsed.temperature.max.value
+          });
+          graph_data['graph-battery-temperature-min'].push({
+            x: data.datetime,
+            y: data.parsed.temperature.min.value
+          });
+          graph_data['graph-battery-temperature-internal'].push({
+            x: data.datetime,
+            y: data.parsed.temperature.internal
           });
           break;
       }
     }
+    case "ADC":
+      switch (data.key) {
+        case "ADC_CPU": {
+          graph_data['graph-core-temperature'].push({
+            x: data.datetime,
+            y: data.parsed / 10
+          });
+          break;
+        }
+      }
+      break;
   }
 }
 
@@ -361,7 +363,7 @@ $('input.tooltips').on('change', e => {
 
 let tooltips = {
   'speed': { title: '차량 속도', desc: '모터 컨트롤러의 RPM 데이터로 계산한 차량의 주행 속도입니다.<br><br><dfn>Velocity(km/h) = (RPM / 6) &times; (π * 0.2475) * 0.06</dfn>' },
-  'acceleration': { title: '가속', desc: '모터 컨트롤러가 보고하는 가속 페달의 아날로그 입력값입니다.'},
+  'accel': { title: '가속', desc: '모터 컨트롤러가 보고하는 가속 페달의 아날로그 입력값입니다.'},
   'braking': { title: '제동', desc: '모터 컨트롤러가 보고하는 브레이크 페달의 아날로그 입력값입니다.'},
   'core-temperature': { title: '프로세서 온도', desc: 'ECU 프로세서의 온도입니다.' },
 
