@@ -1,5 +1,4 @@
 import { Server } from 'socket.io'
-import mariadb from 'mariadb'
 import dateFormat from 'dateformat'
 
 import dotenv from 'dotenv'
@@ -8,24 +7,9 @@ dotenv.config();
 /*****************************************************************************
  * logger configurations
  ****************************************************************************/
-const pool = mariadb.createPool({
-  host: process.env.db_host,
-  user: process.env.db_user,
-  password: process.env.db_pwd,
-  database: process.env.db_name,
-  idleTimeout: 0
-});
-
 async function log(data) {
-  const db = await pool.getConnection();
-  const query = `INSERT INTO \`log\` (\`level\`, \`datetime\`, \`component\`, \`key\`, \`value\`)
-                 VALUES(${db.escape(data.level)}, ${db.escape(data.datetime)}, ${db.escape(data.component)},
-                 ${db.escape(data.key)}, ${db.escape(data.value)});`;
-  const result = await db.query(query);
-  await db.end();
   console.log(data);
 }
-
 
 /*****************************************************************************
  * socket server
@@ -42,7 +26,6 @@ log({
   key: "STARTUP",
   value: "SERVER STARTUP"
 });
-
 
 /*****************************************************************************
  * socket handler
@@ -99,8 +82,22 @@ io.sockets.on('connection', socket => {
     });
 
     socket.on('reset-request', () => {
-      if (ECU.telemetry) socket.emit('reset-reply', { icon: 'error', title: '차량 상태 초기화 오류', html: `<code><i class="fa-duotone fa-fw fa-tower-broadcast" style="color: green"></i> 원격 계측</code> 활성화 상태에서는 차량 상태를 초기화할 수 없습니다.`, showCancelButton: true, showConfirmButton: false, cancelButtonText: '확인', cancelButtonColor: '#7066e0' });
-      else socket.emit('reset-reply', { icon: 'warning', title: '차량 상태 초기화', html: `<code><i class="fa-duotone fa-fw fa-tower-broadcast" style="color: red"></i> 원격 계측</code> 비활성화 상태에서 남아있는 이전 데이터를 초기화합니다.`, showCancelButton: true, cancelButtonText: '취소', confirmButtonText: '확인', confirmButtonColor: '#d33', customClass: { confirmButton: 'swal2-two-buttons' } });
+      if (ECU.telemetry) {
+        socket.emit('reset-reply', {
+          icon: 'error',
+          title: '차량 상태 초기화 오류',
+          html: `<code><i class="fa-duotone fa-fw fa-tower-broadcast" style="color: green"></i> 원격 계측</code> 활성화 상태에서는 차량 상태를 초기화할 수 없습니다.`,
+          showCancelButton: true, showConfirmButton: false, cancelButtonText: '확인', cancelButtonColor: '#7066e0'
+        });
+      } else {
+        socket.emit('reset-reply', {
+          icon: 'warning',
+          title: '차량 상태 초기화',
+          html: `<code><i class="fa-duotone fa-fw fa-tower-broadcast" style="color: red"></i> 원격 계측</code> 비활성화 상태에서 남아있는 이전 데이터를 초기화합니다.`,
+          showCancelButton: true, cancelButtonText: '취소', confirmButtonText: '확인', confirmButtonColor: '#d33',
+          customClass: { confirmButton: 'swal2-two-buttons' }
+        });
+      }
     });
 
     socket.on('reset-confirm', () => {
