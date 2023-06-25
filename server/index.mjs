@@ -64,6 +64,7 @@ io.sockets.on('connection', socket => {
     // on SOCKET_DISCONNECTED
     socket.on('disconnect', reason => {
       ECU.telemetry = false;
+      ECU.system.esp = false;
 
       let data = {
         level: "INFO",
@@ -79,6 +80,8 @@ io.sockets.on('connection', socket => {
 
     // on ECU TELEMETRY
     socket.on('tlog', data => {
+      ECU.telemetry = true;
+      ECU.system.esp = true;
       process_telemetry(data);
     });
   }
@@ -114,100 +117,308 @@ io.sockets.on('connection', socket => {
 function process_telemetry(data) {
   data = convert(data.log.match(/.{2}/g).map(x => parseInt(x, 16)));
 
-  // !!!!! set ECU data
+  if (data != null) {
+    switch (data.source) {
+      case "ECU": {
+        switch (data.key) {
+          case "ECU_STATE": {
+            ECU.car.system = data.parsed;
+            break;
+          }
+          case "ECU_BOOT":
+          case "ECU_READY":
+          case "SD_INIT":
+          default:
+            break;
+        }
+        break;
+      }
+      case "ESP": break;
+      case "CAN": {
+        switch (data.key) {
+          case "CAN_INV_TEMP_1": {
+            ECU.inverter.temperature.igbt.max = data.parsed.igbt.max;
+            ECU.inverter.temperature.gatedriver = data.parsed.gatedriver;
+            break;
+          }
+          case "CAN_INV_TEMP_2": {
+            ECU.inverter.temperature.controlboard = data.parsed.controlboard;
+            break;
+          }
+          case "CAN_INV_TEMP_3": {
+            ECU.inverter.temperature.coolant = data.parsed.coolant;
+            ECU.inverter.temperature.hotspot = data.parsed.hotspot;
+            ECU.inverter.temperature.motor = data.parsed.motor;
+            break;
+          }
+          case "CAN_INV_ANALOG_IN": {
+            ECU.inverter.acceleration = data.parsed.AIN1;
+            ECU.inverter.brake = data.parsed.AIN3;
+            break;
+          }
+          case "CAN_INV_MOTOR_POS": {
+            ECU.inverter.motor.angle = data.parsed.motor_angle;
+            ECU.inverter.motor.speed = data.parsed.motor_speed;
+            break;
+          }
+          case "CAN_INV_CURRENT": {
+            ECU.inverter.current.dc_bus = data.parsed.dc_bus_current;
+            break;
+          }
+          case "CAN_INV_VOLTAGE": {
+            ECU.inverter.voltage.dc_bus = data.parsed.dc_bus_voltage;
+            ECU.inverter.voltage.output = data.parsed.output_voltage;
+            break;
+          }
+          case "CAN_INV_STATE": {
+            ECU.inverter.state.vsm_state = state.vsm[data.parsed.vsm_state];
+            ECU.inverter.state.inverter_state = state.inverter[data.parsed.inverter_state];
+            ECU.inverter.state.relay.precharge = (data.parsed.relay_state & (1 << 0)) ? true : false;
+            ECU.inverter.state.relay.main = (data.parsed.relay_state & (1 << 1)) ? true : false;
+            ECU.inverter.state.relay.pump = (data.parsed.relay_state & (1 << 4)) ? true : false;
+            ECU.inverter.state.relay.fan = (data.parsed.relay_state & (1 << 5)) ? true : false;
+            ECU.inverter.state.mode = state.inverter_mode[data.parsed.inverter_run_mode];
+            ECU.inverter.state.discharge = state.discharge_state[data.parsed.inverter_active_discharge_state];
+            ECU.inverter.state.enabled = data.parsed.inverter_enable_state ? true : false;
+            ECU.inverter.state.bms_comm = data.parsed.bms_active ? true : false;
+            ECU.inverter.state.limit.bms = data.parsed.bms_limiting_torque ? true : false;
+            ECU.inverter.state.limit.speed = data.parsed.limit_max_speed ? true : false;
+            ECU.inverter.state.limit.hotspot = data.parsed.limit_hot_spot ? true : false;
+            ECU.inverter.state.limit.lowspeed = data.parsed.low_speed_limiting ? true : false;
+            ECU.inverter.state.limit.coolant = data.parsed.coolant_temperature_limiting ? true : false;
+            break;
+          }
+          case "CAN_INV_FAULT": {
+            for (let i = 0; i < 32; i++) {
+              if (data.parsed.POST & (1 << i)) {
+                ECU.inverter.fault.post.push(fault.post[i]);
+              }
+              if (data.parsed.RUN & (1 << i)) {
+                ECU.inverter.fault.post.run(fault.run[i]);
+              }
+            }
+            break;
+          }
+          case "CAN_INV_TORQUE": {
+            ECU.inverter.torque.feedback = data.parsed.torque_feedback;
+            ECU.inverter.torque.commanded = data.parsed.commanded_torque;
+            break;
+          }
+          case "CAN_BMS_CORE": {
+            ECU.bms.charge = data.parsed.soc;
+            ECU.bms.voltage = data.parsed.voltage;
+            ECU.bms.current = data.parsed.current;
+            ECU.bms.failsafe = data.parsed.failsafe;
+            break;
+          }
+          case "CAN_BMS_TEMP": {
+            ECU.bms.temperature = data.parsed.temperature;
+            ECU.bms.adaptive = data.parsed.adaptive;
+            break;
+          }
+          case "CAN_INV_DIGITAL_IN":
+          case "CAN_INV_FLUX":
+          case "CAN_INV_REF":
+          case "CAN_INV_FLUX_WEAKING":
+          case "CAN_INV_FIRMWARE_VER":
+          case "CAN_INV_DIAGNOSTIC":
+          case "CAN_INV_HIGH_SPD_MSG":
+          default:
+            break;
+        }
+        break;
+      }
+      case "ADC": {
+        switch (key) {
+          case "ADC_CPU": {
+            ECU.temperature = data.parsed;
+            break;
+          }
+          case "ADC_DIST": {
+            ECU.car.position.FL = data.parsed.DIST_FL;
+            ECU.car.position.RL = data.parsed.DIST_RL;
+            ECU.car.position.FR = data.parsed.DIST_FR;
+            ECU.car.position.RR = data.parsed.DIST_RR;
+            break;
+          }
+          case "ADC_INIT":
+          default:
+            break;
+        }
+        break;
+      }
+      case "DGT": break;
+      case "ACC": {
+        switch (key) {
+          case "ACC_DATA": {
+            ECU.car.acceleration = data.parsed;
+            break;
+          }
+          case "ACC_INIT":
+          default:
+            break;
+        }
+        break;
+      }
+      case "LCD": break;
+      case "GPS": {
+        switch (key) {
+          case "GPS_POS": {
+            ECU.car.gps.lat = data.parsed.lat;
+            ECU.car.gps.lon = data.parsed.lon;
+            break;
+          }
+          case "GPS_VEC": {
+            ECU.car.gps.speed = data.parsed.speed;
+            ECU.car.gps.course = data.parsed.course;
+            break;
+          }
+          case "GPS_INIT":
+          case "GPS_TIME":
+          default:
+            break;
+        }
+        break;
+      }
+    }
 
-  io.to('client').emit('telemetry-repeat', { data: data, status: ECU });
-  console.log(data);
+    io.to('client').emit('telemetry-repeat', { data: data, status: ECU });
+  }
 }
 
 
 /*****************************************************************************
- * templates
+ * system state
  ****************************************************************************/
 let ECU = {          // initial system status
   telemetry: false,
   session: null,
-  system: {
-    lv: false,
-    rtd: false,
-    gps: false,
-    gpio: {
-      hv: false,
-      rtd: false,
-      brake: false,
-      imd: false,
-      bms: false,
-      bspd: false,
-      hvd: false,
-    },
-    temperature: 0,
-    sd: false,
-    can: false,
-  },
+  temperature: 0,
   car: {
-    speed: 0,
-    accelerator: 0,
-    brake: 0
+    system: {
+      HV: false,
+      RTD: false,
+      BMS: false,
+      IMD: false,
+      BSPD: false,
+
+      SD: false,
+      CAN: false,
+      ESP: false,
+      ACC: false,
+      LCD: false,
+      GPS: false,
+    },
+    position: {
+      FL: 0,
+      RL: 0,
+      FR: 0,
+      RR: 0,
+    },
+    wheel_speed: {
+      FL: 0,
+      RL: 0,
+      FR: 0,
+      RR: 0,
+    },
+    acceleration: {
+      x: 0,
+      y: 0,
+      z: 0,
+    },
+    gps: {
+      lat: 0,
+      lon: 0,
+      speed: 0,
+      course: 0,
+    }
   },
-  battery: {
-    percent: 0,
+  inverter: {
+    temperature: {
+      igbt: {
+        max: {
+          value: 0,
+          id: "X",
+        }
+      },
+      gatedriver: 0,
+      controlboard: 0,
+      coolant: 0,
+      hotspot: 0,
+      motor: 0,
+    },
+    motor: {
+      angle: 0,
+      speed: 0,
+    },
+    current: {
+      dc_bus: 0,
+    },
+    voltage: {
+      dc_bus: 0,
+      output: 0,
+    },
+    state: {
+      vsm_state: "N/A",
+      inverter_state: "N/A",
+      relay: {
+        precharge: false,
+        main: false,
+        pump: false,
+        fan: false,
+      },
+      mode: "N/A",
+      discharge: "N/A",
+      enabled: false,
+      bms_comm: false,
+      limit: {
+        bms: false,
+        speed: false,
+        hotspot: false,
+        lowspeed: false,
+        coolant: false
+      }
+    },
+    fault: {
+      post: [],
+      run: [],
+    },
+    torque: {
+      feedback: 0,
+      commanded: 0,
+    },
+    acceleration: 0,
+    brake: 0,
+  },
+  bms: {
+    charge: 0,
     voltage: 0,
     current: 0,
-    temperature: {
-      max: 0,
-      max_id: 0,
-      min: 0,
-      min_id: 0,
-      internal: 0
-    },
-    adaptive: {
-      soc: 0,
-      capacity: 0,
-    },
     failsafe: {
       voltage: false,
       current: false,
       relay: false,
       balancing: false,
       interlock: false,
-      thermistor: false,
+      thermister: false,
       power: false,
     },
-  },
-  motor: {
-    rpm: 0,
-    torque: {
-      feedback: 0,
-      commanded: 0,
-    },
     temperature: {
-      motor: 0,
-      igbt: {
-        temperature: 0,
-        id: "X",
+      max: {
+        value: 0,
+        id: 0,
       },
-      gatedriver: 0,
-    },
-    state: {
-      vsm: "N/A",
-      inverter: "N/A",
-      relay: {
-        precharge: false,
-        pump: false,
-        fan: false,
+      min: {
+        value: 0,
+        id: 0,
       },
+      internal: 0,
     },
-    fault: {
-      post: [],
-      run: [],
-    },
+    adaptive: {
+      soc: 0,
+      capacity: 0,
+    }
   },
-  reference: {
-    v1p5: 0,
-    v2p5: 0,
-    v5: 0,
-    v12: 0
-  }
 }
 const ECU_INIT = JSON.stringify(ECU);
 
@@ -238,6 +449,17 @@ const state = { // motor controller properties
     10: "Internal",
     11: "Internal",
     12: "Internal"
+  },
+  discharge_state: {
+    0: "방전 비활성화",
+    1: "방전 대기",
+    2: "속도 검사 중",
+    3: "방전 중",
+    4: "방전 완료",
+  },
+  inverter_mode: {
+    0: "토크 모드",
+    1: "속도 모드"
   }
 }
 
@@ -384,17 +606,23 @@ const LOG_KEY = {
 };
 
 function convert(raw) {
-  let log = {
-    timestamp: raw[0] + raw[1] * Math.pow(2, 8) + raw[2] * Math.pow(2, 16) + raw[3] * Math.pow(2, 24),
-    level: LOG_LEVEL[raw[4]],
-    source: LOG_SOURCE[raw[5]],
-    key: LOG_KEY[LOG_SOURCE[raw[5]]][raw[6]],
-    value: raw[8] + raw[9] * Math.pow(2, 8) + raw[10] * Math.pow(2, 16) + raw[11] * Math.pow(2, 24) + raw[12] * Math.pow(2, 32) + raw[13] * Math.pow(2, 40) + raw[14] * Math.pow(2, 48) + raw[15] * Math.pow(2, 56),
-    raw: raw.slice(8)
-  };
-  log.parsed = parse(log.source, log.key, log.value, log.raw);
+  try {
+    let log = {
+      timestamp: raw[0] + raw[1] * Math.pow(2, 8) + raw[2] * Math.pow(2, 16) + raw[3] * Math.pow(2, 24),
+      level: LOG_LEVEL[raw[4]],
+      source: LOG_SOURCE[raw[5]],
+      key: LOG_KEY[LOG_SOURCE[raw[5]]][raw[6]],
+      value: raw[8] + raw[9] * Math.pow(2, 8) + raw[10] * Math.pow(2, 16) + raw[11] * Math.pow(2, 24) + raw[12] * Math.pow(2, 32) + raw[13] * Math.pow(2, 40) + raw[14] * Math.pow(2, 48) + raw[15] * Math.pow(2, 56),
+      raw: raw.slice(8)
+    };
+    log.parsed = parse(log.source, log.key, log.value, log.raw);
 
-  return log;
+    return log;
+  } catch(e) {
+    console.error(raw);
+    console.error(e);
+    return null;
+  }
 }
 
 function parse(source, key, value, raw) {
@@ -615,6 +843,8 @@ function parse(source, key, value, raw) {
 
         case "CAN_INV_FAULT": {
           parsed = {
+            POST: value & 0xffffffff,
+            RUN: (value / Math.pow(2, 32)) & 0xffffffff,
             POST_FAULT_LO: value & 0xffff,
             POST_FAULT_HI: (value / Math.pow(2, 16)) & 0xffff,
             RUN_FAULT_LO: (value / Math.pow(2, 32)) & 0xffff,
@@ -684,10 +914,14 @@ function parse(source, key, value, raw) {
         case "CAN_BMS_TEMP": {
           parsed = {
             temperature: {
-              max: signed(raw[0], 8),
-              max_id: raw[1],
-              min: signed(raw[2], 8),
-              min_id: raw[3],
+              max: {
+                value: signed(raw[0], 8),
+                id: raw[1],
+              },
+              min: {
+                value: signed(raw[2], 8),
+                id: raw[3],
+              },
               internal: signed(raw[7], 8),
             },
             adapdtive: {

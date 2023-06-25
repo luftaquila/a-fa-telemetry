@@ -271,6 +271,8 @@ function parse(source, key, value, raw) {
 
         case "CAN_INV_FAULT": {
           parsed = {
+            POST: value & 0xffffffff,
+            RUN: (value / Math.pow(2, 32)) & 0xffffffff,
             POST_FAULT_LO: value & 0xffff,
             POST_FAULT_HI: (value / Math.pow(2, 16)) & 0xffff,
             RUN_FAULT_LO: (value / Math.pow(2, 32)) & 0xffff,
@@ -340,10 +342,14 @@ function parse(source, key, value, raw) {
         case "CAN_BMS_TEMP": {
           parsed = {
             temperature: {
-              max: signed(raw[0], 8),
-              max_id: raw[1],
-              min: signed(raw[2], 8),
-              min_id: raw[3],
+              max: {
+                value: signed(raw[0], 8),
+                id: raw[1],
+              },
+              min: {
+                value: signed(raw[2], 8),
+                id: raw[3],
+              },
               internal: signed(raw[7], 8),
             },
             adapdtive: {
