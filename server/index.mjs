@@ -47,7 +47,7 @@ io.sockets.on('connection', socket => {
     // on SOCKET_DISCONNECTED
     socket.on('disconnect', reason => {
       ECU.telemetry = false;
-      ECU.system.esp = false;
+      ECU.car.system.ESP = false;
 
       let data = {
         level: "INFO",
@@ -64,7 +64,7 @@ io.sockets.on('connection', socket => {
     // on ECU TELEMETRY
     socket.on('tlog', data => {
       ECU.telemetry = true;
-      ECU.system.esp = true;
+      ECU.car.system.ESP = true;
       process_telemetry(data);
     });
   }
@@ -226,7 +226,7 @@ function process_telemetry(data) {
         break;
       }
       case "ADC": {
-        switch (key) {
+        switch (data.key) {
           case "ADC_CPU": {
             ECU.temperature = data.parsed;
             break;
@@ -246,7 +246,7 @@ function process_telemetry(data) {
       }
       case "DGT": break;
       case "ACC": {
-        switch (key) {
+        switch (data.key) {
           case "ACC_DATA": {
             ECU.car.acceleration = data.parsed;
             break;
@@ -259,7 +259,7 @@ function process_telemetry(data) {
       }
       case "LCD": break;
       case "GPS": {
-        switch (key) {
+        switch (data.key) {
           case "GPS_POS": {
             ECU.car.gps.lat = data.parsed.lat;
             ECU.car.gps.lon = data.parsed.lon;
