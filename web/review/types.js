@@ -381,11 +381,23 @@ function parse(source, key, value, raw) {
         }
 
         case "ADC_DIST": {
+          function calc_position(value) {
+            const adc_volatage = 3.3;
+            const adc_resolution = 12;
+            const adc_max_count = (1 << 12) - 1;
+            const sensor_max_travel = 100; // mm
+            const sensor_voltage = 5;
+
+            const voltage = value / adc_max_count * adc_volatage;
+            const dist = voltage / sensor_voltage * sensor_max_travel;
+
+            return dist.toFixed(1);
+          }
           parsed = {
-            DIST_FL: raw[0] + raw[1] * Math.pow(2, 8),
-            DIST_RL: raw[2] + raw[3] * Math.pow(2, 8),
-            DIST_FR: raw[4] + raw[5] * Math.pow(2, 8),
-            DIST_RR: raw[6] + raw[7] * Math.pow(2, 8),
+            DIST_FL: calc_position(raw[0] + raw[1] * Math.pow(2, 8)),
+            DIST_RL: calc_position(raw[2] + raw[3] * Math.pow(2, 8)),
+            DIST_FR: calc_position(raw[4] + raw[5] * Math.pow(2, 8)),
+            DIST_RR: calc_position(raw[6] + raw[7] * Math.pow(2, 8)),
           };
           break;
         }
