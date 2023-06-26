@@ -498,3 +498,5 @@ function parse(source, key, value, raw) {
 function signed(value, bit) {
   return value > Math.pow(2, bit - 1) - 1 ? value - Math.pow(2, bit) : value;
 }
+
+exports.types = { LOG_LEVEL, LOG_SOURCE, LOG_KEY, parse, signed };
