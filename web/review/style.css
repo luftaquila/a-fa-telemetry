@@ -232,3 +232,27 @@ ul {
 .swal-wide{
   width:90vw !important;
 }
+
+#table {
+  width: 98%;
+  height: 50vw;
+  font-size: 10pt;
+  border-collapse: collapse;
+  display: block;
+  overflow-x: auto;
+  overflow-y: auto;
+  white-space: nowrap;
+}
+#table tr {background-color: #fff;}
+#table thead tr,
+#table tbody tr:nth-child(2n) {background-color: #f8f8f8;}
+
+#table td, #table th {
+  max-width: 250px;
+  text-overflow: ellipsis;
+  overflow: hidden;
+  white-space: nowrap;
+  line-height: 1em;
+  border: 1px solid #aaa;
+  padding: 6px 6px;
+}
