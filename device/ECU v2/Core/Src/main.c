@@ -425,7 +425,7 @@ int main(void)
     }
 
 
-    // 100ms timer set: system state record, ADC conversion, accelerometer record
+    // 100ms timer set: system state record, distance ADC conversion, accelerometer record
     if (timer_flag & 0x1 << TIMER_100ms) {
       timer_flag &= ~(1 << TIMER_100ms); // clear 100ms timer flag
 
@@ -439,8 +439,7 @@ int main(void)
       *(SYSTEM_STATE *)syslog.value = sys_state;
       SYS_LOG(LOG_INFO, ECU, ECU_STATE);
 
-      // start ADC conversion
-      HAL_ADC_Start_IT(&hadc1);
+      // linear position(distance) sensor ADC conversion
       HAL_ADC_Start_IT(&hadc2);
 
       // start timer input capture DMA transfer
@@ -468,7 +467,7 @@ int main(void)
     }
 
 
-    // 1s timer set: SD card sync
+    // 1s timer set: SD card sync, internal temperature sensor, heartbeat LED
     if (timer_flag & 0x1 << TIMER_1s) {
       timer_flag &= ~(1 << TIMER_1s); // clear 1s timer flag
 
@@ -477,6 +476,18 @@ int main(void)
       #ifdef DEBUG_MODE
         printf("[%8lu] [INF] SD SYNC: %ld\r\n", HAL_GetTick(), ret);
       #endif
+
+      // internal temperature sensor ADC conversion
+      HAL_ADC_Start_IT(&hadc1);
+
+      // heartbeat
+      static bool heartbeat = true;
+      if (heartbeat) {
+        HAL_GPIO_WritePin(GPIOE, LED2_Pin, GPIO_PIN_SET);
+      } else {
+        HAL_GPIO_WritePin(GPIOE, LED2_Pin, GPIO_PIN_RESET);
+      }
+      heartbeat = !heartbeat;
     }
 
     /* USER CODE END WHILE */
