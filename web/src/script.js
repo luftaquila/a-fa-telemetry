@@ -23,6 +23,8 @@ else {
   // on data report update
   socket.on('telemetry-repeat', data => {
     data.data.datetime = new Date();
+    $("#uptime").text(data.data.timestamp);
+
     process_data(data.data);
     process_status(data.status);
 
@@ -391,6 +393,7 @@ let tooltips = {
   'accel': { title: '가속', desc: '모터 컨트롤러가 보고하는 가속 페달의 아날로그 입력값입니다.'},
   'braking': { title: '제동', desc: '모터 컨트롤러가 보고하는 브레이크 페달의 아날로그 입력값입니다.'},
   'core-temperature': { title: '프로세서 온도', desc: 'ECU 프로세서의 온도입니다.' },
+  'uptime': { title: '코어 시간', desc: 'ECU 코어가 부팅한 후 경과된 시간입니다.' },
 
   'battery-percent': { title: 'HV 배터리 잔량', desc: 'HV 배터리의 잔여 용량입니다.' },
   'battery-voltage': { title: 'HV 배터리 전압', desc: 'HV BUS의 전압입니다.' },

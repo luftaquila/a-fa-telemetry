@@ -137,7 +137,7 @@
               </td>
             </tr>
             <tr><td>&ensp;</td></tr>
-            
+
             <tr>
               <th class="param-label">
                 <h2><i class="fa-solid fa-fw fa-traffic-cone"></i>&ensp;제동</h2>
@@ -177,6 +177,20 @@
               <td colspan="2" class="param-graph">
                 <canvas id="graph-core-temperature" class="graph" width="100%" height="60vh"></canvas>
               </td>
+            </tr>
+            <tr><td>&ensp;</td></tr>
+
+            <tr>
+              <th class="param-label">
+                <h2><i class="fa-solid fa-fw fa-timer"></i>&ensp;시간</h2>
+                <div class="toggle_graph">
+                  <input class="tgl tooltips tgl-skewed" id="tooltip-uptime" type="checkbox"/>
+                  <label class="tgl-btn double" data-tg-off="도움말" data-tg-on="도움말" for="tooltip-uptime"></label>
+                </div>
+              </th>
+              <th class="param-data">
+                <h2 style="margin-top: -.8rem;"><span id="uptime" class="param-value" style='font-size: 2.5rem;'>0</span><span class="param-unit">&ensp;ms</span></h2>
+              </th>
             </tr>
           </table>
         </div>

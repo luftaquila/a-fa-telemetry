@@ -148,6 +148,10 @@ article h2 {
   margin: 0;
 }
 
+article th.param-data h2 {
+  margin-top: -.5rem;
+}
+
 article .content {
   padding-left: 1rem;
 }
@@ -177,7 +181,7 @@ table.param .param-label {
   color: rgb(65,75,81);
   text-align: left;
   vertical-align: baseline;
-  width: 8.5rem;
+  width: 8.3rem;
 }
 
 table.param .param-data h2 {
