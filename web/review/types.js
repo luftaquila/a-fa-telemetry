@@ -467,9 +467,12 @@ function parse(source, key, value, raw) {
         }
 
         case "GPS_POS": {
+          const raw_lat = (raw[0] + raw[1] * Math.pow(2, 8) + raw[2] * Math.pow(2, 16) + raw[3] * Math.pow(2, 24)) * 0.0000001;
+          const raw_lon = (raw[4] + raw[5] * Math.pow(2, 8) + raw[6] * Math.pow(2, 16) + raw[7] * Math.pow(2, 24)) * 0.0000001;
+
           parsed = {
-            lat: (raw[0] + raw[1] * Math.pow(2, 8) + raw[2] * Math.pow(2, 16) + raw[3] * Math.pow(2, 24)) * 0.0000001,
-            lon: (raw[4] + raw[5] * Math.pow(2, 8) + raw[6] * Math.pow(2, 16) + raw[7] * Math.pow(2, 24)) * 0.0000001
+            lat: Math.floor(raw_lat) + (((raw_lat % 1) * 100).toFixed(5) / 60),
+            lon: Math.floor(raw_lon) + (((raw_lon % 1) * 100).toFixed(5) / 60),
           }
           break;
         }

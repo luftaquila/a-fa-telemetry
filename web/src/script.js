@@ -137,6 +137,21 @@ function process_status(status) {
   $("#inverter-temperature").text(status.inverter.temperature.gatedriver.toFixed(1));
 }
 
+// GPS
+let map = new kakao.maps.Map(document.getElementById('map'), {
+  center: new kakao.maps.LatLng(37.2837709, 127.0434392)
+});
+
+let gps_path = [ ];
+let gps_marker;
+let gps_polyline = new kakao.maps.Polyline({
+  path: gps_path,
+  strokeWeight: 5,
+  strokeColor: '#00C40D',
+  strokeOpacity: 0.8,
+  strokeStyle: 'solid'
+});
+gps_polyline.setMap(map);
 
 // graph configs
 let graphs = { };
@@ -162,7 +177,7 @@ const graph_config = {
   'graph-motor-coolant': { delay: 0, grace: 5, color: 'rgb(54, 162, 235)' },
   'graph-motor-igbt-temperature': { delay: 0, grace: 5, color: 'rgb(54, 162, 235)' },
   'graph-inverter-temperature': { delay: 0, grace: 5, color: 'rgb(54, 162, 235)' },
-}
+};
 
 // realtime graph updater
 function process_data(data) {
@@ -254,8 +269,9 @@ function process_data(data) {
           });
           break;
       }
+      break;
     }
-    case "ADC":
+    case "ADC": {
       switch (data.key) {
         case "ADC_CPU": {
           graph_data['graph-core-temperature'].push({
@@ -266,6 +282,30 @@ function process_data(data) {
         }
       }
       break;
+    }
+    case "GPS": {
+      switch (data.key) {
+        case "GPS_POS": {
+          let pos = new kakao.maps.LatLng(data.parsed.lat, data.parsed.lon);
+
+          if (gps_marker) {
+            gps_marker.setMap(null);
+          }
+
+          gps_marker = new kakao.maps.Marker({
+            position: pos
+          });
+          gps_marker.setMap(map);
+
+          gps_path.push(pos);
+          gps_polyline.setPath(gps_path);
+
+          map.panTo(pos);
+          break;
+        }
+      }
+      break;
+    }
   }
 }
 
@@ -471,10 +511,4 @@ $("#livecan").on("click", e => {
       $('#can_table').DataTable().destroy();
     }
   });
-});
-
-
-// GPS map handler
-let map = new kakao.maps.Map(document.getElementById('map'), {
-  center: new kakao.maps.LatLng(37.2837709, 127.0434392)
 });
