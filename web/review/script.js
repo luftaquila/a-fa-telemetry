@@ -69,6 +69,8 @@ async function processRaw(raw, filename) {
   $("#csv").val(converted.csv);
   $("#csv_download").attr("href", "data:text/csv;charset=utf-8," + encodeURIComponent(converted.csv)).attr("download", `${filename}.csv`);
   delete converted.csv;
+
+  $("#bin_download").attr("href", `datalogs/${filename}`);
 }
 
 /* FROM https://github.com/konklone/json */
