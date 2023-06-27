@@ -58,15 +58,17 @@ async function processRaw(raw, filename) {
     index += 16;
   }
 
-  const json = JSON.stringify(log);
-  $("#json").val(json);
-  $("#json_download").attr("href", "data:text/json;charset=utf-8," + encodeURIComponent(json)).attr("download", `${filename}.json`);
+  let converted = { };
 
-  const csv = doCSV(log);
-  $("#csv").val(csv);
-  $("#csv_download").attr("href", "data:text/csv;charset=utf-8," + encodeURIComponent(csv)).attr("download", `${filename}.csv`);
+  converted.json = JSON.stringify(log);
+  $("#json").val(converted.json);
+  $("#json_download").attr("href", "data:text/json;charset=utf-8," + encodeURIComponent(converted.json)).attr("download", `${filename}.json`);
+  delete converted.json;
 
-  renderCSV(csv);
+  converted.csv = doCSV(log);
+  $("#csv").val(converted.csv);
+  $("#csv_download").attr("href", "data:text/csv;charset=utf-8," + encodeURIComponent(converted.csv)).attr("download", `${filename}.csv`);
+  delete converted.csv;
 }
 
 /* FROM https://github.com/konklone/json */
@@ -82,43 +84,6 @@ function doCSV(json) {
 
 
   return $.csv.fromObjects(outArray, {separator: ','});
-}
-
-function renderCSV(csv) {
-  var rows = csv.split("\n").map(x => x.split(','));
-  if (rows.length < 1) return;
-
-  // find CSV table
-  var table = $("#table")[0];
-  $(table).text("");
-
-  // render header row
-  var thead = document.createElement("thead");
-  var tr = document.createElement("tr");
-  var header = rows[0];
-  for (field in header) {
-    var th = document.createElement("th");
-    $(th).text(header[field])
-    tr.appendChild(th);
-  }
-  thead.appendChild(tr);
-
-  // render body of table
-  var tbody = document.createElement("tbody");
-  for (var i=1; i<rows.length; i++) {
-    tr = document.createElement("tr");
-    for (field in rows[i]) {
-      var td = document.createElement("td");
-      $(td)
-        .text(rows[i][field])
-        .attr("title", rows[i][field]);
-      tr.appendChild(td);
-    }
-    tbody.appendChild(tr);
-  }
-
-  table.appendChild(thead);
-  table.appendChild(tbody);
 }
 
 function arrayFrom(json) {
