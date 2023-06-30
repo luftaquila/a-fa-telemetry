@@ -249,7 +249,7 @@ function process_telemetry(data) {
         }
         break;
       }
-      case "DGT": break;
+      case "TIM": break;
       case "ACC": {
         switch (data.key) {
           case "ACC_DATA": {

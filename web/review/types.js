@@ -1,6 +1,6 @@
 const LOG_LEVEL = [ "FATAL", "ERROR", "WARN", "INFO", "DEBUG" ];
 
-const LOG_SOURCE = [ "ECU", "ESP", "CAN", "ADC", "DGT", "ACC", "LCD", "GPS" ];
+const LOG_SOURCE = [ "ECU", "ESP", "CAN", "ADC", "TIM", "ACC", "LCD", "GPS" ];
 
 const LOG_KEY = {
   "ECU": [ "ECU_BOOT", "ECU_STATE", "ECU_READY", "SD_INIT" ],
@@ -33,7 +33,7 @@ const LOG_KEY = {
     0x81: "CAN_BMS_TEMP"
   },
   "ADC": [ "ADC_INIT", "ADC_CPU", "ADC_DIST" ],
-  "DGT": [ "TIMER_IC_INIT", "TIMER_IC_LEFT", "TIMER_IC_RIGHT" ],
+  "TIM": [ "TIMER_IC"],
   "ACC": [ "ACC_INIT", "ACC_DATA" ],
   "LCD": [ "LCD_INIT", "LCD_UPDATED" ],
   "GPS": [ "GPS_INIT", "GPS_POS", "GPS_VEC", "GPS_TIME" ],
@@ -410,7 +410,7 @@ function parse(source, key, value, raw) {
       break;
     }
 
-    case "DGT": {
+    case "TIM": {
       parsed = null;
       break;
     }
