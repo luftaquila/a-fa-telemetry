@@ -75,7 +75,7 @@ uint16_t adc_value[ADC_COUNT] = { 0, };
 
 // timer input capture flag and data
 uint32_t ic_flag = 0;
-int32_t ic_value[IC_CH_COUNT] = { 0, };
+int32_t ic_value[IC_CH_COUNT] = { 0, }; // microsecond
 int32_t ic_buffer_0[IC_CH_COUNT] = { 0, };
 int32_t ic_buffer_1[IC_CH_COUNT] = { 0, };
 
@@ -328,14 +328,11 @@ int main(void)
 
     // all timer input capture DMA transfers are done
     if (ic_flag == ( (1 << IC_WHEEL_FL) | (1 << IC_WHEEL_RL) | (1 << IC_WHEEL_FR) | (1 << IC_WHEEL_RR) )) {
-      // record each channel
-      *(uint32_t *)(syslog.value + 0) = ic_value[IC_WHEEL_FL];
-      *(uint32_t *)(syslog.value + 4) = ic_value[IC_WHEEL_RL];
-      SYS_LOG(LOG_INFO, DIGITAL, TIMER_IC_LEFT);
-
-      *(uint32_t *)(syslog.value + 0) = ic_value[IC_WHEEL_FR];
-      *(uint32_t *)(syslog.value + 4) = ic_value[IC_WHEEL_RR];
-      SYS_LOG(LOG_INFO, DIGITAL, TIMER_IC_RIGHT);
+      *(uint16_t *)(syslog.value + 0) = (uint16_t)(ic_value[IC_WHEEL_FL] / 10); // x10 us
+      *(uint16_t *)(syslog.value + 2) = (uint16_t)(ic_value[IC_WHEEL_RL] / 10);
+      *(uint16_t *)(syslog.value + 4) = (uint16_t)(ic_value[IC_WHEEL_FR] / 10);
+      *(uint16_t *)(syslog.value + 6) = (uint16_t)(ic_value[IC_WHEEL_RR] / 10);
+      SYS_LOG(LOG_INFO, TIMER, TIMER_IC);
 
       ic_flag = IC_READY; // mark ready to start next DMA transfer
     }
@@ -443,9 +440,9 @@ int main(void)
       HAL_ADC_Start_IT(&hadc2);
 
       // start timer input capture DMA transfer
-      if(ic_flag == IC_READY) {
+      if (ic_flag == IC_READY) {
         ic_flag = 0;
-        DIGITAL_SETUP();
+        INPUT_CAPTURE();
       }
 
       // trigger accelerometer read

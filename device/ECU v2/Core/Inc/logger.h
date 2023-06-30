@@ -38,7 +38,7 @@ typedef enum {
   ESP,
   CAN,
   ANALOG,
-  DIGITAL,
+  TIMER,
   ACC,
   LCD,
   GPS
@@ -92,10 +92,8 @@ typedef enum {
 } LOG_KEY_ANALOG;
 
 typedef enum {
-  TIMER_IC_INIT = 0,
-  TIMER_IC_LEFT,
-  TIMER_IC_RIGHT
-} LOG_KEY_DIGITAL;
+  TIMER_IC = 0,
+} LOG_KEY_TIMER;
 
 typedef enum {
   ACC_INIT = 0,

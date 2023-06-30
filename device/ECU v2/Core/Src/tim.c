@@ -26,19 +26,9 @@ extern uint32_t ic_flag;
 extern int32_t ic_value[IC_CH_COUNT];
 extern int32_t ic_buffer_0[IC_CH_COUNT];
 extern int32_t ic_buffer_1[IC_CH_COUNT];
-int update_buffer = 1;
 
-static inline void CALCULATE_PERIOD(int channel, TIM_HandleTypeDef *htim) {
-  if (update_buffer == 0) {
-    ic_value[channel] = ic_buffer_0[channel] - ic_buffer_1[channel];
-  }
-  else {
-    ic_value[channel] = ic_buffer_1[channel] - ic_buffer_0[channel];
-  }
-  if (ic_value[channel] < 0) {
-    ic_value[channel] += htim->Instance->ARR + 1;
-  }
-}
+int32_t ic_armed = false;
+static void CALCULATE_PERIOD(int channel, uint32_t arr);
 
 void HAL_TIM_PeriodElapsedCallback(TIM_HandleTypeDef *htim) {
   static uint32_t count = 0;
@@ -60,58 +50,67 @@ void HAL_TIM_PeriodElapsedCallback(TIM_HandleTypeDef *htim) {
 }
 
 void HAL_TIM_IC_CaptureCallback(TIM_HandleTypeDef *htim) {
-  if(htim->Instance == TIM5) {
+  if (htim->Instance != TIM5) {
+    return;
+  }
+
+  if (ic_armed == true) {
+    HAL_TIM_IC_Start_DMA(&htim5, TIM_CHANNEL_1, (uint32_t *)&ic_buffer_1[IC_WHEEL_FL], 1);
+    HAL_TIM_IC_Start_DMA(&htim5, TIM_CHANNEL_2, (uint32_t *)&ic_buffer_1[IC_WHEEL_FR], 1);
+    HAL_TIM_IC_Start_DMA(&htim5, TIM_CHANNEL_3, (uint32_t *)&ic_buffer_1[IC_WHEEL_RL], 1);
+    HAL_TIM_IC_Start_DMA(&htim5, TIM_CHANNEL_4, (uint32_t *)&ic_buffer_1[IC_WHEEL_RR], 1);
+
+    ic_armed = false;
+  } else {
+    uint32_t arr = htim->Instance->ARR;
+    uint32_t ch = 0xBADACAFE;
+
     switch (htim->Channel) {
       case HAL_TIM_ACTIVE_CHANNEL_1:
-        ic_flag |= 1 << IC_WHEEL_FL;
-        //HAL_TIM_IC_Stop_DMA(&htim5, TIM_CHANNEL_1);
-        CALCULATE_PERIOD(IC_WHEEL_FL, htim);
+        ch = IC_WHEEL_FL;
         break;
 
       case HAL_TIM_ACTIVE_CHANNEL_2:
-        ic_flag |= 1 << IC_WHEEL_RL;
-        //HAL_TIM_IC_Stop_DMA(&htim5, TIM_CHANNEL_2);
-        CALCULATE_PERIOD(IC_WHEEL_RL, htim);
+        ch = IC_WHEEL_RL;
         break;
 
       case HAL_TIM_ACTIVE_CHANNEL_3:
-        ic_flag |= 1 << IC_WHEEL_FR;
-        //HAL_TIM_IC_Stop_DMA(&htim5, TIM_CHANNEL_3);
-        CALCULATE_PERIOD(IC_WHEEL_FR, htim);
+        ch = IC_WHEEL_FR;
         break;
 
       case HAL_TIM_ACTIVE_CHANNEL_4:
-        ic_flag |= 1 << IC_WHEEL_RR;
-        //HAL_TIM_IC_Stop_DMA(&htim5, TIM_CHANNEL_4);
-        CALCULATE_PERIOD(IC_WHEEL_RR, htim);
+        ch = IC_WHEEL_RR;
         break;
 
       default:
         break;
     }
+
+    if (ch != 0xBADACAFE) {
+      ic_flag |= 1 << ch;
+      CALCULATE_PERIOD(ch, arr);
+    }
   }
 }
 
-int32_t DIGITAL_SETUP(void) {
-  // start TIM5 input capture
-  /*
-  update_buffer = !update_buffer;
-  if (update_buffer == 0) {
-    HAL_TIM_IC_Start_DMA(&htim5, TIM_CHANNEL_1, &ic_buffer_0[IC_WHEEL_FL], 2);
-    HAL_TIM_IC_Start_DMA(&htim5, TIM_CHANNEL_2, &ic_buffer_0[IC_WHEEL_FR], 2);
-    HAL_TIM_IC_Start_DMA(&htim5, TIM_CHANNEL_3, &ic_buffer_0[IC_WHEEL_RL], 2);
-    HAL_TIM_IC_Start_DMA(&htim5, TIM_CHANNEL_4, &ic_buffer_0[IC_WHEEL_RR], 2);
-  }
-  else {
-    HAL_TIM_IC_Start_DMA(&htim5, TIM_CHANNEL_1, &ic_buffer_1[IC_WHEEL_FL], 2);
-    HAL_TIM_IC_Start_DMA(&htim5, TIM_CHANNEL_2, &ic_buffer_1[IC_WHEEL_FR], 2);
-    HAL_TIM_IC_Start_DMA(&htim5, TIM_CHANNEL_3, &ic_buffer_1[IC_WHEEL_RL], 2);
-    HAL_TIM_IC_Start_DMA(&htim5, TIM_CHANNEL_4, &ic_buffer_1[IC_WHEEL_RR], 2);
-  }
-  */
+// start TIM5 input capture
+void INPUT_CAPTURE(void) {
+  HAL_TIM_IC_Start_DMA(&htim5, TIM_CHANNEL_1, (uint32_t *)&ic_buffer_0[IC_WHEEL_FL], 1);
+  HAL_TIM_IC_Start_DMA(&htim5, TIM_CHANNEL_2, (uint32_t *)&ic_buffer_0[IC_WHEEL_FR], 1);
+  HAL_TIM_IC_Start_DMA(&htim5, TIM_CHANNEL_3, (uint32_t *)&ic_buffer_0[IC_WHEEL_RL], 1);
+  HAL_TIM_IC_Start_DMA(&htim5, TIM_CHANNEL_4, (uint32_t *)&ic_buffer_0[IC_WHEEL_RR], 1);
 
-  return 0;
+  ic_armed = true;
 }
+
+static inline void CALCULATE_PERIOD(int channel, uint32_t arr) {
+  ic_value[channel] = ic_buffer_1[channel] - ic_buffer_0[channel];
+
+  if (ic_value[channel] < 0) {
+    ic_value[channel] += arr + 1;
+  }
+}
+
 /* USER CODE END 0 */
 
 TIM_HandleTypeDef htim1;
@@ -179,8 +178,8 @@ void MX_TIM5_Init(void)
   /* USER CODE END TIM5_Init 1 */
   htim5.Instance = TIM5;
   htim5.Init.Prescaler = 84 - 1;
-  htim5.Init.CounterMode = TIM_COUNTERMODE_DOWN;
-  htim5.Init.Period = 10000 - 1;
+  htim5.Init.CounterMode = TIM_COUNTERMODE_UP;
+  htim5.Init.Period = 1000000 - 1;
   htim5.Init.ClockDivision = TIM_CLOCKDIVISION_DIV1;
   htim5.Init.AutoReloadPreload = TIM_AUTORELOAD_PRELOAD_DISABLE;
   if (HAL_TIM_Base_Init(&htim5) != HAL_OK)
