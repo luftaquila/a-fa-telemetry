@@ -480,9 +480,9 @@ int main(void)
       // heartbeat
       static bool heartbeat = true;
       if (heartbeat) {
-        HAL_GPIO_WritePin(GPIOE, LED2_Pin, GPIO_PIN_SET);
+        HAL_GPIO_WritePin(GPIOE, LED_HEARTBEAT_Pin, GPIO_PIN_SET);
       } else {
-        HAL_GPIO_WritePin(GPIOE, LED2_Pin, GPIO_PIN_RESET);
+        HAL_GPIO_WritePin(GPIOE, LED_HEARTBEAT_Pin, GPIO_PIN_RESET);
       }
       heartbeat = !heartbeat;
     }
@@ -555,7 +555,7 @@ int32_t ECU_SETUP(void) {
 
   HAL_GPIO_WritePin(GPIOE, LED0_Pin, GPIO_PIN_SET);
   HAL_GPIO_WritePin(GPIOE, LED1_Pin, GPIO_PIN_SET);
-  HAL_GPIO_WritePin(GPIOE, LED2_Pin, GPIO_PIN_SET);
+  HAL_GPIO_WritePin(GPIOE, LED_HEARTBEAT_Pin, GPIO_PIN_SET);
 
   // init system state
   sys_state.SD = false;

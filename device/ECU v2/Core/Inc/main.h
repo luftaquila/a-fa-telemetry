@@ -89,8 +89,8 @@ inline uint32_t drop_point(uint8_t *str) {
 #define LED0_GPIO_Port GPIOE
 #define LED1_Pin GPIO_PIN_11
 #define LED1_GPIO_Port GPIOE
-#define LED2_Pin GPIO_PIN_12
-#define LED2_GPIO_Port GPIOE
+#define LED_HEARTBEAT_Pin GPIO_PIN_12
+#define LED_HEARTBEAT_GPIO_Port GPIOE
 #define LED_SD_Pin GPIO_PIN_13
 #define LED_SD_GPIO_Port GPIOE
 #define LED_CAN_Pin GPIO_PIN_14
