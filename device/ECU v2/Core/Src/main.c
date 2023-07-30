@@ -219,6 +219,7 @@ int main(void)
   if (ret != 0) {
     syslog.value[0] = false;
     SYS_LOG(LOG_ERROR, ANALOG, ADC_INIT);
+    HAL_GPIO_WritePin(GPIOE, ERR_SYS_Pin, GPIO_PIN_SET);
     #ifdef DEBUG_MODE
       printf("[%8lu] [ERR] ADC setup failed: %ld\r\n", HAL_GetTick(), ret);
     #endif
@@ -251,6 +252,7 @@ int main(void)
   if (ret != 0) {
     syslog.value[0] = false;
     SYS_LOG(LOG_ERROR, LCD, LCD_INIT);
+    HAL_GPIO_WritePin(GPIOE, ERR_SYS_Pin, GPIO_PIN_SET);
     #ifdef DEBUG_MODE
       printf("[%8lu] [ERR] LCD setup failed: %ld\r\n", HAL_GetTick(), ret);
     #endif
@@ -267,6 +269,7 @@ int main(void)
   if (ret != 0) {
     syslog.value[0] = false;
     SYS_LOG(LOG_ERROR, ACC, ACC_INIT);
+    HAL_GPIO_WritePin(GPIOE, ERR_SYS_Pin, GPIO_PIN_SET);
     #ifdef DEBUG_MODE
       printf("[%8lu] [ERR] ACC setup failed: %ld\r\n", HAL_GetTick(), ret);
     #endif
@@ -283,6 +286,7 @@ int main(void)
   if (ret != 0) {
     syslog.value[0] = false;
     SYS_LOG(LOG_ERROR, GPS, GPS_INIT);
+    HAL_GPIO_WritePin(GPIOE, ERR_SYS_Pin, GPIO_PIN_SET);
     #ifdef DEBUG_MODE
       printf("[%8lu] [ERR] GPS setup failed: %ld\r\n", HAL_GetTick(), ret);
     #endif
@@ -574,10 +578,10 @@ int32_t ECU_SETUP(void) {
 
   // init LEDs
   HAL_GPIO_WritePin(GPIOA, LED00_Pin, GPIO_PIN_RESET);
-  HAL_GPIO_WritePin(GPIOA, LED01_Pin, GPIO_PIN_SET);
+  HAL_GPIO_WritePin(GPIOA, LED01_Pin, GPIO_PIN_RESET);
 
-  HAL_GPIO_WritePin(GPIOE, LED0_Pin, GPIO_PIN_SET);
-  HAL_GPIO_WritePin(GPIOE, LED1_Pin, GPIO_PIN_SET);
+  HAL_GPIO_WritePin(GPIOE, ERR_SYS_Pin, GPIO_PIN_RESET);
+  HAL_GPIO_WritePin(GPIOE, ERR_CAN_Pin, GPIO_PIN_RESET);
   HAL_GPIO_WritePin(GPIOE, LED_HEARTBEAT_Pin, GPIO_PIN_SET);
 
   // init system state
@@ -614,11 +618,9 @@ void Error_Handler(void)
   printf("[%8lu] [ERR] Error code: %d\n", HAL_GetTick(), err);
 
   while (1) {
-    HAL_GPIO_WritePin(GPIOA, LED00_Pin, GPIO_PIN_SET);
-    HAL_GPIO_WritePin(GPIOA, LED01_Pin, GPIO_PIN_RESET);
+    HAL_GPIO_WritePin(GPIOA, ERR_SYS_Pin, GPIO_PIN_SET);
     HAL_Delay(500);
-    HAL_GPIO_WritePin(GPIOA, LED00_Pin, GPIO_PIN_RESET);
-    HAL_GPIO_WritePin(GPIOA, LED01_Pin, GPIO_PIN_SET);
+    HAL_GPIO_WritePin(GPIOA, ERR_SYS_Pin, GPIO_PIN_RESET);
     HAL_Delay(500);
   }
   /* USER CODE END Error_Handler_Debug */
