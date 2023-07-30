@@ -29,8 +29,8 @@ const LOG_KEY = {
 
     0xB0: "CAN_INV_HIGH_SPD_MSG",
 
-    0x80: "CAN_BMS_CORE",
-    0x81: "CAN_BMS_TEMP"
+    0x81: "CAN_BMS_CORE",
+    0x82: "CAN_BMS_TEMP",
   },
   "ADC": [ "ADC_INIT", "ADC_CPU", "ADC_DIST" ],
   "TIM": [ "TIMER_IC"],
@@ -40,17 +40,21 @@ const LOG_KEY = {
 };
 
 function convert(raw) {
-  let log = {
-    timestamp: raw[0] + raw[1] * Math.pow(2, 8) + raw[2] * Math.pow(2, 16) + raw[3] * Math.pow(2, 24),
-    level: LOG_LEVEL[raw[4]],
-    source: LOG_SOURCE[raw[5]],
-    key: LOG_KEY[LOG_SOURCE[raw[5]]][raw[6]],
-    value: raw[8] + raw[9] * Math.pow(2, 8) + raw[10] * Math.pow(2, 16) + raw[11] * Math.pow(2, 24) + raw[12] * Math.pow(2, 32) + raw[13] * Math.pow(2, 40) + raw[14] * Math.pow(2, 48) + raw[15] * Math.pow(2, 56),
-    raw: raw.slice(8)
-  };
-  log.parsed = parse(log.source, log.key, log.value, log.raw);
+  try {
+    let log = {
+      timestamp: raw[0] + raw[1] * Math.pow(2, 8) + raw[2] * Math.pow(2, 16) + raw[3] * Math.pow(2, 24),
+      level: LOG_LEVEL[raw[4]],
+      source: LOG_SOURCE[raw[5]],
+      key: LOG_KEY[LOG_SOURCE[raw[5]]][raw[6]],
+      value: raw[8] + raw[9] * Math.pow(2, 8) + raw[10] * Math.pow(2, 16) + raw[11] * Math.pow(2, 24) + raw[12] * Math.pow(2, 32) + raw[13] * Math.pow(2, 40) + raw[14] * Math.pow(2, 48) + raw[15] * Math.pow(2, 56),
+      raw: raw.slice(8)
+    };
+    log.parsed = parse(log.source, log.key, log.value, log.raw);
 
-  return log;
+    return log;
+  } catch (e) {
+    console.error(raw, e);
+  }
 }
 
 function parse(source, key, value, raw) {
@@ -321,11 +325,12 @@ function parse(source, key, value, raw) {
         }
 
         case "CAN_BMS_CORE": {
-          const failsafe = raw[5] + raw[6] * Math.pow(2, 8);
+          const failsafe = raw[7] + raw[6] * Math.pow(2, 8);
           parsed = {
             soc: raw[0] * 0.5,
-            voltage: (raw[1] + raw[2] * Math.pow(2, 8)) * 0.1,
-            current: signed(raw[3] + raw[4] * Math.pow(2, 8), 16) * 0.1,
+            capacity: raw[1] * 0.1,
+            voltage: (raw[3] + raw[2] * Math.pow(2, 8)) * 0.1,
+            current: signed(raw[5] + raw[4] * Math.pow(2, 8), 16) * 0.1,
             failsafe: {
               voltage: failsafe & 1 << 0 ? true : false,
               current: failsafe & 1 << 1 ? true : false,
@@ -350,12 +355,9 @@ function parse(source, key, value, raw) {
                 value: signed(raw[2], 8),
                 id: raw[3],
               },
-              internal: signed(raw[7], 8),
             },
-            adapdtive: {
-              soc: raw[4] * 0.5,
-              capacity: (raw[5] + raw[6] * Math.pow(2, 8)) * 0.1,
-            }
+            dcl: (raw[5] + raw[4] * Math.pow(2, 8)),
+            ccl: (raw[7] + raw[6] * Math.pow(2, 8)),
           };
           break;
         }

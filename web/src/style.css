@@ -74,12 +74,11 @@ div.status {
 }
 
 div.status.left {
-  margin-right: 1rem;
+  margin-right: 2rem;
 }
 
 div.status.right {
-  float: right;
-  margin-left: 1.2rem;
+  margin-left: 2rem;
 }
 
 div.fault-indicator {
@@ -95,6 +94,10 @@ div.status.middle {
 
 div.status.middle.narrow {
   width: 18%;
+}
+
+div.status.middle.wide {
+  width: 33%;
 }
 
 div.status.middle i {

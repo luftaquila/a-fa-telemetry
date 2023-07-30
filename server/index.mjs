@@ -142,13 +142,13 @@ function process_telemetry(data) {
             break;
           }
           case "CAN_INV_TEMP_2": {
-            ECU.inverter.temperature.controlboard = data.parsed.controlboard;
-            ECU.inverter.temperature.rtd.rtd1 = data.parsed.RTD1;
-            ECU.inverter.temperature.rtd.rtd2 = data.parsed.RTD2;
+            // ECU.inverter.temperature.controlboard = data.parsed.controlboard;
+            // ECU.inverter.temperature.rtd.rtd1 = data.parsed.RTD1;
+            // ECU.inverter.temperature.rtd.rtd2 = data.parsed.RTD2;
             break;
           }
           case "CAN_INV_TEMP_3": {
-            ECU.inverter.temperature.coolant = data.parsed.coolant;
+            // ECU.inverter.temperature.coolant = data.parsed.coolant;
             ECU.inverter.temperature.hotspot = data.parsed.hotspot;
             ECU.inverter.temperature.motor = data.parsed.motor;
             break;
@@ -161,6 +161,7 @@ function process_telemetry(data) {
           case "CAN_INV_MOTOR_POS": {
             ECU.inverter.motor.angle = data.parsed.motor_angle;
             ECU.inverter.motor.speed = data.parsed.motor_speed;
+            ECU.car.speed = 2 * Math.PI * 0.24765 * 60 * data.parsed.motor_speed / (1000 * 5.188235);
             break;
           }
           case "CAN_INV_CURRENT": {
@@ -208,6 +209,7 @@ function process_telemetry(data) {
           }
           case "CAN_BMS_CORE": {
             ECU.bms.charge = data.parsed.soc;
+            ECU.bms.capacity = data.parsed.capacity;
             ECU.bms.voltage = data.parsed.voltage;
             ECU.bms.current = data.parsed.current;
             ECU.bms.failsafe = data.parsed.failsafe;
@@ -215,7 +217,8 @@ function process_telemetry(data) {
           }
           case "CAN_BMS_TEMP": {
             ECU.bms.temperature = data.parsed.temperature;
-            ECU.bms.adaptive = data.parsed.adaptive;
+            ECU.bms.dcl = data.parsed.dcl;
+            ECU.bms.ccl = data.parsed.ccl;
             break;
           }
           case "CAN_INV_DIGITAL_IN":
@@ -342,7 +345,7 @@ let ECU = {          // initial system status
     temperature: {
       igbt: {
         max: {
-          value: 0,
+          temperature: 0,
           id: "X",
         }
       },
@@ -399,8 +402,11 @@ let ECU = {          // initial system status
   },
   bms: {
     charge: 0,
+    capacity: 0,
     voltage: 0,
     current: 0,
+    ccl: 0,
+    dcl: 0,
     failsafe: {
       voltage: false,
       current: false,
@@ -421,10 +427,6 @@ let ECU = {          // initial system status
       },
       internal: 0,
     },
-    adaptive: {
-      soc: 0,
-      capacity: 0,
-    }
   },
 }
 const ECU_INIT = JSON.stringify(ECU);

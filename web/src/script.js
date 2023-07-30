@@ -102,11 +102,8 @@ function process_status(status) {
   $("#imd i").css("color", status.car.system.IMD ? "green" : "red");
   $("#bms i").css("color", status.car.system.BMS ? "green" : "red");
   $("#bspd i").css("color", status.car.system.BSPD ? "green" : "red");
-  $("#hvd i").css("color", status.car.system.HVD ? "green" : "red");
 
   $("#speed").text(status.car.speed.toFixed(0));
-  $("#accel").text(status.car.accel.toFixed(0));
-  $("#brake").text(status.car.brake.toFixed(0));
   $("#core-temperature").text((parseFloat(status.temperature) / 10).toFixed(1));
 
   $("#voltage-failsafe i").css("color", status.bms.failsafe.voltage ? "red" : "green");
@@ -122,19 +119,21 @@ function process_status(status) {
   $("#battery-current").text(parseFloat(status.bms.current).toFixed(1));
   $("#battery-temperature-max").text(parseFloat(status.bms.temperature.max.value).toFixed(0));
   $("#battery-temperature-max-id").text(status.bms.temperature.max.id);
-  $("#battery-temperature-min").text(parseFloat(status.bms.temperature.min.value).toFixed(0));
-  $("#battery-temperature-min-id").text(status.bms.temperature.min.id);
-  $("#battery-adaptive-capacity").text(parseFloat(status.bms.adaptive.capacity).toFixed(1));
+  $("#battery-capacity").text(parseFloat(status.bms.capacity).toFixed(1));
+  $("#dcl").text(parseFloat(status.bms.dcl));
 
-  $("#inverter-status-indicator").css('color', status.inverter.fault.post.length + status.inverter.fault.run.length ? "red" : "green");
-  $("#inverter-status").text(status.inverter.state.vsm_state);
+  $("#vsm-status-indicator").css('color', status.inverter.fault.post.length + status.inverter.fault.run.length ? "red" : "green");
+  $("#vsm-status").text(status.inverter.state.vsm_state);
+  $("#inverter-status").text(status.inverter.state.inverter_state);
+  $("#inv_mode i").removeClass("fa-square-t").removeClass("fa-square-s").addClass(`fa-square-${status.inverter.state.mode === "토크 모드" ? 't' : 's' }`);
   $("#rpm").text(status.inverter.motor.speed);
-  $("#motor-torque").text(status.inverter.torque.feedback);
+  $("#motor-torque").text(status.inverter.torque.feedback.toFixed(1));
   $("#motor-temperature").text(status.inverter.temperature.motor.toFixed(0));
   $("#motor-coolant").text(status.inverter.temperature.rtd.rtd1.toFixed(0));
-  $("#motor-igbt-temperature").text(status.inverter.temperature.igbt.max.value.toFixed(0));
+  $("#motor-igbt-temperature").text(status.inverter.temperature.igbt.max.temperature.toFixed(0));
   $("#motor-igbt-temperature-id").text(status.inverter.temperature.igbt.max.id);
-  $("#inverter-temperature").text(status.inverter.temperature.gatedriver.toFixed(1));
+  $("#precharge i").css("color", status.inverter.state.relay.precharge ? "green" : "red");
+  $("#air i").css("color", status.inverter.state.relay.main ? "green" : "red");
 }
 
 // GPS
@@ -170,6 +169,7 @@ const graph_config = {
   'graph-battery-current': { delay: 0, grace: 5, color: 'rgb(54, 162, 235)' },
   'graph-battery-temperature-max': { delay: 0, grace: 5, color: 'rgb(54, 162, 235)' },
   'graph-battery-temperature-min': { delay: 0, grace: 5, color: 'rgb(54, 162, 235)' },
+  'graph-dcl': { delay: 0, grace: 5, color: 'rgb(54, 162, 235)' },
 
   'graph-rpm': { delay: 0, grace: 5, color: 'rgb(54, 162, 235)' },
   'graph-motor-torque': { delay: 0, grace: 5, color: 'rgb(54, 162, 235)' },
@@ -189,17 +189,9 @@ function process_data(data) {
             x: data.datetime,
             y: data.parsed.igbt.max.temperature
           });
-          graph_data['graph-inverter-temperature'].push({
-            x: data.datetime,
-            y: data.parsed.gatedriver
-          });
           break;
 
         case "CAN_INV_TEMP_2":
-          graph_data['graph-motor-coolant'].push({
-            x: data.datetime,
-            y: data.parsed.RTD1
-          });
           break;
 
         case "CAN_INV_TEMP_3":
@@ -210,6 +202,7 @@ function process_data(data) {
           break;
 
         case "CAN_INV_ANALOG_IN":
+          console.log(data);
           graph_data['graph-accel'].push({
             x: data.datetime,
             y: data.parsed.AIN1
@@ -266,6 +259,10 @@ function process_data(data) {
           graph_data['graph-battery-temperature-min'].push({
             x: data.datetime,
             y: data.parsed.temperature.min.value
+          });
+          graph_data['graph-dcl'].push({
+            x: data.datetime,
+            y: data.parsed.dcl
           });
           break;
       }
@@ -388,28 +385,11 @@ $('input.tooltips').on('change', e => {
   if ($(e.target).prop('checked')) {
     const target = e.target.id.replace('tooltip-', '');
 
-    if (target == "inverter-status") {
+    if (target == "vsm-status") {
       return Swal.fire({
+        title: 'Vehicle State Machine',
         html: `
         <div class="failsafe-desc" style="line-height: 2rem; font-weight: bold; font-size: 1.2rem;">
-          <span style="font-size: 1.1rem; font-weight: initial">VSM 상태:</span> <span style="color: blue">${telemetry.inverter.state.vsm_state}</span><br>
-          <span style="font-size: 1.1rem; font-weight: initial">인버터 상태:</span> <span style="color: blue">${telemetry.inverter.state.inverter_state}</span><br>
-          <span style="font-size: 1.1rem; font-weight: initial">인버터 모드:</span> <span style="color: blue">${telemetry.inverter.state.mode}</span><br>
-          <span style="font-size: 1.1rem; font-weight: initial">방전 모드:</span> <span style="color: blue">${telemetry.inverter.state.discharge}</span><br>
-          <span style="font-size: 1.1rem; font-weight: initial">BMS 통신:</span> <span style="color: ${telemetry.inverter.state.bms_comm ? "green" : "red" }">${telemetry.inverter.state.bms_comm ? "ON" : "OFF" }</span><br>
-          <span style="font-size: 1.1rem; font-weight: initial">릴레이:</span><br>
-          <ul>
-            <li>초기충전: <span style="color: ${telemetry.inverter.state.relay.precharge ? "green" : "red" }">${telemetry.inverter.state.relay.precharge ? "ON" : "OFF" }</span></li>
-            <li>AIR: <span style="color: ${telemetry.inverter.state.relay.main ? "green" : "red" }">${telemetry.inverter.state.relay.main ? "ON" : "OFF" }</span></li>
-            <li>워터펌프: <span style="color: ${telemetry.inverter.state.relay.pump ? "green" : "red" }">${telemetry.inverter.state.relay.pump ? "ON" : "OFF" }</span></li>
-            <li>라디에이터 팬: <span style="color: ${telemetry.inverter.state.relay.fan ? "green" : "red" }">${telemetry.inverter.state.relay.fan ? "ON" : "OFF" }</span></li>
-          </ul>
-          <span style="font-size: 1.1rem; font-weight: initial">출력 제한:</span><br>
-          <ul>
-            <li>BMS: <span style="color: ${telemetry.inverter.state.limit.bms ? "red" : "green" }">${telemetry.inverter.state.limit.bms ? "ON" : "OFF" }</span></li>
-            <li>HIGH SPEED: <span style="color: ${telemetry.inverter.state.limit.speed ? "red" : "green" }">${telemetry.inverter.state.limit.speed ? "ON" : "OFF" }</span></li>
-            <li>LOW SPEED: <span style="color: ${telemetry.inverter.state.limit.lowspeed ? "red" : "green" }">${telemetry.inverter.state.limit.lowspeed ? "ON" : "OFF" }</span></li>
-          </ul>
           <span style="font-size: 1.1rem; font-weight: initial">POST FAULT</span><br>
             ${fault_toHTML(telemetry.inverter.fault.post)}
           <span style="font-size: 1.1rem; font-weight: initial">RUN FAULT</span><br>
@@ -440,14 +420,15 @@ let tooltips = {
   'battery-current': { title: 'HV 배터리 전류', desc: 'HV BUS의 전류입니다.' },
   'battery-temperature-max': { title: 'HV 배터리 최고 온도', desc: 'HV 배터리에서 최고 온도를 보고하는 온도 센서의 ID와 그 온도입니다.' },
   'battery-temperature-min': { title: 'HV 배터리 최저 온도', desc: 'HV 배터리에서 최저 온도를 보고하는 온도 센서의 ID와 그 온도입니다.' },
-  'battery-adaptive-capacity': { title: 'HV Adaptive Capacity', desc: 'BMS가 충방전을 반복하며 학습한 HV 배터리 팩의 실제 용량입니다.' },
-
+  'battery-capacity': { title: 'HV Capacity', desc: 'HV 배터리 팩의 용량입니다.' },
+  'dcl': { title: 'Discharge Current Limit', desc: 'BMS가 설정하는 방전 전류 한계입니다.' },
   'rpm': { title: 'RPM', desc: '모터 컨트롤러가 측정한 모터의 분당 회전수입니다.' },
   'motor-torque': { title: '모터 토크', desc: '컨트롤러가 모터 설정값에 기반해 추측한 모터의 실제 토크입니다.<br><br>그래프에서는 모터 컨트롤러가 의도한 토크(commanded torque)를 주황색으로 함께 표시합니다.' },
   'motor-temperature': { title: '모터 온도', desc: '모터 온도 센서가 측정한 온도입니다.' },
   'motor-coolant': { title: '냉각수 온도', desc: '인버터의 RTD1 냉각수 온도 센서가 측정한 온도입니다.' },
   'motor-igbt-temperature': { title: 'IGBT 온도', desc: '인버터의 3상 스위칭 IGBT 중 가장 높은 온도를 보고하는 IGBT의 온도와, 해당 IGBT가 담당하는 상(A/B/C)입니다.' },
   'inverter-temperature': { title: 'Gate Driver 온도', desc: '인버터 게이트 드라이버 보드의 온도입니다.' },
+  'inverter-status': { title: '인버터 상태', desc: '3상 스위칭 인버터의 상태입니다.' },
 
   'voltage-failsafe': { title: 'Voltage failsafe mode', desc: '<div class="failsafe-desc">BMS가 셀 또는 배터리 팩 전압을 정확히 측정할 수 없을 때 작동하는 가장 심각한 비상 모드입니다. BMS가 더 이상 셀을 보호할 수 없으므로, BMS는 배터리 팩의 충방전 전류 제한을 서서히 0으로 낮추어 배터리 작동을 정지시킵니다. 이 비상 모드가 발동하면 반드시 배터리 팩을 다시 사용하기 전에 문제 발생 원인을 조사해야 합니다.<br><br>이 문제는 셀 전압이 0.09V 이하이거나 5V 이상일 때 또는 voltage tap 와이어 일부가 분리되었을 때 발생할 수 있습니다.</div>' },
   'current-failsafe': { title: 'Current failsafe mode', desc: '<div class="failsafe-desc">이 문제는 전류 센서가 부정확하거나 분리되었다고 BMS가 판단할 때 발생할 수 있습니다. BMS 프로파일에 전류 센서가 사용 설정되지 않았을 때도 발생합니다.<br><br>이 모드에서 전류 센서는 비활성화되어 측정값은 0A로 고정되며, BMS는 전류 센서를 무시하고 오로지 전압 센서에 의존해서 셀을 보호합니다. 배터리 팩 자체는 계속 작동합니다.<br><br>이 비상 모드는 다음의 기능에 영향을 미칩니다.<ol><li>셀 내부 저항 측정이 비활성화됩니다.</li><li>충전량(%) 측정값이 부정확해집니다.</li><li>충방전 전류 제한이 voltage failsafe mode로 전환되며 실제 값과 다를 수 있습니다.</li><li>과전류 보호 기능이 사실상 작동하지 않습니다.</li></ol></div>' },
@@ -456,6 +437,9 @@ let tooltips = {
   'interlock-failsafe': { title: 'Charge Interlock failsafe mode', desc: '<div class="failsafe-desc">충전 중에 충전기 인터락이 분리되었을 때 활성화됩니다.</div>' },
   'thermistor-invalid': { title: 'Thermistor b-value table invalid', desc: '<div class="failsafe-desc">뭔지 모르겠음</div>' },
   'input-power-failsafe': { title: 'Input Power Supply Failsafe', desc: '<div class="failsafe-desc">BMS에 공급되는 12V 전원의 실제 전압이 너무 낮아 정상 작동을 보장할 수 없을 때 발생하는 비상 모드입니다. 공급 전원이 8초 이상 8V 이하로 유지될 때 발생합니다.<br><br>이 모드에서 charge enable, discharge enable, charger safety 출력은 모두 비활성화됩니다. 또한 모든 디지털 출력은 꺼지며, 충방전 전류 제한은 즉시 0A로 설정됩니다. 5V 아날로그 출력은 동작할 수 있으나 측정값은 신뢰할 수 없습니다.<br><br>이 문제로 인한 에러 코드는 기록에 남지만, 정상 전압이 복구되면 BMS는 즉시 다시 정상 작동합니다.<br><br>한편, BMS는 5초 미만의 시간 동안 발생하는 전압 강하로 전압이 4.5V까지 내려가더라도 이 비상 모드를 활성화하지 않고 정상 작동할 수 있습니다.</div>' },
+  'precharge': { title: 'Pre-charge contactor' , desc: '모터 컨트롤러가 제어하는 초기 충전 릴레이의 상태입니다.' },
+  'air': { title: 'Main contactor' , desc: '모터 컨트롤러가 제어하는 AIR+ 릴레이의 상태입니다.' },
+  'inv-mode': { title: '제어 모드' , desc: '모터 컨트롤러가 모터를 제어하는 모드입니다. Speed 모드와 Torque 모드가 있습니다. Speed Mode는 <i class="fa-solid fa-fw fa-square-s"></i>, Torque Mode는 <i class="fa-solid fa-fw fa-square-t"></i>로 표시됩니다.' },
 };
 
 function fault_toHTML(faults) {
