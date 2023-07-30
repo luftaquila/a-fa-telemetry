@@ -236,6 +236,7 @@ int main(void)
   if (ret != 0) {
     syslog.value[0] = false;
     SYS_LOG(LOG_ERROR, CAN, CAN_INIT);
+    HAL_GPIO_WritePin(GPIOE, ERR_CAN_Pin, GPIO_PIN_SET);
     #ifdef DEBUG_MODE
       printf("[%8lu] [ERR] CAN setup failed: %ld\r\n", HAL_GetTick(), ret);
     #endif
