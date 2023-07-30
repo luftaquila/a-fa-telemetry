@@ -155,6 +155,7 @@ int main(void)
   MX_TIM1_Init();
   MX_I2C3_Init();
   MX_TIM5_Init();
+  MX_UART4_Init();
   /* USER CODE BEGIN 2 */
 
   // check boot time
@@ -446,8 +447,30 @@ int main(void)
       }
 
       // trigger accelerometer read
-      /* THIS TAKES 30ms EVERY TIME!!!!!!!!!!!!!! */
+      /* THIS TAKES 30ms EVERY TIME if the module is NOT CONNECTED */
       HAL_I2C_Mem_Read_IT(&hi2c3, ACC_I2C_ADDR, 0x32, 1, acc_value, 6);
+
+      // trigger RTDS if RTD is enabled
+      static uint8_t prev_rtd_state = true; // skip very first condition test
+      static uint8_t rtd_packet[8] = { 0x7E, 0xFF, 0x06, 0x12, 0x00, 0x00, 0x01, 0xEF };
+
+      static int32_t rtd_trigger_cnt = 0;
+      const int32_t rtd_threshold = 3;
+
+      if ((sys_state.RTD == true) && (prev_rtd_state == false) && (rtd_trigger_cnt == 0)) {
+        rtd_trigger_cnt++;
+      } else if ((sys_state.RTD == true) && (prev_rtd_state == true) && (rtd_trigger_cnt > 0)) {
+        rtd_trigger_cnt++;
+
+        if (rtd_trigger_cnt >= rtd_threshold) {
+          HAL_UART_Transmit_IT(&huart4, rtd_packet, 8);
+          rtd_trigger_cnt = 0;
+        }
+      } else {
+        rtd_trigger_cnt = 0;
+      }
+
+      prev_rtd_state = sys_state.RTD;
     }
 
 
