@@ -43,6 +43,7 @@ function convert(raw) {
   try {
     let log = {
       timestamp: raw[0] + raw[1] * Math.pow(2, 8) + raw[2] * Math.pow(2, 16) + raw[3] * Math.pow(2, 24),
+      datetime: null,
       level: LOG_LEVEL[raw[4]],
       source: LOG_SOURCE[raw[5]],
       key: LOG_KEY[LOG_SOURCE[raw[5]]][raw[6]],

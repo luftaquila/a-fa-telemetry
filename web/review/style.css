@@ -270,3 +270,12 @@ ul {
 .btn_download span {
   width: 70%;
 }
+
+.link {
+  text-decoration: none;
+  color: blue;
+}
+
+ul li {
+  margin-bottom: 1rem;
+}
