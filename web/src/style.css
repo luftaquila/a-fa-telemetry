@@ -108,6 +108,10 @@ div.status.failsafe {
   width: 13%;
 }
 
+div.status.failsafe.wide {
+  margin: 0px 1.8rem;
+}
+
 div.status.failsafe i {
   font-size: 1.75rem!important;
 }
