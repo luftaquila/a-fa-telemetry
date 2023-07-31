@@ -156,7 +156,7 @@ function parse(source, key, value, raw) {
 
         case "CAN_INV_TEMP_2": {
           parsed = {
-            controlboard: signed(value & 0xffff, 16) * 0.1,
+            controlboard: signed(raw[0] + raw[1] * Math.pow(2, 8), 16) * 0.1,
             RTD1: signed((value / Math.pow(2, 16)) & 0xffff, 16) * 0.1,
             RTD2: signed((value / Math.pow(2, 32)) & 0xffff, 16) * 0.1,
             RTD3: signed((value / Math.pow(2, 48)) & 0xffff, 16) * 0.1,
@@ -176,7 +176,7 @@ function parse(source, key, value, raw) {
 
         case "CAN_INV_ANALOG_IN": {
           parsed = {
-            AIN1: signed(value & 0x3ff, 10) * 0.01,
+            AIN1: signed((raw[0] + raw[1] * Math.pow(2, 8)) & 0x3ff, 10) * 0.01,
             AIN2: signed((value / Math.pow(2, 10)) & 0x3ff, 10) * 0.01,
             AIN3: signed((value / Math.pow(2, 20)) & 0x3ff, 10) * 0.01,
             AIN4: signed((value / Math.pow(2, 30)) & 0x3ff, 10) * 0.01,
