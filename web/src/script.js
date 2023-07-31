@@ -28,17 +28,17 @@ else {
     process_data(data.data);
     process_status(data.status);
 
-    if (isLiveCANTrafficOn && data.data.key.includes("CAN")) {
+    if (isLiveCANTrafficOn && data.data.source == "CAN") {
       let item = liveCANTrafficData.find(x => x.id === data.data.key);
       if (item) {
-        item.byte0 = data.data.bytes[0];
-        item.byte1 = data.data.bytes[1];
-        item.byte2 = data.data.bytes[2];
-        item.byte3 = data.data.bytes[3];
-        item.byte4 = data.data.bytes[4];
-        item.byte5 = data.data.bytes[5];
-        item.byte6 = data.data.bytes[6];
-        item.byte7 = data.data.bytes[7];
+        item.byte0 = data.data.raw[0];
+        item.byte1 = data.data.raw[1];
+        item.byte2 = data.data.raw[2];
+        item.byte3 = data.data.raw[3];
+        item.byte4 = data.data.raw[4];
+        item.byte5 = data.data.raw[5];
+        item.byte6 = data.data.raw[6];
+        item.byte7 = data.data.raw[7];
         item.cnt++;
         item.index = item.index;
         item.interval = new Date(data.data.datetime) - new Date(item.timestamp);
@@ -47,22 +47,23 @@ else {
         $('#can_table').DataTable().row(item.index).data(item);
       }
 
-      else {
+      else if (data.data.key) {
         const item = {
           id: data.data.key,
-          byte0: data.data.bytes[0],
-          byte1: data.data.bytes[1],
-          byte2: data.data.bytes[2],
-          byte3: data.data.bytes[3],
-          byte4: data.data.bytes[4],
-          byte5: data.data.bytes[5],
-          byte6: data.data.bytes[6],
-          byte7: data.data.bytes[7],
+          byte0: data.data.raw[0],
+          byte1: data.data.raw[1],
+          byte2: data.data.raw[2],
+          byte3: data.data.raw[3],
+          byte4: data.data.raw[4],
+          byte5: data.data.raw[5],
+          byte6: data.data.raw[6],
+          byte7: data.data.raw[7],
           cnt: 0,
           index: CAN_index++,
           timestamp: data.data.datetime,
           interval: 0
         };
+
         liveCANTrafficData.push(item);
         $('#can_table').DataTable().row.add(item).draw();
       }
@@ -111,11 +112,11 @@ function process_status(status) {
   $("#relay-failsafe i").css("color", status.bms.failsafe.relay ? "red" : "green");
   $("#balancing-active i").css("color", status.bms.failsafe.balancing ? "green" : "red");
   $("#interlock-failsafe i").css("color", status.bms.failsafe.interlock ? "red" : "green");
-  $("#thermistor-failsafe i").css("color", status.bms.failsafe.thermistor ? "red" : "green");
+  $("#thermistor-invalid i").css("color", status.bms.failsafe.thermistor ? "red" : "green");
   $("#input-power-failsafe i").css("color", status.bms.failsafe.power ? "red" : "green");
 
   $("#battery-percent").text(parseFloat(status.bms.charge).toFixed(1));
-  $("#battery-voltage").text(parseFloat(status.bms.voltage).toFixed(0));
+  $("#battery-voltage").text(parseFloat(status.bms.voltage).toFixed(1));
   $("#battery-current").text(parseFloat(status.bms.current).toFixed(1));
   $("#battery-temperature-max").text(parseFloat(status.bms.temperature.max.value).toFixed(0));
   $("#battery-temperature-max-id").text(status.bms.temperature.max.id);
@@ -125,7 +126,8 @@ function process_status(status) {
   $("#vsm-status-indicator").css('color', status.inverter.fault.post.length + status.inverter.fault.run.length ? "red" : "green");
   $("#vsm-status").text(status.inverter.state.vsm_state);
   $("#inverter-status").text(status.inverter.state.inverter_state);
-  $("#inv_mode i").removeClass("fa-square-t").removeClass("fa-square-s").addClass(`fa-square-${status.inverter.state.mode === "토크 모드" ? 't' : 's' }`);
+  $("#inv_mode i").removeClass("fa-square-x").removeClass("fa-square-t").removeClass("fa-square-s")
+    .addClass(`fa-square-${status.inverter.state.mode === "토크 모드" ? 't' : 's' }`).css("color", "green");
   $("#rpm").text(status.inverter.motor.speed);
   $("#motor-torque").text(status.inverter.torque.feedback.toFixed(1));
   $("#motor-temperature").text(status.inverter.temperature.motor.toFixed(0));
@@ -202,15 +204,6 @@ function process_data(data) {
           break;
 
         case "CAN_INV_ANALOG_IN":
-          console.log(data);
-          graph_data['graph-accel'].push({
-            x: data.datetime,
-            y: data.parsed.AIN1
-          });
-          graph_data['graph-braking'].push({
-            x: data.datetime,
-            y: data.parsed.AIN3
-          });
           break;
 
         case "CAN_INV_MOTOR_POS":
@@ -220,7 +213,7 @@ function process_data(data) {
           });
           graph_data['graph-speed'].push({
             x: data.datetime,
-            y: data.parsed.motor_speed // !!!! calc needed
+            y: 2 * Math.PI * 0.24765 * 60 * data.parsed.motor_speed / (1000 * 5.188235)
           });
           break;
 
@@ -255,10 +248,6 @@ function process_data(data) {
           graph_data['graph-battery-temperature-max'].push({
             x: data.datetime,
             y: data.parsed.temperature.max.value
-          });
-          graph_data['graph-battery-temperature-min'].push({
-            x: data.datetime,
-            y: data.parsed.temperature.min.value
           });
           graph_data['graph-dcl'].push({
             x: data.datetime,
@@ -429,17 +418,16 @@ let tooltips = {
   'motor-igbt-temperature': { title: 'IGBT 온도', desc: '인버터의 3상 스위칭 IGBT 중 가장 높은 온도를 보고하는 IGBT의 온도와, 해당 IGBT가 담당하는 상(A/B/C)입니다.' },
   'inverter-temperature': { title: 'Gate Driver 온도', desc: '인버터 게이트 드라이버 보드의 온도입니다.' },
   'inverter-status': { title: '인버터 상태', desc: '3상 스위칭 인버터의 상태입니다.' },
-
+  'precharge': { title: 'Pre-charge contactor' , desc: '모터 컨트롤러가 제어하는 초기 충전 릴레이의 상태입니다.' },
+  'air': { title: 'Main contactor' , desc: '모터 컨트롤러가 제어하는 AIR+ 릴레이의 상태입니다.' },
+  'inv-mode': { title: '제어 모드' , desc: '모터 컨트롤러가 모터를 제어하는 모드입니다. Speed 모드와 Torque 모드가 있습니다.<br><i class="fa-solid fa-fw fa-square-s" style="color: green"></i> : Speed Mode<br><i class="fa-solid fa-fw fa-square-t" style="color: green"></i> : Torque Mode' },
   'voltage-failsafe': { title: 'Voltage failsafe mode', desc: '<div class="failsafe-desc">BMS가 셀 또는 배터리 팩 전압을 정확히 측정할 수 없을 때 작동하는 가장 심각한 비상 모드입니다. BMS가 더 이상 셀을 보호할 수 없으므로, BMS는 배터리 팩의 충방전 전류 제한을 서서히 0으로 낮추어 배터리 작동을 정지시킵니다. 이 비상 모드가 발동하면 반드시 배터리 팩을 다시 사용하기 전에 문제 발생 원인을 조사해야 합니다.<br><br>이 문제는 셀 전압이 0.09V 이하이거나 5V 이상일 때 또는 voltage tap 와이어 일부가 분리되었을 때 발생할 수 있습니다.</div>' },
   'current-failsafe': { title: 'Current failsafe mode', desc: '<div class="failsafe-desc">이 문제는 전류 센서가 부정확하거나 분리되었다고 BMS가 판단할 때 발생할 수 있습니다. BMS 프로파일에 전류 센서가 사용 설정되지 않았을 때도 발생합니다.<br><br>이 모드에서 전류 센서는 비활성화되어 측정값은 0A로 고정되며, BMS는 전류 센서를 무시하고 오로지 전압 센서에 의존해서 셀을 보호합니다. 배터리 팩 자체는 계속 작동합니다.<br><br>이 비상 모드는 다음의 기능에 영향을 미칩니다.<ol><li>셀 내부 저항 측정이 비활성화됩니다.</li><li>충전량(%) 측정값이 부정확해집니다.</li><li>충방전 전류 제한이 voltage failsafe mode로 전환되며 실제 값과 다를 수 있습니다.</li><li>과전류 보호 기능이 사실상 작동하지 않습니다.</li></ol></div>' },
   'relay-failsafe': { title: 'Relay failsafe mode', desc: '<div class="failsafe-desc">이 모드는 BMS가 릴레이 제어 출력 신호를 꺼 릴레이를 비활성화했음에도 불구하고 배터리에 500ms 이상 전류 흐름이 측정될 때 발생합니다. 이 모드에서 BMS의 모든 릴레이 제어 출력 신호는 에러 코드를 초기화하기 전까지 비활성화 상태로 유지됩니다.<br><br>이 모드는 BMS 프로파일에서 활성화된 릴레이에 대해서만 작동합니다. 비활성화된 릴레이에서는 무시됩니다.</div>' },
   'balancing-active': { title: 'Cell Balancing Active', desc: '<div class="failsafe-desc">BMS가 셀 밸런싱 중일 때 활성화되어 녹색으로 표시됩니다.</div>' },
   'interlock-failsafe': { title: 'Charge Interlock failsafe mode', desc: '<div class="failsafe-desc">충전 중에 충전기 인터락이 분리되었을 때 활성화됩니다.</div>' },
-  'thermistor-invalid': { title: 'Thermistor b-value table invalid', desc: '<div class="failsafe-desc">뭔지 모르겠음</div>' },
+  'thermistor-invalid': { title: 'Thermistor b-value table invalid', desc: '<div class="failsafe-desc">Thermister Fault</div>' },
   'input-power-failsafe': { title: 'Input Power Supply Failsafe', desc: '<div class="failsafe-desc">BMS에 공급되는 12V 전원의 실제 전압이 너무 낮아 정상 작동을 보장할 수 없을 때 발생하는 비상 모드입니다. 공급 전원이 8초 이상 8V 이하로 유지될 때 발생합니다.<br><br>이 모드에서 charge enable, discharge enable, charger safety 출력은 모두 비활성화됩니다. 또한 모든 디지털 출력은 꺼지며, 충방전 전류 제한은 즉시 0A로 설정됩니다. 5V 아날로그 출력은 동작할 수 있으나 측정값은 신뢰할 수 없습니다.<br><br>이 문제로 인한 에러 코드는 기록에 남지만, 정상 전압이 복구되면 BMS는 즉시 다시 정상 작동합니다.<br><br>한편, BMS는 5초 미만의 시간 동안 발생하는 전압 강하로 전압이 4.5V까지 내려가더라도 이 비상 모드를 활성화하지 않고 정상 작동할 수 있습니다.</div>' },
-  'precharge': { title: 'Pre-charge contactor' , desc: '모터 컨트롤러가 제어하는 초기 충전 릴레이의 상태입니다.' },
-  'air': { title: 'Main contactor' , desc: '모터 컨트롤러가 제어하는 AIR+ 릴레이의 상태입니다.' },
-  'inv-mode': { title: '제어 모드' , desc: '모터 컨트롤러가 모터를 제어하는 모드입니다. Speed 모드와 Torque 모드가 있습니다. Speed Mode는 <i class="fa-solid fa-fw fa-square-s"></i>, Torque Mode는 <i class="fa-solid fa-fw fa-square-t"></i>로 표시됩니다.' },
 };
 
 function fault_toHTML(faults) {
