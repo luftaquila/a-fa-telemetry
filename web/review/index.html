@@ -7,7 +7,7 @@
 		<meta property="og:title" content="A-FA TELEMETRY CONTROL"/>
 		<meta property="og:url" content="https://a-fa.luftaquila.io/telemetry"/>
 		<meta property="og:image" content="https://a-fa.luftaquila.io/assets/A-FA.jpeg"/>
-		<meta property="og:description" content=" "/>	
+		<meta property="og:description" content=" "/>
 
     <link rel="stylesheet" href="style.css">
     <link rel="stylesheet" href="../src/fontawesome/css/all.min.css">
@@ -16,57 +16,96 @@
     <link rel="shortcut icon" href="../assets/favicon.svg" type="image/x-icon">
   </head>
   <body>
-    <div style="display: flex;">
+    <div id="header">
       <div id="logo">
         <a href="/">
           <img src="../assets/logo-transparent.png">
         </a>
       </div>
-
-      <div style="margin-top: 1rem;">
-        <span style="font-size: 1.5rem; font-weight: bold;">로그 파일 업로드</span><br>
-        <input id="file" type="file" name="file" accept=".log" style="margin-top: 1rem; margin-left:2rem;">
-      </div>
-
-      <div style="margin-top: 1rem;">
-        <span style="font-size: 1.5rem; font-weight: bold;">이전 로그 파일</span><br>
-        <select id="prevlog" style="margin-top: 1rem; margin-left: 1rem;">
-          <option role="placeholder" value="" disabled selected>로그 파일 선택</option>
-        </select>
-      </div>
     </div>
 
     <div id="container">
-      <article style='width: 86vw; max-width: none;'>
-        <h1><i class="fa-duotone fa-fw fa-book"></i>&ensp;로그</h1>
-        <div class="content" style='padding-top: 1rem;'>
-          <span>대용량 파일 변환 시 시스템 메모리 소요량이 많습니다.</span>
-          <table class="settings" style='margin-bottom: 1rem;'>
-            <colgroup>
-              <col width=24%">
-              <col width=24%">
-              <col width=24%">
-              <col width=24%">
-            </colgroup>
-            <tr>
-              <td><a id="json_download"><span class="btn green"><i class="fa-solid fa-fw fa-download"></i>&ensp;JSON 다운로드</span></a></td>
-              <td><a id="csv_download"><span class="btn green"><i class="fa-solid fa-fw fa-download"></i>&ensp;CSV 다운로드</span></a></td>
-              <td><a id="bin_download"><span class="btn green"><i class="fa-solid fa-fw fa-download"></i>&ensp;원본 로그 다운로드</span></a></td>
-              <td><a href="https://github.com/luftaquila/a-fa" target="_blank"><span class="btn purple"><i class="fa-brands fa-fw fa-github"></i>&ensp;CODE</span></a></td>
-            </tr>
-          </table>
+      <article>
+        <h1><i class="fa-duotone fa-fw fa-book"></i>&ensp;로그 파일</h1>
+        <div class="content" style='padding-top: 1rem; line-height: 2rem'>
+          <div>
+            <span style="font-size: 1.5rem; font-weight: bold;">업로드</span><br>
+            <input id="file" type="file" name="file" accept=".log" style="margin-top: .5rem; margin-left:2rem;">
+          </div>
 
-          <h2>JSON</h2>
-          <textarea id='json' style='width: 98%; height: 30vw; resize: vertical;' readonly></textarea>
-          <div style='height: 1rem;'></div>
-          <h2>CSV</h2>
-          <textarea id="csv" style='width: 98%; height: 30vw; resize: vertical;' readonly></textarea>
+          <div style="margin-top: 2rem;">
+            <span style="font-size: 1.5rem; font-weight: bold;">이전 로그 선택</span><br>
+            <select id="prevlog" style="margin-top: .5rem; margin-left: 1rem;">
+              <option role="placeholder" value="" disabled selected>로그 파일 선택</option>
+            </select>
+          </div>
+        </div>
+      </article>
+      <article style=''>
+        <h1><i class="fa-duotone fa-fw fa-book"></i>&ensp;로그 변환</h1>
+        <div class="content" style='padding-top: 1rem; line-height: 2rem'>
+          <span id="load_file_first" style="font-weight: bold;">변환할 파일을 업로드하거나, 이전에 업로드한 파일을 선택하세요.</span>
+          <ul style="padding-left: 1rem;">
+            <li>차량이 주행 중 생성한 바이너리 로그 파일을 사람이 읽을 수 있도록 변환합니다.</li>
+            <li>1MB 이상의 대용량 로그는 변환에 시간이 다소 소요됩니다. 페이지가 응답이 없다는 메시지가 나와도 잠시 기다려 주세요. (특히 CSV)</li>
+          </ul>
+
+          <div style="text-align: center">
+            <div><a id="json_download" class="btn_download disabled"><span class="btn green"><i class="fa-solid fa-fw fa-download"></i>&ensp;JSON 다운로드</span></a></div>
+            <div><a id="csv_download" class="btn_download disabled"><span class="btn green"><i class="fa-solid fa-fw fa-download"></i>&ensp;CSV 다운로드</span></a></div>
+            <div><a id="bin_download" class="btn_download disabled"><span class="btn green"><i class="fa-solid fa-fw fa-download"></i>&ensp;원본 로그 다운로드</span></a></div>
+            <div><a href="https://github.com/luftaquila/a-fa" target="_blank"><span class="btn purple" style="width: 70%"><i class="fa-brands fa-fw fa-github"></i>&ensp;CODE</span></a></div>
+          </div>
+        </div>
+      </article>
+
+      <article>
+        <h1><i class="fa-duotone fa-fw fa-book"></i>&ensp;프로토콜</h1>
+        <div class="content" style='padding-top: 1rem; line-height: 2rem'>
+          <ul style="padding-left: 1rem;">
+            <li>Size: 16 Byte</li>
+            <li>Endianness: Big Endian</li>
+          </ul>
+          <ul>
+            <li>
+              timestamp(#0 ~ #3, 4 Byte)<br>
+              <div style='font-size: .9rem; margin-left: 1rem;'>
+                STM32 부팅 이후 경과 시간(ms). 부팅 시간은 로그 파일명에 기록
+              </div>
+            </li>
+            <li>
+              level(#4, 1 Byte)<br>
+              <div style='font-size: .9rem; margin-left: 1rem;'>
+                로그 수준. FATAL(0), ERROR(1), WARN(2), INFO(3), DEBUG(4)
+              </div>
+            </li>
+            <li>
+              source(#5, 1 Byte)<br>
+              <div style='font-size: .9rem; margin-left: 1rem;'>
+                로그 생성 장비. ECU(0), ESP(1), CAN(2), ADC(3), TIM(4), ACC(5), LCD(6), GPS(7)
+              </div>
+            </li>
+            <li>
+              key(#6, 1 Byte)<br>
+              <div style='font-size: .9rem; margin-left: 1rem;'>
+                로그 종류. 로그 소스에 따라 다름(<a style="text-decoration: none;" href="https://github.com/luftaquila/a-fa-telemetry/blob/master/web/review/types.js">types.js</a> 참조)
+              </div>
+            </li>
+            <li>_reserved(#7, 1 Byte)</li>
+            <li>
+              value(#8 ~ #15, 8 Byte)<br>
+              <div style='font-size: .9rem; margin-left: 1rem;'>
+                로그 데이터 (각 로그에 따른 해석 방법은 <a style="text-decoration: none;" href="https://github.com/luftaquila/a-fa-telemetry/blob/master/web/review/types.js">types.js</a> 참조)
+              </div>
+            </li>
+          </ul>
         </div>
       </article>
     </div>
 
     <script src="../src/jquery/jquery-3.6.0.slim.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/jquery-csv/1.0.21/jquery.csv.min.js"></script>
+    <script src="FileSaver.min.js"></script>
     <script src="types.js"></script>
     <script src="script.js"></script>
     <script src="tooltips.js"></script>

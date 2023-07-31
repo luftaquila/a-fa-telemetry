@@ -1,4 +1,5 @@
 log = [];
+filename = "";
 
 loadfile();
 async function loadfile() {
@@ -45,32 +46,49 @@ $("#file").change(async function() {
   }
 });
 
-async function processRaw(raw, filename) {
+$("#json_download").click(function() {
+  let json = JSON.stringify(log);
+  saveAs(new File([json], `${filename}.json`, { type: 'text/json;charset=utf-8' }));
+  setTimeout()
+});
+
+$("#csv_download").click(function() {
+  let csv = doCSV(log);
+  saveAs(new File([csv], `${filename}.csv`, { type: 'text/csv;charset=utf-8' }));
+});
+
+async function processRaw(raw, file_name) {
+  filename = file_name;
+
   let buffer = await raw.arrayBuffer();
   buffer = new Uint8Array(buffer);
 
   const log_size = 16;
   let index = 0;
+  let error = 0;
   let count = buffer.length / log_size;
 
   while (index < buffer.length) {
-    log.push(convert(buffer.slice(index, index + log_size)));
-    index += 16;
+    let converted_log = convert(buffer.slice(index, index + log_size));
+
+    if (converted_log) {
+      log.push(converted_log);
+    } else {
+      error++;
+    }
+
+    index += log_size;
   }
 
-  let converted = { };
-
-  converted.json = JSON.stringify(log);
-  $("#json").val(converted.json);
-  $("#json_download").attr("href", "data:text/json;charset=utf-8," + encodeURIComponent(converted.json)).attr("download", `${filename}.json`);
-  delete converted.json;
-
-  converted.csv = doCSV(log);
-  $("#csv").val(converted.csv);
-  $("#csv_download").attr("href", "data:text/csv;charset=utf-8," + encodeURIComponent(converted.csv)).attr("download", `${filename}.csv`);
-  delete converted.csv;
-
   $("#bin_download").attr("href", `datalogs/${filename}`);
+
+  // process finished
+
+  $("#load_file_first").text(`현재 파일: ${filename}`);
+  $(".btn_download").removeClass("disabled");
+
+  console.log(log);
+  console.log(`total: ${count}, error: ${error}, converted: ${count - error}, actual: ${log.length}`);
 }
 
 /* FROM https://github.com/konklone/json */

@@ -30,29 +30,34 @@ html {
 }
 
 body {
-  min-width: 320px;
-  min-height: 568px;
   overflow-y: auto;
   border-radius: 10px;
 }
 
 #logo {
   text-align: center;
-  padding-top: .5rem;
   max-width: 414px;
+  margin: auto;
 }
 
 #logo img {
   width: 70%;
 }
 
-div#container {
+div#container, div#header {
   padding: 1rem;
   padding-top: 0rem;
   display: flex;
   max-width: none;
   flex-wrap: wrap;
+}
+div#container {
   justify-content: space-evenly;
+}
+div#header {
+  padding-top: 1rem;
+  padding-bottom: 0rem;
+  justify-content: space-between;
 }
 
 header {
@@ -255,4 +260,13 @@ ul {
   line-height: 1em;
   border: 1px solid #aaa;
   padding: 6px 6px;
+}
+
+.disabled {
+  opacity: 30%;
+  pointer-events: none;
+}
+
+.btn_download span {
+  width: 70%;
 }
