@@ -10,6 +10,7 @@ async function loadfile() {
 
   const prevfile = new URLSearchParams(window.location.search).get('file');
   if (prevfile) {
+    $("#load_file_first").text("파일 불러오는 중...");
     const res = await fetch("https://a-fa.luftaquila.io/telemetry/review/datalogs/" + prevfile);
 
     const raw = await res.blob();

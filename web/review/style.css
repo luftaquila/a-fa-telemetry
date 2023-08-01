@@ -129,8 +129,8 @@ article {
   background-color: white;
   border-radius: 10px;
   min-width: 320px;
-  width: 25vw; /* 40vw */
-  max-width: 600px;
+  width: 380px;
+  max-width: 414px;
 }
 
 article h1 {
