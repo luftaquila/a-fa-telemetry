@@ -16,8 +16,124 @@ async function loadfile() {
     const raw = await res.blob();
     processRaw(raw, prevfile);
   }
+
+  drawGraph();
 }
 
+function drawGraph() {
+  const canvas = document.getElementById('graph-review');
+
+  chart = new Chart(canvas, {
+    type: 'line',
+    data: {
+      datasets: [
+
+      ]
+    },
+    options: {
+      responsive: true,
+      interaction: {
+        intersect: false,
+      },
+      scales: {
+        x: {
+          type: 'time',
+          time: {
+            unit: 'second',
+            displayFormats: {
+              second: 'hh:mm:ss'
+            }
+          },
+        },
+      },
+      plugins: {
+        zoom: {
+          zoom: {
+            wheel: {
+              enabled: true,
+            },
+            pinch: {
+              enabled: true,
+            },
+            mode: 'x',
+          }
+        }
+      }
+    },
+    elements: {
+      point: {
+        borderWidth: 0,
+        radius: 2,
+        backgroundColor: 'rgba(0, 0, 0, 0)'
+      }
+    }
+  });
+}
+
+async function processRaw(raw, file_name) {
+  filename = file_name;
+  file_date = file_name.replace("A-FA ", "").replace(".log", "").replace(" ", "-").split("-");
+  file_date = new Date(file_date[0], file_date[1] - 1, file_date[2], file_date[3], file_date[4], file_date[5]);
+
+  let buffer = await raw.arrayBuffer();
+  buffer = new Uint8Array(buffer);
+
+  const log_size = 16;
+  let index = 0;
+  let error = 0;
+  let count = buffer.length / log_size;
+
+  while (index < buffer.length) {
+    let converted_log = convert(buffer.slice(index, index + log_size));
+
+    if (converted_log) {
+      converted_log.datetime = new Date(file_date.getTime() + converted_log.timestamp).format("yyyy-mm-dd HH:MM:ss.l");
+      log.push(converted_log);
+    } else {
+      error++;
+    }
+
+    index += log_size;
+  }
+
+  $("#bin_download").attr("href", `datalogs/${filename}`);
+
+  // process finished
+  console.log(log);
+  console.log(`total: ${count}, error: ${error}, converted: ${count - error}, actual: ${log.length}`);
+
+  let keylist = [];
+
+  for (let data of log) {
+    if (!keylist.find(x => x.key == data.key) && data.key && typeof data.parsed == 'object') {
+      if (!data.key.includes("GPS") && !data.key.includes("FIRMWARE")) {
+        keylist.push({
+          key: data.key,
+          parsed: data.parsed
+        });
+      }
+    }
+  }
+
+  let paramlist = [];
+  for (let key of keylist) {
+    for (let param of Object.keys(key.parsed)) {
+      if (typeof param != 'object') {
+        paramlist.push(`${key.key} / ${param}`);
+      }
+    }
+  }
+
+  $("#parameter_list").html(`<option value="" disabled selected>그래프에 추가할 데이터를 선택하세요.</option>` + paramlist.map(x => `<option value='${x}'>${x}</option>`).join(''));
+
+  $("#load_file_first").text(`현재 파일: ${filename}`);
+  $(".btn_download, #parameter_list, #add_parameter").removeClass("disabled");
+}
+
+
+/*************************************************
+ * jquery event listeners
+ */
 $("#prevlog").change(function() {
   const urlParams = new URLSearchParams(window.location.search);
   urlParams.set('file', $("#prevlog option:selected").text());
@@ -58,44 +174,33 @@ $("#csv_download").click(function() {
   saveAs(new File([csv], `${filename}.csv`, { type: 'text/csv;charset=utf-8' }));
 });
 
-async function processRaw(raw, file_name) {
-  filename = file_name;
-  file_date = file_name.replace("A-FA ", "").replace(".log", "").replace(" ", "-").split("-");
-  file_date = new Date(file_date[0], file_date[1] - 1, file_date[2], file_date[3], file_date[4], file_date[5]);
+$("#add_parameter").click(function() {
+  const val = $("#parameter_list").val();
+  const tmp = val.split(' / ')
+  const key = tmp[0], param = tmp[1];
 
-  let buffer = await raw.arrayBuffer();
-  buffer = new Uint8Array(buffer);
+  const arr = log.filter(x => x.key == key);
+  let target = arr.map(k => { return { x: new Date(k.datetime).getTime(), y: k.parsed[param] } });
 
-  const log_size = 16;
-  let index = 0;
-  let error = 0;
-  let count = buffer.length / log_size;
+  target = target.map(x => { if (key == 'CAN_INV_MOTOR_POS') { return { x: x.x, y: x.y / 100 } } else { return x }  })
 
-  while (index < buffer.length) {
-    let converted_log = convert(buffer.slice(index, index + log_size));
+  const color = getRandomColor();
+  console.log(color)
+  const data = {
+    label: val,
+    backgroundColor: color,
+    borderColor: color,
+    data: target
+  };
 
-    if (converted_log) {
-      converted_log.datetime = new Date(file_date.getTime() + converted_log.timestamp).format("yyyy-mm-dd HH:MM:ss.l");
-      log.push(converted_log);
-    } else {
-      error++;
-    }
+  chart.data.datasets.push(data);
+  chart.update();
+});
 
-    index += log_size;
-  }
 
-  $("#bin_download").attr("href", `datalogs/${filename}`);
-
-  // process finished
-
-  $("#load_file_first").text(`현재 파일: ${filename}`);
-  $(".btn_download").removeClass("disabled");
-
-  console.log(log);
-  console.log(`total: ${count}, error: ${error}, converted: ${count - error}, actual: ${log.length}`);
-}
-
-/* FROM https://github.com/konklone/json */
+/**************************************************
+ * JSON to CSV from https://github.com/konklone/json
+ */
 function doCSV(json) {
   // 1) find the primary array to iterate over
   // 2) for each item in that array, recursively flatten it into a tabular object
@@ -105,7 +210,6 @@ function doCSV(json) {
   var outArray = [];
   for (var row in inArray)
       outArray[outArray.length] = parse_object(inArray[row]);
-
 
   return $.csv.fromObjects(outArray, {separator: ','});
 }
@@ -163,6 +267,10 @@ function parse_object(obj, path) {
     else return {};
 }
 
+
+/*********************************************
+ * DateFormat
+ */
 var dateFormat = function () {
   var	token = /d{1,4}|m{1,4}|yy(?:yy)?|([HhMsTt])\1?|[LloSZ]|"[^"]*"|'[^']*'/g,
     timezone = /\b(?:[PMCEA][SDP]T|(?:Pacific|Mountain|Central|Eastern|Atlantic) (?:Standard|Daylight|Prevailing) Time|(?:GMT|UTC)(?:[-+]\d{4})?)\b/g,
@@ -242,3 +350,15 @@ dateFormat.i18n = {
   ]
 };
 Date.prototype.format = function (mask, utc) { return dateFormat(this, mask, utc); };
+
+/***************************************
+ * chart.js random color
+ */
+function getRandomColor() {
+    var letters = '0123456789ABCDEF'.split('');
+    var color = '#';
+    for (var i = 0; i < 6; i++ ) {
+        color += letters[Math.floor(Math.random() * 16)];
+    }
+    return color;
+}

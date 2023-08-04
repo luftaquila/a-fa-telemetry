@@ -41,7 +41,8 @@
           </div>
         </div>
       </article>
-      <article style=''>
+
+      <article>
         <h1><i class="fa-solid fa-fw fa-wand-magic-sparkles"></i>&ensp;로그 변환</h1>
         <div class="content" style='padding-top: 1rem; line-height: 2rem'>
           <span id="load_file_first" style="font-weight: bold;">변환할 파일을 선택하세요.</span>
@@ -105,6 +106,16 @@
         </div>
       </article>
 
+      <article style='width: 90vw; max-width: 90vw'>
+        <h1><i class="fa-solid fa-fw fa-wand-magic-sparkles"></i>&ensp;데이터 뷰어</h1>
+        <div class="content" style='padding-top: 1rem; line-height: 2rem'>
+          <select id='parameter_list' class='disabled' style='width: 25rem; height: 2rem;'>
+          </select>
+          <a><span id="add_parameter" class="btn blue disabled" style='height: 1.2rem; line-height: 1.4rem;'><i class="fa-solid fa-fw fa-plus"></i>&ensp;데이터 추가</span></a>
+          <canvas id="graph-review" class="graph" width="100%" height="55vh" style="margin-top: 2rem;"></canvas>
+        </div>
+      </article>
+
       <article>
         <h1><i class="fa-solid fa-fw fa-microphone-stand"></i>&ensp;일러두기</h1>
         <div class="content" style='padding-top: 1rem; line-height: 2rem'>
@@ -125,6 +136,11 @@
 
     <script src="../src/jquery/jquery-3.6.0.slim.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/jquery-csv/1.0.21/jquery.csv.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js@3.8.2/dist/chart.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/luxon@1.27.0"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chartjs-adapter-luxon@1.0.0"></script>
+    <script src="chartjs-plugin-zoom.min.js"></script>
+    <script type="text/javascript" src="//dapi.kakao.com/v2/maps/sdk.js?appkey=104567b3d9ce11bfc56d92f7c5883307&libraries=clusterer,drawing"></script>
     <script src="FileSaver.min.js"></script>
     <script src="types.js"></script>
     <script src="script.js"></script>
