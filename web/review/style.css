@@ -279,3 +279,10 @@ ul {
 ul li {
   margin-bottom: 1rem;
 }
+
+.reset-zoom {
+	position: absolute!important;
+	top: 14vh;
+	right: 2vw;
+  border: none;
+}

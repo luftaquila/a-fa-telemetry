@@ -26,14 +26,19 @@ function drawGraph() {
   chart = new Chart(canvas, {
     type: 'line',
     data: {
-      datasets: [
-
-      ]
+      datasets: [],
     },
     options: {
       responsive: true,
       interaction: {
+        mode: 'nearest',
+        axis: 'x',
         intersect: false,
+      },
+      elements: {
+        point: {
+          hitRadius: 10,
+        }
       },
       scales: {
         x: {
@@ -56,6 +61,32 @@ function drawGraph() {
               enabled: true,
             },
             mode: 'x',
+          }
+        },
+        tooltip: {
+          position: 'bottom',
+        },
+        crosshair: {
+          line: {
+            color: 'black',
+            width: 1,
+          },
+          sync: {
+            enabled: true,
+            group: 1,
+            suppressTooltips: false,
+          },
+          zoom: {
+            enabled: true,
+            zoomButtonText: '줌 리셋',
+            zoomButtonClass: 'reset-zoom btn purple',
+          },
+          callbacks: {
+            beforeZoom: () => function(start, end) {
+              return true;
+            },
+            afterZoom: () => function(start, end) {
+            }
           }
         }
       }
@@ -100,7 +131,6 @@ async function processRaw(raw, file_name) {
 
   // process finished
   console.log(log);
-  console.log(`total: ${count}, error: ${error}, converted: ${count - error}, actual: ${log.length}`);
 
   let keylist = [];
 
@@ -117,6 +147,7 @@ async function processRaw(raw, file_name) {
 
   let paramlist = [];
   for (let key of keylist) {
+    if (!key.parsed) continue;
     for (let param of Object.keys(key.parsed)) {
       if (typeof param != 'object') {
         paramlist.push(`${key.key} / ${param}`);
@@ -127,6 +158,10 @@ async function processRaw(raw, file_name) {
   $("#parameter_list").html(`<option value="" disabled selected>그래프에 추가할 데이터를 선택하세요.</option>` + paramlist.map(x => `<option value='${x}'>${x}</option>`).join(''));
 
   $("#load_file_first").text(`현재 파일: ${filename}`);
+  $("#data-count").text(count);
+  $("#error-count").text(error);
+  $("#converted-count").text(count - error);
+  $("#duration").text(((log[log.length - 1].timestamp - log[0].timestamp) / (1000 * 60)).toFixed(0));
   $(".btn_download, #parameter_list, #add_parameter").removeClass("disabled");
 }
 
@@ -185,12 +220,11 @@ $("#add_parameter").click(function() {
   target = target.map(x => { if (key == 'CAN_INV_MOTOR_POS') { return { x: x.x, y: x.y / 100 } } else { return x }  })
 
   const color = getRandomColor();
-  console.log(color)
   const data = {
     label: val,
     backgroundColor: color,
     borderColor: color,
-    data: target
+    data: target,
   };
 
   chart.data.datasets.push(data);
@@ -352,7 +386,7 @@ dateFormat.i18n = {
 Date.prototype.format = function (mask, utc) { return dateFormat(this, mask, utc); };
 
 /***************************************
- * chart.js random color
+ * chart.js functions
  */
 function getRandomColor() {
     var letters = '0123456789ABCDEF'.split('');
@@ -362,3 +396,21 @@ function getRandomColor() {
     }
     return color;
 }
+
+Chart.Tooltip.positioners.bottom = function(items, coord) {
+  const pos = Chart.Tooltip.positioners.average(items);
+
+  // Happens when nothing is found
+  if (pos === false) {
+    return false;
+  }
+
+  const chart = this.chart;
+
+  return {
+    x: coord.x,
+    y: chart.chartArea.top,
+    xAlign: 'center',
+    yAlign: 'top',
+  };
+};

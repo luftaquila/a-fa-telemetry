@@ -289,6 +289,29 @@
 
             <tr>
               <th class="param-label">
+                <h2><i class="fa-solid fa-fw fa-battery-exclamation"></i>&ensp;DCL</h2>
+                <div class="toggle_graph">
+                  <input class="tgl tooltips tgl-skewed" id="tooltip-dcl" type="checkbox"/>
+                  <label class="tgl-btn" data-tg-off="도움말" data-tg-on="도움말" for="tooltip-dcl"></label>
+                  <input class="tgl toggle-graph tgl-skewed" id="toggle-graph-dcl" type="checkbox"/>
+                  <label class="tgl-btn" data-tg-off="그래프" data-tg-on="그래프" for="toggle-graph-dcl"></label>
+                </div>
+              </th>
+              <th class="param-data">
+                <h2>
+                  <span id="dcl" class="param-value">0</span><span class="param-unit">&ensp;A</span>
+                </h2>
+              </th>
+            </tr>
+            <tr>
+              <td colspan="2" class="param-graph">
+                <canvas id="graph-dcl" class="graph" width="100%" height="60vh"></canvas>
+              </td>
+            </tr>
+            <tr><td>&ensp;</td></tr>
+
+            <tr>
+              <th class="param-label">
                 <h2><i class="fa-solid fa-fw fa-temperature-arrow-up"></i>&ensp;최고</h2>
                 <div class="toggle_graph">
                   <input class="tgl tooltips tgl-skewed" id="tooltip-battery-temperature-max" type="checkbox"/>
@@ -309,29 +332,7 @@
                 <canvas id="graph-battery-temperature-max" class="graph" width="100%" height="60vh"></canvas>
               </td>
             </tr>
-            <tr><td>&ensp;</td></tr>
 
-            <tr>
-              <th class="param-label">
-                <h2><i class="fa-solid fa-fw fa-battery-exclamation"></i>&ensp;DCL</h2>
-                <div class="toggle_graph">
-                  <input class="tgl tooltips tgl-skewed" id="tooltip-dcl" type="checkbox"/>
-                  <label class="tgl-btn" data-tg-off="도움말" data-tg-on="도움말" for="tooltip-dcl"></label>
-                  <input class="tgl toggle-graph tgl-skewed" id="toggle-graph-dcl" type="checkbox"/>
-                  <label class="tgl-btn" data-tg-off="그래프" data-tg-on="그래프" for="toggle-graph-dcl"></label>
-                </div>
-              </th>
-              <th class="param-data">
-                <h2>
-                  <span id="dcl" class="param-value">0</span><span class="param-unit">&ensp;A</span>
-                </h2>
-              </th>
-            </tr>
-            <tr>
-              <td colspan="2" class="param-graph">
-                <canvas id="graph-dcl" class="graph" width="100%" height="60vh"></canvas>
-              </td>
-            </tr>
           </table>
         </div>
       </article>
