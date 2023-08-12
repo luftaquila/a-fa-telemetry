@@ -192,12 +192,14 @@ function process_telemetry(data) {
             break;
           }
           case "CAN_INV_FAULT": {
+            ECU.inverter.fault.post = [];
+            ECU.inverter.fault.run = [];
             for (let i = 0; i < 32; i++) {
               if (data.parsed.POST & (1 << i)) {
                 ECU.inverter.fault.post.push(fault.post[i]);
               }
               if (data.parsed.RUN & (1 << i)) {
-                ECU.inverter.fault.post.run(fault.run[i]);
+                ECU.inverter.fault.run.push(fault.run[i + 32]);
               }
             }
             break;
