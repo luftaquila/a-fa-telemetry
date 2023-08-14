@@ -86,7 +86,7 @@ int32_t ESP_SETUP(void) {
 
   // ESP handshake
   HAL_Delay(1000);
-  HAL_I2C_Master_Transmit(&hi2c1, ESP_I2C_ADDR, (uint8_t *)"READY", 5, 50);
+  HAL_I2C_Master_Transmit(&hi2c1, ESP_I2C_ADDR, (uint8_t *)"READY", 5, 500);
 
   // receive ACK from UART (10 bytes)
   uint8_t ack[10];
