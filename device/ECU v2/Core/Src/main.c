@@ -316,13 +316,18 @@ int main(void)
 
   while (1) {
 
-    // all ADC conversions are done
-    if (adc_flag == ( (1 << ADC_CPU) | (1 << ADC_DIST) )) {
-      adc_flag = 0; // clear all adc flags
+    // CPU temmperature ADC conversion done
+    if ((adc_flag & (1 << ADC_CPU)) != 0) {
+      adc_flag &= ~(1 << ADC_CPU); // clear ADC_CPU flag
 
-      // record each channel
       *(uint16_t *)syslog.value = adc_value[ADC_TEMP];
       SYS_LOG(LOG_INFO, ANALOG, ADC_CPU);
+    }
+
+
+    // linear distance sensor ADC conversions done
+    if ((adc_flag & (1 << ADC_DIST)) != 0) {
+      adc_flag &= ~(1 << ADC_DIST); // clear ADC_DIST flag
 
       *(uint16_t *)(syslog.value + 0) = adc_value[ADC_DIST_FL];
       *(uint16_t *)(syslog.value + 2) = adc_value[ADC_DIST_RL];
