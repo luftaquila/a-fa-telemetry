@@ -47,10 +47,16 @@ function convert(raw) {
       level: LOG_LEVEL[raw[4]],
       source: LOG_SOURCE[raw[5]],
       key: LOG_KEY[LOG_SOURCE[raw[5]]][raw[6]],
+      checksum: raw[7] == ((raw[0] + raw[1] + raw[2] + raw[3] + raw[4] + raw[5] + raw[6] + raw[8] + raw[9] + raw[10] + raw[11] + raw[12] + raw[13] + raw[14] + raw[15]) % 256),
       value: raw[8] + raw[9] * Math.pow(2, 8) + raw[10] * Math.pow(2, 16) + raw[11] * Math.pow(2, 24) + raw[12] * Math.pow(2, 32) + raw[13] * Math.pow(2, 40) + raw[14] * Math.pow(2, 48) + raw[15] * Math.pow(2, 56),
       raw: raw.slice(8)
     };
+
     log.parsed = parse(log.source, log.key, log.value, log.raw);
+
+    if (!log.checksum) {
+      throw new Error("checksum error");
+    }
 
     return log;
   } catch (e) {
