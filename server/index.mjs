@@ -5,7 +5,7 @@ import dotenv from 'dotenv'
 dotenv.config();
 
 import types from '../web/review/types.js';
-const { LOG_LEVEL, LOG_SOURCE, LOG_KEY, parse, signed } = types.types;
+const { LOG_LEVEL, LOG_SOURCE, LOG_KEY, convert, parse, signed } = types.types;
 
 /*****************************************************************************
  * logger configurations
@@ -570,27 +570,3 @@ http.createServer(function (req, res) {
     });
   }
 }).listen(process.env.upload_port);
-
-
-/*****************************************************************************
- * types.js
- ****************************************************************************/
-function convert(raw) {
-  try {
-    let log = {
-      timestamp: raw[0] + raw[1] * Math.pow(2, 8) + raw[2] * Math.pow(2, 16) + raw[3] * Math.pow(2, 24),
-      level: LOG_LEVEL[raw[4]],
-      source: LOG_SOURCE[raw[5]],
-      key: LOG_KEY[LOG_SOURCE[raw[5]]][raw[6]],
-      value: raw[8] + raw[9] * Math.pow(2, 8) + raw[10] * Math.pow(2, 16) + raw[11] * Math.pow(2, 24) + raw[12] * Math.pow(2, 32) + raw[13] * Math.pow(2, 40) + raw[14] * Math.pow(2, 48) + raw[15] * Math.pow(2, 56),
-      raw: raw.slice(8)
-    };
-    log.parsed = parse(log.source, log.key, log.value, log.raw);
-
-    return log;
-  } catch(e) {
-    console.error(raw);
-    console.error(e);
-    return null;
-  }
-}

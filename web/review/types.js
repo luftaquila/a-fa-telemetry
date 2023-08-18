@@ -61,6 +61,7 @@ function convert(raw) {
     return log;
   } catch (e) {
     console.error(raw, e);
+    return null;
   }
 }
 
@@ -523,4 +524,4 @@ function signed(value, bit) {
   return value > Math.pow(2, bit - 1) - 1 ? value - Math.pow(2, bit) : value;
 }
 
-exports.types = { LOG_LEVEL, LOG_SOURCE, LOG_KEY, parse, signed };
+exports.types = { LOG_LEVEL, LOG_SOURCE, LOG_KEY, convert, parse, signed };
