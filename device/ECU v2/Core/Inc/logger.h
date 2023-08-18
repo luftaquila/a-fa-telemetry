@@ -19,7 +19,7 @@ typedef struct {
   uint8_t level;
   uint8_t source;
   uint8_t key;
-  uint8_t _reserved;
+  uint8_t checksum;
   uint8_t value[8];
 } LOG;
 
