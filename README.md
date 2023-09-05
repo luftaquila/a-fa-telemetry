@@ -31,6 +31,8 @@
 ## 서비스 URL
 * [A-FA E-포뮬러 원격 계측 시스템](https://a-fa.luftaquila.io/telemetry)
 
+![screencapture-a-fa-luftaquila-io-telemetry-2023-08-26-16_22_42](https://github.com/luftaquila/a-fa-telemetry/assets/17094868/7f5d1325-e314-4a54-927a-87ae08ecbfc2)
+
 ![image](https://github.com/luftaquila/a-fa-telemetry/assets/17094868/b007af26-b12d-4942-88ab-b200da300190)
 
 ## Log structure (16 Byte)
