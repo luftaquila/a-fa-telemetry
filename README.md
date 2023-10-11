@@ -2,6 +2,10 @@
 
 상위 프로젝트: [luftaquila/a-fa-landing](https://github.com/luftaquila/a-fa-landing)
 
+아주대학교 자작자동차소학회 A-FA의 E-Formula 차량용 데이터로거입니다.
+
+오픈소스 DIY 데이터로거 [monolith](https://github.com/luftaquila/monolith)의 초기 버전입니다.
+
 ### 기능
 1. CAN 버스 트래픽 모니터링 (BMS 및 모터 컨트롤러 데이터)
 2. 6채널 디지털 입력 신호 모니터링 (BMS / BSPD / IMD 오류, HV 활성화, RTD 활성화 신호)
