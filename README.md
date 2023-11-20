@@ -1,7 +1,9 @@
 # 차량 원격 계측 시스템
 
-## ⚠️ Deprecated
-오픈소스 DIY 데이터로거 [monolith](https://github.com/luftaquila/monolith)에서 업데이트 및 유지보수가 이루어지고 있습니다.
+> [!CAUTION]
+> ⚠️ DEPRECATED<br><br>
+> 이 저장소는 유지보수되지 않습니다.<br><br>
+> 추가 업데이트 및 유지보수는 오픈소스 DIY 데이터로거 [monolith](https://github.com/luftaquila/monolith)에서 이루어지고 있습니다.
 
 <hr>
 
